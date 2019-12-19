@@ -1,0 +1,6 @@
+﻿  main.cpp
+c:\users\ryuki874dora\desktop\mvc\library\clapack\x64\f2c.h(159): warning C4005: 'min': マクロが再定義されました。
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\shared\minwindef.h(197): note: 'min' の以前の定義を確認してください
+c:\users\ryuki874dora\desktop\mvc\library\clapack\x64\f2c.h(160): warning C4005: 'max': マクロが再定義されました。
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\shared\minwindef.h(193): note: 'max' の以前の定義を確認してください
+  Main.vcxproj -> C:\Users\ryuki874dora\Desktop\MVC\x64\Debug\Main.exe

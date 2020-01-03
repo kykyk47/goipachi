@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <gdiplus.h>
 
-using namespace Gdiplus;
+//using namespace Gdiplus;
 
 #define WIDTH 800
 #define HEIGHT 450
@@ -21,8 +21,8 @@ GLuint tex;
 void LoadImagePNG(const wchar_t* filename, GLuint &texture)
 {
 	glEnable(GL_TEXTURE_2D);
-	Bitmap bmp(filename);
-	BitmapData data;
+	Gdiplus::Bitmap bmp(filename);
+	Gdiplus::BitmapData data;
 	bmp.LockBits(0, ImageLockModeRead, PixelFormat32bppARGB, &data);
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
@@ -35,7 +35,7 @@ void LoadImagePNG(const wchar_t* filename, GLuint &texture)
 
 void end()
 {
-	GdiplusShutdown(gdiPT);
+	Gdiplus::GdiplusShutdown(gdiPT);
 }
 void display(void)
 {

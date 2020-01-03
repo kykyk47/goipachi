@@ -160,9 +160,9 @@ void display(void)
 	//std::cout << "Display" << std::endl;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glMatrixMode(GL_MODELVIEW);
-	/*glLoadIdentity();
-	glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);*/
-
+	glLoadIdentity();
+	glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
+	gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 	//glBindTexture(GL_TEXTURE_2D, tex);
 	//glEnable(GL_BLEND);
 	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -194,11 +194,11 @@ void display(void)
 	glutSwapBuffers();
 }
 
-double counter = 0.01;
+double counter = 1;
 
 void idle(void)
 {
-	glutPostRedisplay();
+	
 	if (onMoveKeyPress_R) {
 		std::cout << "d押しました" << std::endl;
 		//pic.lb[0] += 5;
@@ -207,7 +207,9 @@ void idle(void)
 		//pic.rb[0] += 5;
 		//camera_x += 0.00001;
 		//glTranslated(-1, 0, 0);
-		gluLookAt(center_x + counter, center_y, 0, center_x + counter, center_y, 1, 0, 1, 0);
+		camera_x += counter;
+		//glLoadIdentity();
+		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 		std::cout << camera_x << ":" << camera_y << std::endl;
 	}
 
@@ -217,14 +219,17 @@ void idle(void)
 		//pic.lu[0] -= 5;
 		//pic.ru[0] -= 5;
 		//pic.rb[0] -= 5;
-		camera_x -= 0.00001;
-		std::cout << camera_x << ":" << camera_y << std::endl;
+		//camera_x -= 0.00001;
+		
 		//glTranslated(1, 0, 0);
 		//gluLookAt(camera_x, center_y, 0, camera_x, center_y, 1, 0, 1, 0);
-		gluLookAt(center_x - counter, center_y, 0, center_x - counter, center_y, 1, 0, 1, 0);
+		camera_x -= counter;
+		//glLoadIdentity();
+		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
+		std::cout << camera_x << ":" << camera_y << std::endl;
 	}
 
-
+	glutPostRedisplay();
 }
 
 void resize(int w, int h){
@@ -244,7 +249,7 @@ void resize(int w, int h){
 	glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
 	//gluPerspective(30.0, (double)w / (double)h, 0.1, 100.0);
 	
-	gluLookAt(center_x, center_y - 400, 0, center_x, center_y - 400, 1, 0, 1, 0);
+	gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 	//gluLookAt(100.0f, 200.0f, 200.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
 	std::cout << "resize" << std::endl;
 }
@@ -290,8 +295,8 @@ void keyboard(unsigned char key, int x, int y)
 void keyboardUp(unsigned char key, int x, int y)
 {
 	switch (key) {
-	case 'a': onMoveKeyPress_L = false; camera_x = 0; camera_y = 0; break;
-	case 'd': onMoveKeyPress_R = false; camera_x = 0; camera_y = 0; break;
+	case 'a': onMoveKeyPress_L = false; break;
+	case 'd': onMoveKeyPress_R = false; break;
 
 	default:
 		break;

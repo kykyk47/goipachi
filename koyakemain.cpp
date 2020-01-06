@@ -30,6 +30,7 @@ ULONG_PTR gdiPT;
 GLuint tex_player1;
 GLuint tex_player2;
 GLuint tex_player3;
+GLuint tex_ground;
 bool onMoveKeyPress_L = false;
 bool onMoveKeyPress_R = false;
 bool player_jump = false;
@@ -37,6 +38,9 @@ bool player_walk = false;
 int jump_timer = 0;  //キャラクターがジャンプしてからの時間を計測
 int walk_timer = 0;
 int walk_timer100 = 0;
+
+double camera_x = 0; //カメラの位置
+double camera_y = 0;
 
 
 struct Position
@@ -67,12 +71,31 @@ void end()
 	GdiplusShutdown(gdiPT);
 }
 
+void SetImage(double x, double y, GLuint &tex) {
+	glBindTexture(GL_TEXTURE_2D, tex);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_ALPHA_TEST);
+	glBegin(GL_POLYGON);
+	glTexCoord2f(0.0f, 1.0f); glVertex2d(0 + x, 64 + y);//左下
+	glTexCoord2f(0.0f, 0.0f); glVertex2d(0 + x, 0 + y);//左上
+	glTexCoord2f(1.0f, 0.0f); glVertex2d(64 + x, 0 + y);//右上
+	glTexCoord2f(1.0f, 1.0f); glVertex2d(64 + x, 64 + y);//右下
+	glEnd();
+	glDisable(GL_ALPHA_TEST);
+	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_BLEND);
+
+}
+
 void display(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
+	gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 
 	if (walk_timer == 0)
 	{
@@ -97,42 +120,54 @@ void display(void)
 	{
 	case 0:
 	{
-		glTexCoord2f(0.0f, 1.0f); glVertex2d(32 + player.x, 448 + player.y);//左下
-		glTexCoord2f(0.0f, 0.0f); glVertex2d(32 + player.x, 416 + player.y);//左上
-		glTexCoord2f(1.0f, 0.0f); glVertex2d(0 + player.x, 416 + player.y);//右上
-		glTexCoord2f(1.0f, 1.0f); glVertex2d(0 + player.x, 448 + player.y);//右下
+		glTexCoord2f(0.0f, 1.0f); glVertex2d(0 + player.x, 480 + player.y);//左下
+		glTexCoord2f(0.0f, 0.0f); glVertex2d(0 + player.x, 416 + player.y);//左上
+		glTexCoord2f(1.0f, 0.0f); glVertex2d(64 + player.x, 416 + player.y);//右上
+		glTexCoord2f(1.0f, 1.0f); glVertex2d(64 + player.x, 480 + player.y);//右下
 		break;
 	}
 
 	case 1:
 	{
-		glTexCoord2f(0.0f, 1.0f); glVertex2d(0 + player.x, 448 + player.y);//左下
-		glTexCoord2f(0.0f, 0.0f); glVertex2d(0 + player.x, 416 + player.y);//左上
-		glTexCoord2f(1.0f, 0.0f); glVertex2d(32 + player.x, 416 + player.y);//右上
-		glTexCoord2f(1.0f, 1.0f); glVertex2d(32 + player.x, 448 + player.y);//右下
+		glTexCoord2f(0.0f, 1.0f); glVertex2d(64 + player.x, 480 + player.y);//左下
+		glTexCoord2f(0.0f, 0.0f); glVertex2d(64 + player.x, 416 + player.y);//左上
+		glTexCoord2f(1.0f, 0.0f); glVertex2d(0 + player.x, 416 + player.y);//右上
+		glTexCoord2f(1.0f, 1.0f); glVertex2d(0 + player.x, 480 + player.y);//右下
 		break;
 	}
 	}
-
-
 	glEnd();
 	glDisable(GL_ALPHA_TEST);
 	glDisable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
+
+
+	for (int i = -2; i < 40; i++) {
+		SetImage(i * 64, 480, tex_ground);
+	}
+
 
 	glutSwapBuffers();
 }
 
 void idle(void)
 {
+	double speed = 0.125;
+
 	if (onMoveKeyPress_L == true)
 	{
-		player.x -= 0.125;
+		player.x += speed;
+		camera_x += speed;
+		//glLoadIdentity();
+		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 	}
 
 	if (onMoveKeyPress_R == true)
 	{
-		player.x += 0.125;
+		player.x -= speed;
+		camera_x -= speed;
+		//glLoadIdentity();
+		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 	}
 
 	if (player_jump == true)
@@ -157,7 +192,7 @@ void idle(void)
 	}
 
 
-	printf("%.2f,%.2f %d %d \n", player.x, player.y, jump_timer, walk_timer100);
+	//printf("%.2f,%.2f %d %d \n", player.x, player.y, jump_timer, walk_timer100);
 	glutPostRedisplay();
 }
 
@@ -185,6 +220,27 @@ void keyboardUp(unsigned char key, int x, int y)
 	}
 }
 
+void resize(int w, int h) {
+	camera_x = (double)w / (double)2.0;
+	camera_y = -128;
+	std::cout << camera_x << std::endl;
+	std::cout << camera_y << std::endl;
+
+	/* ウィンドウ全体をビューポートにする */
+	glViewport(0, 0, w, h);
+	/* 変換行列の初期化 */
+	//glLoadIdentity();
+	/* スクリーン上の表示領域をビューポートの大きさに比例させる */
+	//glOrtho(-w / 200.0, w / 200.0, -h / 200.0, h / 200.0, -1.0, 1.0);
+	glLoadIdentity();
+	glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
+	//gluPerspective(30.0, (double)w / (double)h, 0.1, 100.0);
+
+	gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
+	//gluLookAt(100.0f, 200.0f, 200.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+
+}
+
 void Init() {
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glOrtho(0, WIDTH, HEIGHT, 0, -1, 1);
@@ -192,6 +248,7 @@ void Init() {
 	LoadImagePNG(L"walk1.png", tex_player1);
 	LoadImagePNG(L"walk2.png", tex_player2);
 	LoadImagePNG(L"walk3.png", tex_player3);
+	LoadImagePNG(L"ground.png", tex_ground);
 	player.x = 0;
 	player.y = 0;
 	player.direction = 1;
@@ -201,7 +258,7 @@ void Init() {
 void timer(int value) {
 
 	glutPostRedisplay();
-	glutTimerFunc(15, timer, 0);
+	glutTimerFunc(50, timer, 0);
 
 	if (player_jump == true)
 	{
@@ -239,7 +296,8 @@ int main(int argc, char *argv[])
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
 	glutCreateWindow("goipachi ver.0.0.0");
 	glutDisplayFunc(display);
-	glutTimerFunc(15, timer, 0);
+	glutReshapeFunc(resize);
+	glutTimerFunc(50, timer, 0);
 	glutKeyboardFunc(keyboard);
 	glutKeyboardUpFunc(keyboardUp);
 	glutIdleFunc(idle);

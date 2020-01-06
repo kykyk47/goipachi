@@ -201,30 +201,18 @@ void idle(void)
 	
 	if (onMoveKeyPress_R) {
 		std::cout << "d押しました" << std::endl;
-		//pic.lb[0] += 5;
-		//pic.lu[0] += 5;
-		//pic.ru[0] += 5;
-		//pic.rb[0] += 5;
-		//camera_x += 0.00001;
-		//glTranslated(-1, 0, 0);
+		
 		camera_x += counter;
-		//glLoadIdentity();
+		
 		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 		std::cout << camera_x << ":" << camera_y << std::endl;
 	}
 
 	if (onMoveKeyPress_L) {
 		std::cout << "a押しました" << std::endl;
-		//pic.lb[0] -= 5;
-		//pic.lu[0] -= 5;
-		//pic.ru[0] -= 5;
-		//pic.rb[0] -= 5;
-		//camera_x -= 0.00001;
-		
-		//glTranslated(1, 0, 0);
-		//gluLookAt(camera_x, center_y, 0, camera_x, center_y, 1, 0, 1, 0);
+	
 		camera_x -= counter;
-		//glLoadIdentity();
+		
 		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 		std::cout << camera_x << ":" << camera_y << std::endl;
 	}

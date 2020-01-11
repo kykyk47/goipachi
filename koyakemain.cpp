@@ -72,20 +72,24 @@ void end()
 }
 
 void SetImage(double x, double y, GLuint &tex) {
-	glBindTexture(GL_TEXTURE_2D, tex);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_TEXTURE_2D);
-	glEnable(GL_ALPHA_TEST);
-	glBegin(GL_POLYGON);
-	glTexCoord2f(0.0f, 1.0f); glVertex2d(0 + x, 64 + y);//左下
-	glTexCoord2f(0.0f, 0.0f); glVertex2d(0 + x, 0 + y);//左上
-	glTexCoord2f(1.0f, 0.0f); glVertex2d(64 + x, 0 + y);//右上
-	glTexCoord2f(1.0f, 1.0f); glVertex2d(64 + x, 64 + y);//右下
-	glEnd();
-	glDisable(GL_ALPHA_TEST);
-	glDisable(GL_TEXTURE_2D);
-	glDisable(GL_BLEND);
+
+	if (x <=camera_x+500 && x >=camera_x-1500)
+	{
+		glBindTexture(GL_TEXTURE_2D, tex);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_TEXTURE_2D);
+		glEnable(GL_ALPHA_TEST);
+		glBegin(GL_POLYGON);
+		glTexCoord2f(0.0f, 1.0f); glVertex2d(0 + x, 64 + y);//左下
+		glTexCoord2f(0.0f, 0.0f); glVertex2d(0 + x, 0 + y);//左上
+		glTexCoord2f(1.0f, 0.0f); glVertex2d(64 + x, 0 + y);//右上
+		glTexCoord2f(1.0f, 1.0f); glVertex2d(64 + x, 64 + y);//右下
+		glEnd();
+		glDisable(GL_ALPHA_TEST);
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_BLEND);
+	}
 
 }
 
@@ -130,7 +134,7 @@ void display(void)
 	case 1:
 	{
 		glTexCoord2f(0.0f, 1.0f); glVertex2d(64 + player.x, 480 + player.y);//左下
-		glTexCoord2f(0.0f, 0.0f); glVertex2d(64 + player.x, 416 + player.y);//左上
+		glTexCoord2f(0.0f, 0.0f); glVertex2d(64+ player.x, 416 + player.y);//左上
 		glTexCoord2f(1.0f, 0.0f); glVertex2d(0 + player.x, 416 + player.y);//右上
 		glTexCoord2f(1.0f, 1.0f); glVertex2d(0 + player.x, 480 + player.y);//右下
 		break;
@@ -141,11 +145,11 @@ void display(void)
 	glDisable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
 
-
-	for (int i = -2; i < 40; i++) {
-		SetImage(i * 64, 480, tex_ground);
+	
+	for (int i = -4000; i < 4; i++) {
+		SetImage( i * 64, 480, tex_ground);
 	}
-
+	
 
 	glutSwapBuffers();
 }
@@ -174,7 +178,7 @@ void idle(void)
 	{
 		if (jump_timer < 10)
 		{
-			player.y = player.y - (15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.02;//ジャンプのときのプレイヤーの動き
+			player.y = player.y - (15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.01;//ジャンプのときのプレイヤーの動き
 		}
 
 		else if (jump_timer >= 10)
@@ -244,7 +248,7 @@ void resize(int w, int h) {
 void Init() {
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glOrtho(0, WIDTH, HEIGHT, 0, -1, 1);
-	GdiplusStartup(&gdiPT, &gdiPSI, NULL);
+	GdiplusStartup(&gdiPT, &gdiPSI, NULL); 
 	LoadImagePNG(L"walk1.png", tex_player1);
 	LoadImagePNG(L"walk2.png", tex_player2);
 	LoadImagePNG(L"walk3.png", tex_player3);

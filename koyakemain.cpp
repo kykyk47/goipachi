@@ -31,6 +31,7 @@ GLuint tex_player1;
 GLuint tex_player2;
 GLuint tex_player3;
 GLuint tex_ground;
+GLuint tex_hiragana_01;
 bool onMoveKeyPress_L = false;
 bool onMoveKeyPress_R = false;
 bool player_jump = false;
@@ -90,7 +91,6 @@ void SetImage(double x, double y, GLuint &tex) {
 		glDisable(GL_TEXTURE_2D);
 		glDisable(GL_BLEND);
 	}
-
 }
 
 void display(void)
@@ -124,19 +124,19 @@ void display(void)
 	{
 	case 0:
 	{
-		glTexCoord2f(0.0f, 1.0f); glVertex2d(0 + player.x, 480 + player.y);//左下
-		glTexCoord2f(0.0f, 0.0f); glVertex2d(0 + player.x, 416 + player.y);//左上
-		glTexCoord2f(1.0f, 0.0f); glVertex2d(64 + player.x, 416 + player.y);//右上
-		glTexCoord2f(1.0f, 1.0f); glVertex2d(64 + player.x, 480 + player.y);//右下
+		glTexCoord2f(0.0f, 1.0f); glVertex2d(0 + player.x, 0 + player.y);//左下
+		glTexCoord2f(0.0f, 0.0f); glVertex2d(0 + player.x, -64 + player.y);//左上
+		glTexCoord2f(1.0f, 0.0f); glVertex2d(64 + player.x, -64 + player.y);//右上
+		glTexCoord2f(1.0f, 1.0f); glVertex2d(64 + player.x, 0 + player.y);//右下
 		break;
 	}
 
 	case 1:
 	{
-		glTexCoord2f(0.0f, 1.0f); glVertex2d(64 + player.x, 480 + player.y);//左下
-		glTexCoord2f(0.0f, 0.0f); glVertex2d(64+ player.x, 416 + player.y);//左上
-		glTexCoord2f(1.0f, 0.0f); glVertex2d(0 + player.x, 416 + player.y);//右上
-		glTexCoord2f(1.0f, 1.0f); glVertex2d(0 + player.x, 480 + player.y);//右下
+		glTexCoord2f(0.0f, 1.0f); glVertex2d(64 + player.x, 0 + player.y);//左下
+		glTexCoord2f(0.0f, 0.0f); glVertex2d(64+ player.x, -64 + player.y);//左上
+		glTexCoord2f(1.0f, 0.0f); glVertex2d(0 + player.x, -64 + player.y);//右上
+		glTexCoord2f(1.0f, 1.0f); glVertex2d(0 + player.x, 0 + player.y);//右下
 		break;
 	}
 	}
@@ -146,8 +146,8 @@ void display(void)
 	glDisable(GL_BLEND);
 
 	
-	for (int i = -4000; i < 4; i++) {
-		SetImage( i * 64, 480, tex_ground);
+	for (int i = -1000; i < 4; i++) {
+		SetImage( i * 64, 0, tex_ground);
 	}
 	
 
@@ -226,7 +226,7 @@ void keyboardUp(unsigned char key, int x, int y)
 
 void resize(int w, int h) {
 	camera_x = (double)w / (double)2.0;
-	camera_y = -128;
+	camera_y = -544;
 	std::cout << camera_x << std::endl;
 	std::cout << camera_y << std::endl;
 
@@ -249,10 +249,11 @@ void Init() {
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glOrtho(0, WIDTH, HEIGHT, 0, -1, 1);
 	GdiplusStartup(&gdiPT, &gdiPSI, NULL); 
-	LoadImagePNG(L"walk1.png", tex_player1);
-	LoadImagePNG(L"walk2.png", tex_player2);
-	LoadImagePNG(L"walk3.png", tex_player3);
-	LoadImagePNG(L"ground.png", tex_ground);
+	LoadImagePNG(L"./pic/walk1.png", tex_player1);
+	LoadImagePNG(L"./pic/walk2.png", tex_player2);
+	LoadImagePNG(L"./pic/walk3.png", tex_player3);
+	LoadImagePNG(L"./pic/ground.png", tex_ground);
+	LoadImagePNG(L"./pic/block_hiragana_01.png", tex_hiragana_01);
 	player.x = 0;
 	player.y = 0;
 	player.direction = 1;

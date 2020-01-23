@@ -47,6 +47,9 @@ GLuint tex_btn_slow;
 GLuint tex_btn_normal;
 GLuint tex_btn_fast;
 GLuint tex_char_hs;
+GLuint tex_menu01;
+GLuint tex_menu02;
+GLuint tex_menu03;
 
 GLuint tex_num_a0;
 GLuint tex_num_a1;
@@ -58,6 +61,11 @@ GLuint tex_num_a6;
 GLuint tex_num_a7;
 GLuint tex_num_a8;
 GLuint tex_num_a9;
+GLuint tex_pause01;
+GLuint tex_pause02;
+GLuint tex_pause03;
+GLuint tex_pause04;
+GLuint tex_pause05;
 
 
 
@@ -75,6 +83,12 @@ int difficulty_select = 0; //◇0：松竹梅選択 1：文字数選択 2：は�
 
 double camera_x = 0; //カメラの位置
 double camera_y = 0;
+double temp_camera_x = 0; //◇シーン移動によりカメラの位置をリセットするため，ゲーム中のカメラ位置をストックしておく
+double temp_camera_y = 0;
+
+int score =0;
+int high_score[5] = { 0,0,0,0,0 };
+
 
 struct Position
 {
@@ -146,6 +160,186 @@ void SetButtonImage(double x, double y, int size_x, int size_y, GLuint &tex) {
 
 }
 
+void SetNumImage(double x, double y, int size_x, int size_y, int num) {
+	
+	if (num >= 100000) //10万の位
+	{
+		switch (num / 100000) 
+		{
+		case 1: {glBindTexture(GL_TEXTURE_2D, tex_num_a1); printf("1"); }break;
+		case 2: {glBindTexture(GL_TEXTURE_2D, tex_num_a2); }break;
+		case 3: {glBindTexture(GL_TEXTURE_2D, tex_num_a3); }break;
+		case 4: {glBindTexture(GL_TEXTURE_2D, tex_num_a4); }break;
+		case 5: {glBindTexture(GL_TEXTURE_2D, tex_num_a5); }break;
+		case 6: {glBindTexture(GL_TEXTURE_2D, tex_num_a6); }break;
+		case 7: {glBindTexture(GL_TEXTURE_2D, tex_num_a7); }break;
+		case 8: {glBindTexture(GL_TEXTURE_2D, tex_num_a8); }break;
+		case 9: {glBindTexture(GL_TEXTURE_2D, tex_num_a9); }break;
+		}
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_TEXTURE_2D);
+		glEnable(GL_ALPHA_TEST);
+		glBegin(GL_POLYGON);
+		glTexCoord2f(0.0f, 1.0f); glVertex2d(size_x / 8 * 6 + x + 20, size_y + y);//左下
+		glTexCoord2f(0.0f, 0.0f); glVertex2d(size_x / 8 * 6 + x + 20, y);//左上
+		glTexCoord2f(1.0f, 0.0f); glVertex2d(size_x / 8 * 5 + x + 20, y);//右上
+		glTexCoord2f(1.0f, 1.0f); glVertex2d(size_x / 8 * 5 + x + 20, size_y + y);//右下
+		glEnd();
+		glDisable(GL_ALPHA_TEST);
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_BLEND);
+	}
+
+	if (num >= 10000) //1万の位
+	{
+		switch ((num / 10000) % 10)
+		{
+		case 0: {glBindTexture(GL_TEXTURE_2D, tex_num_a0); }break;
+		case 1: {glBindTexture(GL_TEXTURE_2D, tex_num_a1); }break;
+		case 2: {glBindTexture(GL_TEXTURE_2D, tex_num_a2); }break;
+		case 3: {glBindTexture(GL_TEXTURE_2D, tex_num_a3); }break;
+		case 4: {glBindTexture(GL_TEXTURE_2D, tex_num_a4); }break;
+		case 5: {glBindTexture(GL_TEXTURE_2D, tex_num_a5); }break;
+		case 6: {glBindTexture(GL_TEXTURE_2D, tex_num_a6); }break;
+		case 7: {glBindTexture(GL_TEXTURE_2D, tex_num_a7); }break;
+		case 8: {glBindTexture(GL_TEXTURE_2D, tex_num_a8); }break;
+		case 9: {glBindTexture(GL_TEXTURE_2D, tex_num_a9); }break;
+		}
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_TEXTURE_2D);
+		glEnable(GL_ALPHA_TEST);
+		glBegin(GL_POLYGON);
+		glTexCoord2f(0.0f, 1.0f); glVertex2d(size_x / 8 * 5 + x+16, size_y + y);//左下
+		glTexCoord2f(0.0f, 0.0f); glVertex2d(size_x / 8 * 5 + x+16, y);//左上
+		glTexCoord2f(1.0f, 0.0f); glVertex2d(size_x / 8 * 4 + x + 16, y);//右上
+		glTexCoord2f(1.0f, 1.0f); glVertex2d(size_x / 8 * 4 + x + 16, size_y + y);//右下
+		glEnd();
+		glDisable(GL_ALPHA_TEST);
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_BLEND);
+	}
+
+	if (num >= 1000) //1000の位
+	{
+		switch ((num / 1000) % 10)
+		{
+		case 0: {glBindTexture(GL_TEXTURE_2D, tex_num_a0); }break;
+		case 1: {glBindTexture(GL_TEXTURE_2D, tex_num_a1); }break;
+		case 2: {glBindTexture(GL_TEXTURE_2D, tex_num_a2); }break;
+		case 3: {glBindTexture(GL_TEXTURE_2D, tex_num_a3); }break;
+		case 4: {glBindTexture(GL_TEXTURE_2D, tex_num_a4); }break;
+		case 5: {glBindTexture(GL_TEXTURE_2D, tex_num_a5); }break;
+		case 6: {glBindTexture(GL_TEXTURE_2D, tex_num_a6); }break;
+		case 7: {glBindTexture(GL_TEXTURE_2D, tex_num_a7); }break;
+		case 8: {glBindTexture(GL_TEXTURE_2D, tex_num_a8); }break;
+		case 9: {glBindTexture(GL_TEXTURE_2D, tex_num_a9); }break;
+		}
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_TEXTURE_2D);
+		glEnable(GL_ALPHA_TEST);
+		glBegin(GL_POLYGON);
+		glTexCoord2f(0.0f, 1.0f); glVertex2d(size_x / 8 * 4 + x+12, size_y + y);//左下
+		glTexCoord2f(0.0f, 0.0f); glVertex2d(size_x / 8 * 4 + x + 12, y);//左上
+		glTexCoord2f(1.0f, 0.0f); glVertex2d(size_x / 8 * 3 + x + 12, y);//右上
+		glTexCoord2f(1.0f, 1.0f); glVertex2d(size_x / 8 * 3 + x + 12, size_y + y);//右下
+		glEnd();
+		glDisable(GL_ALPHA_TEST);
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_BLEND);
+	}
+
+	if (num >= 100) //100の位
+	{
+		switch ((num / 100) % 10)
+		{
+		case 0: {glBindTexture(GL_TEXTURE_2D, tex_num_a0); }break;
+		case 1: {glBindTexture(GL_TEXTURE_2D, tex_num_a1); }break;
+		case 2: {glBindTexture(GL_TEXTURE_2D, tex_num_a2); }break;
+		case 3: {glBindTexture(GL_TEXTURE_2D, tex_num_a3); }break;
+		case 4: {glBindTexture(GL_TEXTURE_2D, tex_num_a4); }break;
+		case 5: {glBindTexture(GL_TEXTURE_2D, tex_num_a5); }break;
+		case 6: {glBindTexture(GL_TEXTURE_2D, tex_num_a6); }break;
+		case 7: {glBindTexture(GL_TEXTURE_2D, tex_num_a7); }break;
+		case 8: {glBindTexture(GL_TEXTURE_2D, tex_num_a8); }break;
+		case 9: {glBindTexture(GL_TEXTURE_2D, tex_num_a9); }break;
+		}
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_TEXTURE_2D);
+		glEnable(GL_ALPHA_TEST);
+		glBegin(GL_POLYGON);
+		glTexCoord2f(0.0f, 1.0f); glVertex2d(size_x / 8 * 3 + x+8, size_y + y);//左下
+		glTexCoord2f(0.0f, 0.0f); glVertex2d(size_x / 8 * 3 + x + 8, y);//左上
+		glTexCoord2f(1.0f, 0.0f); glVertex2d(size_x / 8 * 2 + x + 8, y);//右上
+		glTexCoord2f(1.0f, 1.0f); glVertex2d(size_x / 8 * 2 + x + 8, size_y + y);//右下
+		glEnd();
+		glDisable(GL_ALPHA_TEST);
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_BLEND);
+	}
+
+	if (num >= 10) //10の位
+	{
+		switch ((num / 10) % 10)
+		{
+		case 0: {glBindTexture(GL_TEXTURE_2D, tex_num_a0); }break;
+		case 1: {glBindTexture(GL_TEXTURE_2D, tex_num_a1); }break;
+		case 2: {glBindTexture(GL_TEXTURE_2D, tex_num_a2); }break;
+		case 3: {glBindTexture(GL_TEXTURE_2D, tex_num_a3); }break;
+		case 4: {glBindTexture(GL_TEXTURE_2D, tex_num_a4); }break;
+		case 5: {glBindTexture(GL_TEXTURE_2D, tex_num_a5); }break;
+		case 6: {glBindTexture(GL_TEXTURE_2D, tex_num_a6); }break;
+		case 7: {glBindTexture(GL_TEXTURE_2D, tex_num_a7); }break;
+		case 8: {glBindTexture(GL_TEXTURE_2D, tex_num_a8); }break;
+		case 9: {glBindTexture(GL_TEXTURE_2D, tex_num_a9); }break;
+		}
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_TEXTURE_2D);
+		glEnable(GL_ALPHA_TEST);
+		glBegin(GL_POLYGON);
+		glTexCoord2f(0.0f, 1.0f); glVertex2d(size_x / 8 * 2 + x+4, size_y + y);//左下
+		glTexCoord2f(0.0f, 0.0f); glVertex2d(size_x / 8 * 2 + x + 4, y);//左上
+		glTexCoord2f(1.0f, 0.0f); glVertex2d(size_x / 8 * 1 + x + 4, y);//右上
+		glTexCoord2f(1.0f, 1.0f); glVertex2d(size_x / 8 * 1 + x + 4, size_y + y);//右下
+		glEnd();
+		glDisable(GL_ALPHA_TEST);
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_BLEND);
+	}
+
+
+	switch (num % 10) // 1の位
+	{
+	case 0: {glBindTexture(GL_TEXTURE_2D, tex_num_a0); }break;
+	case 1: {glBindTexture(GL_TEXTURE_2D, tex_num_a1); }break;
+	case 2: {glBindTexture(GL_TEXTURE_2D, tex_num_a2); }break;
+	case 3: {glBindTexture(GL_TEXTURE_2D, tex_num_a3); }break;
+	case 4: {glBindTexture(GL_TEXTURE_2D, tex_num_a4); }break;
+	case 5: {glBindTexture(GL_TEXTURE_2D, tex_num_a5); }break;
+	case 6: {glBindTexture(GL_TEXTURE_2D, tex_num_a6); }break;
+	case 7: {glBindTexture(GL_TEXTURE_2D, tex_num_a7); }break;
+	case 8: {glBindTexture(GL_TEXTURE_2D, tex_num_a8); }break;
+	case 9: {glBindTexture(GL_TEXTURE_2D, tex_num_a9); }break;
+	}
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_ALPHA_TEST);
+	glBegin(GL_POLYGON);
+	glTexCoord2f(0.0f, 1.0f); glVertex2d(size_x / 8 * 1 + x, size_y + y);//左下
+	glTexCoord2f(0.0f, 0.0f); glVertex2d(size_x / 8 * 1 + x , y);//左上
+	glTexCoord2f(1.0f, 0.0f); glVertex2d(size_x / 8 * 0 + x , y);//右上
+	glTexCoord2f(1.0f, 1.0f); glVertex2d(size_x / 8 * 0 + x , size_y + y);//右下
+	glEnd();
+	glDisable(GL_ALPHA_TEST);
+	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_BLEND);
+}
+
 void display(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -161,6 +355,8 @@ void display(void)
 
 		SetButtonImage(-384, -480, 768, 256, tex_title);
 		SetButtonImage(-128, 16, 256, 80, tex_btn_start);
+
+		glutPostRedisplay();
 
 	}break;
 
@@ -187,11 +383,26 @@ void display(void)
 
 		SetButtonImage(-512, -480, 256, 32, tex_char_hs);
 
+		SetNumImage(-544, -432, 256, 32, high_score[0]);
 
-	
+		SetButtonImage(304, -240, 256, 64, tex_menu01);
+		SetButtonImage(304, -480, 256, 64, tex_menu02);
+		SetButtonImage(304, 0, 256, 64, tex_menu03);
 
 		SetButtonImage(480, -480 + 240 * difficulty_select, 128, 128, tex_arrow);
 
+	}break;
+
+	case 2:
+	{
+		glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
+		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
+
+		SetButtonImage(-160, 0, 64, 64, tex_pause01);
+		SetButtonImage(-96, 0, 64, 64, tex_pause02);
+		SetButtonImage(-32, 0, 64, 64, tex_pause03);
+		SetButtonImage(32, 0, 64, 64, tex_pause04);
+		SetButtonImage(96, 0, 64, 64, tex_pause05);
 
 	}break;
 
@@ -413,6 +624,31 @@ void keyboard(unsigned char key, int x, int y)
 		}
 	}break;
 
+	case 2:
+	{
+		switch (key) {
+		case 'p': camera_x = temp_camera_x; camera_y = temp_camera_y;  scene = 5; break;//再開 カメラの位置をゲーム中のに戻す
+		case '\033':  /* '\033' は ESC の ASCII コード */
+			exit(0); break;
+		}
+	}break;
+
+	case 3:
+	{
+		switch (key) {
+		case '\033':  /* '\033' は ESC の ASCII コード */
+			exit(0); break;
+		}
+	}break;
+
+	case 4:
+	{
+		switch (key) {
+		case '\033':  /* '\033' は ESC の ASCII コード */
+			exit(0); break;
+		}
+	}break;
+
 	case 5:
 	{
 		switch (key) {
@@ -421,6 +657,8 @@ void keyboard(unsigned char key, int x, int y)
 			exit(0); break;
 		case 'a': onMoveKeyPress_L = true; /*MoveLock_R = true;*/ player.direction = 0; break;
 		case 'd': onMoveKeyPress_R = true; /*MoveLock_L = true;*/ player.direction = 1; break;
+		case 'p': scene = 2; temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544; break; //ポーズ カメラの位置をＧＵＩ用にリセット
+		case 't': scene = 3; temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544; break; //デバッグ用 強制ゲームオーバー
 
 		case '\040': if (player_jump == false) { player_jump = true; } break;
 		default:
@@ -448,22 +686,10 @@ void keyboardUp(unsigned char key, int x, int y)
 
 void resize(int w, int h) {
 
-	switch(scene)
-	{
-	case 0: case 1: case 2: 
-	{
+	
 		camera_x = (double)w / (double)2.0;
 		camera_y = -544;
-	}break;
-
-	case 5:
-	{
-	camera_x = (double)w / (double)2.0;
-	camera_y = -544;
-	std::cout << camera_x << std::endl;
-	std::cout << camera_y << std::endl;
-	}break;
-	}
+	
 
 	glViewport(0, 0, w, h);
 
@@ -496,17 +722,25 @@ void Init() {
 	LoadImagePNG(L"./pic/block_hiragana_01.png", tex_hiragana_01);
 	LoadImagePNG(L"./pic/arrow.png", tex_arrow);
 	LoadImagePNG(L"./pic/Y.png", tex_highlight);
-	LoadImagePNG(L"./pic/0.png", tex_num_a0);
-	LoadImagePNG(L"./pic/1.png", tex_num_a1);
-	LoadImagePNG(L"./pic/2.png", tex_num_a2);
-	LoadImagePNG(L"./pic/3.png", tex_num_a3);
-	LoadImagePNG(L"./pic/4.png", tex_num_a4);
-	LoadImagePNG(L"./pic/5.png", tex_num_a5);
-	LoadImagePNG(L"./pic/6.png", tex_num_a6);
-	LoadImagePNG(L"./pic/7.png", tex_num_a7);
-	LoadImagePNG(L"./pic/8.png", tex_num_a8);
-	LoadImagePNG(L"./pic/9.png", tex_num_a9);
+	LoadImagePNG(L"./pic/num_a0.png", tex_num_a0);
+	LoadImagePNG(L"./pic/num_a1.png", tex_num_a1);
+	LoadImagePNG(L"./pic/num_a2.png", tex_num_a2);
+	LoadImagePNG(L"./pic/num_a3.png", tex_num_a3);
+	LoadImagePNG(L"./pic/num_a4.png", tex_num_a4);
+	LoadImagePNG(L"./pic/num_a5.png", tex_num_a5);
+	LoadImagePNG(L"./pic/num_a6.png", tex_num_a6);
+	LoadImagePNG(L"./pic/num_a7.png", tex_num_a7);
+	LoadImagePNG(L"./pic/num_a8.png", tex_num_a8);
+	LoadImagePNG(L"./pic/num_a9.png", tex_num_a9);
+	LoadImagePNG(L"./pic/block_alphabet_p.png", tex_pause01);
+	LoadImagePNG(L"./pic/block_alphabet_a.png", tex_pause02);
+	LoadImagePNG(L"./pic/block_alphabet_u.png", tex_pause03);
+	LoadImagePNG(L"./pic/block_alphabet_e.png", tex_pause04);
+	LoadImagePNG(L"./pic/block_alphabet_e.png", tex_pause05);
 	LoadImagePNG(L"./pic/highscore.png", tex_char_hs);
+	LoadImagePNG(L"./pic/difficulty_menu01.png", tex_menu01);
+	LoadImagePNG(L"./pic/difficulty_menu02.png", tex_menu02);
+	LoadImagePNG(L"./pic/difficulty_menu03.png", tex_menu03);
 
 	player.x = 0;
 	player.y = 0;
@@ -519,8 +753,6 @@ void timer(int value) {
 
 	glutPostRedisplay();
 	glutTimerFunc(50, timer, 0);
-	printf("[%03d]\n",difficulty);
-
 	switch (scene)
 	{
 	case 5:

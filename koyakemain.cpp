@@ -36,6 +36,8 @@ GLuint tex_highlight;
 
 GLuint tex_arrow;
 GLuint tex_title;
+GLuint tex_title_press;
+GLuint tex_title_gamestart;
 GLuint tex_btn_start;
 GLuint tex_btn_matsu;
 GLuint tex_btn_take;
@@ -66,6 +68,11 @@ GLuint tex_pause02;
 GLuint tex_pause03;
 GLuint tex_pause04;
 GLuint tex_pause05;
+GLuint tex_menu_return;
+GLuint tex_gameover;
+GLuint tex_tonext01;
+
+FILE *fp;
 
 
 
@@ -77,7 +84,7 @@ int jump_timer = 0;  //キャラクターがジャンプしてからの時間を
 int walk_timer = 0;
 int walk_timer100 = 0;
 
-int scene = 0; //◇シーンの追加．0:タイトル 1:ステージ選択 2:ポーズ画面 3:リザルト画面A 4リザルト画面B 5:プレイ画面 
+int scene = 0; //◇シーンの追加．0:タイトル 1:ステージ選択 2:ポーズ画面 3:リザルト画面A 4リザルト画面B 5:プレイ画面 6:GAME OVER画面
 int difficulty = 0; //◇難易度：松竹梅（+0~2）文字数（+00～20）はやさ（+000～200）
 int difficulty_select = 0; //◇0：松竹梅選択 1：文字数選択 2：はやさ選択
 
@@ -89,6 +96,7 @@ double temp_camera_y = 0;
 int score =0;
 int high_score[5] = { 0,0,0,0,0 };
 
+int i, j, k;
 
 struct Position
 {
@@ -166,7 +174,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num) {
 	{
 		switch (num / 100000) 
 		{
-		case 1: {glBindTexture(GL_TEXTURE_2D, tex_num_a1); printf("1"); }break;
+		case 1: {glBindTexture(GL_TEXTURE_2D, tex_num_a1); }break;
 		case 2: {glBindTexture(GL_TEXTURE_2D, tex_num_a2); }break;
 		case 3: {glBindTexture(GL_TEXTURE_2D, tex_num_a3); }break;
 		case 4: {glBindTexture(GL_TEXTURE_2D, tex_num_a4); }break;
@@ -354,7 +362,9 @@ void display(void)
 		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 
 		SetButtonImage(-384, -480, 768, 256, tex_title);
-		SetButtonImage(-128, 16, 256, 80, tex_btn_start);
+		SetButtonImage(-336, 16, 512, 64, tex_title_gamestart);
+		SetButtonImage(76, -64, 128, 64, tex_title_press);
+
 
 		glutPostRedisplay();
 
@@ -393,20 +403,31 @@ void display(void)
 
 	}break;
 
-	case 2:
+	case 2: //ポーズ画面
 	{
 		glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
 		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 
-		SetButtonImage(-160, 0, 64, 64, tex_pause01);
-		SetButtonImage(-96, 0, 64, 64, tex_pause02);
-		SetButtonImage(-32, 0, 64, 64, tex_pause03);
-		SetButtonImage(32, 0, 64, 64, tex_pause04);
-		SetButtonImage(96, 0, 64, 64, tex_pause05);
+		SetButtonImage(192, -480, 128, 128, tex_pause01);
+		SetButtonImage(64, -480, 128, 128, tex_pause02);
+		SetButtonImage(-64, -480, 128, 128, tex_pause03);
+		SetButtonImage(-192, -480, 128, 128, tex_pause04);
+		SetButtonImage(-320, -480, 128, 128, tex_pause05);
+
+		SetButtonImage(-512, 0, 1024, 128, tex_menu_return);
 
 	}break;
 
-	case 5:
+	case 3: //リザルト画面
+	{
+		glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
+		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
+
+		
+
+	}break;
+
+	case 5: //ゲーム画面
 	{
 		glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
 		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
@@ -459,6 +480,17 @@ void display(void)
 		for (int i = -1000; i < 4; i++) {
 			SetImage(i * 64, 0, tex_ground);
 		}
+	}break;
+
+	case 6: //リザルト画面
+	{
+		glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
+		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
+
+		SetButtonImage(-512, -480, 1024, 128, tex_gameover);
+		SetButtonImage(-512, 0, 1024, 128, tex_tonext01);
+
+
 	}break;
 	}
 
@@ -527,7 +559,7 @@ void keyboard(unsigned char key, int x, int y)
 		case 'q':
 		case '\033':  /* '\033' は ESC の ASCII コード */
 			exit(0); break;
-		case 's': scene = 1; break; //PRESS START 次の画面へ
+		case 'g': scene = 1; break; //PRESS GAME START 次の画面へ
 
 		default:
 			break;
@@ -617,7 +649,7 @@ void keyboard(unsigned char key, int x, int y)
 		}break;
 
 
-		case 'l': scene = 5; break; //PRESS START 次の画面へ
+		case 'l': scene = 5; break; 
 
 		default:
 			break;
@@ -636,6 +668,9 @@ void keyboard(unsigned char key, int x, int y)
 	case 3:
 	{
 		switch (key) {
+		case 'l': scene = 4; break; //リザルト画面切り替え
+		case 'o': camera_x = 640; camera_y = -544; player.x = 0; player.y = 0; scene = 5; break;//リトライ
+		case 'p': camera_x = 640; camera_y = -544; player.x = 0; player.y = 0; scene = 1; break;//メニューに戻る
 		case '\033':  /* '\033' は ESC の ASCII コード */
 			exit(0); break;
 		}
@@ -644,12 +679,16 @@ void keyboard(unsigned char key, int x, int y)
 	case 4:
 	{
 		switch (key) {
+		case 'l': scene = 3; break; //リザルト画面切り替え
+		case 'o': camera_x = 640; camera_y = -544; player.x = 0; player.y = 0; scene = 5; break;//リトライ
+		case 'p': camera_x = 640; camera_y = -544; player.x = 0; player.y = 0; scene = 1; break;//メニューに戻る
+
 		case '\033':  /* '\033' は ESC の ASCII コード */
 			exit(0); break;
 		}
 	}break;
 
-	case 5:
+	case 5: //ゲーム画面
 	{
 		switch (key) {
 		case 'q':
@@ -658,11 +697,20 @@ void keyboard(unsigned char key, int x, int y)
 		case 'a': onMoveKeyPress_L = true; /*MoveLock_R = true;*/ player.direction = 0; break;
 		case 'd': onMoveKeyPress_R = true; /*MoveLock_L = true;*/ player.direction = 1; break;
 		case 'p': scene = 2; temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544; break; //ポーズ カメラの位置をＧＵＩ用にリセット
-		case 't': scene = 3; temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544; break; //デバッグ用 強制ゲームオーバー
+		case 't': scene = 6; temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544; break; //デバッグ用 強制ゲームオーバー
 
 		case '\040': if (player_jump == false) { player_jump = true; } break;
 		default:
 			break;
+		}
+	}break;
+
+	case 6: //ゲームオーバー画面
+	{
+		switch (key) {
+		case 'l': scene = 3; break; //リザルト画面へ
+		case '\033':  /* '\033' は ESC の ASCII コード */
+			exit(0); break;
 		}
 	}break;
 	}
@@ -706,6 +754,8 @@ void Init() {
 	GdiplusStartup(&gdiPT, &gdiPSI, NULL); 
 	LoadImagePNG(L"./pic/title_a.png", tex_title);
 	LoadImagePNG(L"./pic/title_start.png", tex_btn_start);
+	LoadImagePNG(L"./pic/game_start.png", tex_title_gamestart);
+	LoadImagePNG(L"./pic/press.png", tex_title_press);
 	LoadImagePNG(L"./pic/button_matsu.png", tex_btn_matsu);
 	LoadImagePNG(L"./pic/button_take.png", tex_btn_take);
 	LoadImagePNG(L"./pic/button_ume.png", tex_btn_ume);
@@ -735,11 +785,14 @@ void Init() {
 	LoadImagePNG(L"./pic/block_alphabet_p.png", tex_pause01);
 	LoadImagePNG(L"./pic/block_alphabet_a.png", tex_pause02);
 	LoadImagePNG(L"./pic/block_alphabet_u.png", tex_pause03);
-	LoadImagePNG(L"./pic/block_alphabet_e.png", tex_pause04);
+	LoadImagePNG(L"./pic/block_alphabet_s.png", tex_pause04);
 	LoadImagePNG(L"./pic/block_alphabet_e.png", tex_pause05);
+	LoadImagePNG(L"./pic/menu_return.png", tex_menu_return);
 	LoadImagePNG(L"./pic/highscore.png", tex_char_hs);
+	LoadImagePNG(L"./pic/gameover.png", tex_gameover);
 	LoadImagePNG(L"./pic/difficulty_menu01.png", tex_menu01);
 	LoadImagePNG(L"./pic/difficulty_menu02.png", tex_menu02);
+	LoadImagePNG(L"./pic/menu_tonext01.png", tex_tonext01);
 	LoadImagePNG(L"./pic/difficulty_menu03.png", tex_menu03);
 
 	player.x = 0;
@@ -747,6 +800,16 @@ void Init() {
 	player.direction = 1;
 	scene = 0;
 
+	if ((fopen_s(&fp, "score.dat", "r")) != 0) //スコアファイルを読み込む
+	{
+		printf("ファイルを開けませんでした");
+		exit(0);
+	}
+
+	while (fscanf_s(fp, "%d", &high_score[i]) != EOF)
+	{
+		i++;
+	}
 }
 
 void timer(int value) {
@@ -805,5 +868,7 @@ int main(int argc, char *argv[])
 
 	Init();
 	glutMainLoop();
+
+	fclose(fp);
 	return 0;
 }

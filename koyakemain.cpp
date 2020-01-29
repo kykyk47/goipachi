@@ -52,6 +52,21 @@ GLuint tex_char_hs;
 GLuint tex_menu01;
 GLuint tex_menu02;
 GLuint tex_menu03;
+GLuint tex_menu04;
+GLuint tex_menu05;
+GLuint tex_menu06;
+GLuint tex_ranking01;
+GLuint tex_ranking02;
+GLuint tex_ranking03;
+GLuint tex_ranking04;
+GLuint tex_ranking05;
+GLuint tex_result01;
+GLuint tex_result02;
+GLuint tex_result03;
+GLuint tex_result04;
+GLuint tex_result11;
+GLuint tex_result12;
+GLuint tex_result13;
 
 GLuint tex_num_a0;
 GLuint tex_num_a1;
@@ -71,6 +86,13 @@ GLuint tex_pause05;
 GLuint tex_menu_return;
 GLuint tex_gameover;
 GLuint tex_tonext01;
+
+int score_get_hiragana=0;
+int score_leave_hiragana = 0;
+int score_most_hiragana = 0;
+int score_tango = 0;
+int score_enemy = 0;
+int score_cleared = 0;
 
 FILE *fp;
 
@@ -138,10 +160,10 @@ void SetImage(double x, double y, GLuint &tex) {
 		glEnable(GL_TEXTURE_2D);
 		glEnable(GL_ALPHA_TEST);
 		glBegin(GL_POLYGON);
-		glTexCoord2f(0.0f, 1.0f); glVertex2d(0 + x, 64 + y);//左下
-		glTexCoord2f(0.0f, 0.0f); glVertex2d(0 + x, 0 + y);//左上
-		glTexCoord2f(1.0f, 0.0f); glVertex2d(64 + x, 0 + y);//右上
-		glTexCoord2f(1.0f, 1.0f); glVertex2d(64 + x, 64 + y);//右下
+		glTexCoord2f(0.0f, 1.0f); glVertex2d(64 + x, 64 + y);//左下
+		glTexCoord2f(0.0f, 0.0f); glVertex2d(64 + x, 0 + y);//左上
+		glTexCoord2f(1.0f, 0.0f); glVertex2d(0 + x, 0 + y);//右上
+		glTexCoord2f(1.0f, 1.0f); glVertex2d(0 + x, 64 + y);//右下
 		glEnd();
 		glDisable(GL_ALPHA_TEST);
 		glDisable(GL_TEXTURE_2D);
@@ -365,7 +387,7 @@ void display(void)
 		SetButtonImage(-336, 16, 512, 64, tex_title_gamestart);
 		SetButtonImage(76, -64, 128, 64, tex_title_press);
 
-
+		
 		glutPostRedisplay();
 
 	}break;
@@ -398,6 +420,7 @@ void display(void)
 		SetButtonImage(304, -240, 256, 64, tex_menu01);
 		SetButtonImage(304, -480, 256, 64, tex_menu02);
 		SetButtonImage(304, 0, 256, 64, tex_menu03);
+		SetButtonImage(-616, -64, 384, 192, tex_menu04);
 
 		SetButtonImage(480, -480 + 240 * difficulty_select, 128, 128, tex_arrow);
 
@@ -414,7 +437,8 @@ void display(void)
 		SetButtonImage(-192, -480, 128, 128, tex_pause04);
 		SetButtonImage(-320, -480, 128, 128, tex_pause05);
 
-		SetButtonImage(-512, 0, 1024, 128, tex_menu_return);
+		SetButtonImage(-384, 24, 768, 96, tex_menu_return);
+		SetButtonImage(-256, -300, 512, 256, tex_menu05);
 
 	}break;
 
@@ -423,7 +447,48 @@ void display(void)
 		glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
 		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 
-		
+
+		SetButtonImage(100, -412, 128, 32, tex_result11);
+		SetButtonImage(-256, -554, 512, 256, tex_result12);
+		SetButtonImage(-192, -440, 384, 192, tex_result13);
+		SetNumImage(-224, -420, 320, 40, score);
+
+
+		SetButtonImage(-512, 64, 1024, 64, tex_menu06);
+		SetButtonImage(164, -244, 80, 40, tex_ranking01);
+		SetButtonImage(164, -200, 80, 40, tex_ranking02);
+		SetButtonImage(164, -152, 80, 40, tex_ranking03);
+		SetButtonImage(164, -104, 80, 40, tex_ranking04);
+		SetButtonImage(164, -56, 80, 40, tex_ranking05);
+		SetNumImage(-244, -244, 320, 40, high_score[0]);
+		SetNumImage(-244, -200, 320, 40, high_score[1]);
+		SetNumImage(-244, -152, 320, 40, high_score[2]);
+		SetNumImage(-244, -104, 320, 40, high_score[3]);
+		SetNumImage(-244, -56, 320, 40, high_score[4]);
+
+
+	}break;
+
+	case 4: //リザルト画面
+	{
+		glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
+		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
+
+		SetButtonImage(100, -412, 128, 32, tex_result11);
+		SetButtonImage(-256, -554, 512, 256, tex_result12);
+
+		SetNumImage(-224, -420, 320, 40, score);
+
+		SetButtonImage(-512, 64, 1024, 64, tex_menu06);
+		SetButtonImage(-64, -256, 384, 48, tex_result01);
+		SetButtonImage(-64, -208, 384, 48, tex_result02);
+		SetButtonImage(-64, -160, 384, 48, tex_result03);
+		SetButtonImage(-64, -112, 384, 48, tex_result04);
+		SetNumImage(-244, -244, 320, 40, score_get_hiragana);
+		SetNumImage(-244, -200, 320, 40, score_leave_hiragana);
+		SetButtonImage(-244, -152, 48, 48, tex_hiragana_01);
+		SetNumImage(-244, -104, 320, 40, score_cleared);
+		//SetNumImage(-244, -56, 320, 40, high_score[4]);
 
 	}break;
 
@@ -451,6 +516,7 @@ void display(void)
 		glEnable(GL_TEXTURE_2D);
 		glEnable(GL_ALPHA_TEST);
 		glBegin(GL_POLYGON);
+
 		switch (player.direction)
 		{
 		case 0:
@@ -489,7 +555,6 @@ void display(void)
 
 		SetButtonImage(-512, -480, 1024, 128, tex_gameover);
 		SetButtonImage(-512, 0, 1024, 128, tex_tonext01);
-
 
 	}break;
 	}
@@ -794,6 +859,21 @@ void Init() {
 	LoadImagePNG(L"./pic/difficulty_menu02.png", tex_menu02);
 	LoadImagePNG(L"./pic/menu_tonext01.png", tex_tonext01);
 	LoadImagePNG(L"./pic/difficulty_menu03.png", tex_menu03);
+	LoadImagePNG(L"./pic/menu_UI_07.png", tex_menu04);
+	LoadImagePNG(L"./pic/menu_UI_08.png", tex_menu05);
+	LoadImagePNG(L"./pic/menu_UI_09.png", tex_menu06);
+	LoadImagePNG(L"./pic/result_01.png", tex_result01);
+	LoadImagePNG(L"./pic/result_02.png", tex_result02);
+	LoadImagePNG(L"./pic/result_03.png", tex_result03);
+	LoadImagePNG(L"./pic/result_04.png", tex_result04);
+	LoadImagePNG(L"./pic/score.png", tex_result11);
+	LoadImagePNG(L"./pic/result_newrecord.png", tex_result12);
+	LoadImagePNG(L"./pic/result_ranking.png", tex_result13);
+	LoadImagePNG(L"./pic/ranking_01.png", tex_ranking01);
+	LoadImagePNG(L"./pic/ranking_02.png", tex_ranking02);
+	LoadImagePNG(L"./pic/ranking_03.png", tex_ranking03);
+	LoadImagePNG(L"./pic/ranking_04.png", tex_ranking04);
+	LoadImagePNG(L"./pic/ranking_05.png", tex_ranking05);
 
 	player.x = 0;
 	player.y = 0;
@@ -816,6 +896,7 @@ void timer(int value) {
 
 	glutPostRedisplay();
 	glutTimerFunc(50, timer, 0);
+
 	switch (scene)
 	{
 	case 5:

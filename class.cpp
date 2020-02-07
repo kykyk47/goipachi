@@ -21,6 +21,7 @@
 #include <iostream>
 #include <math.h>
 #include <Windows.h>
+#include <vector>
 
 
 using namespace Gdiplus;
@@ -123,7 +124,7 @@ public:
 	Coordinate left_b;
 	const wchar_t* file;
 	Object(double x, double y, const wchar_t* filename) {
-		std::cout << "コンストラクタ" << std::endl;
+		//std::cout << "コンストラクタ" << std::endl;
 		center.x = x;
 		center.y = y;
 
@@ -135,14 +136,19 @@ public:
 		up.y = center.y - (double)grid / 2;
 		bottom.x = center.x;
 		bottom.y = center.y + (double)grid / 2;
+	
+
+		left_b.x = center.x + (double)grid / 2;
+		left_b.y = center.y + (double)grid / 2;
 		left_u.x = center.x + (double)grid / 2;
 		left_u.y = center.y - (double)grid / 2;
 		right_u.x = center.x - (double)grid / 2;
 		right_u.y = center.y - (double)grid / 2;
 		right_b.x = center.x - (double)grid / 2;
 		right_b.y = center.y + (double)grid / 2;
-		left_b.x = center.x + (double)grid / 2;
-		left_b.y = center.y + (double)grid / 2;
+		
+
+		
 		file = filename;
 		//LoadImagePNG2(filename, tex);
 		//SetImage2();
@@ -166,8 +172,8 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, 4, data.Width, data.Height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, data.Scan0);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		bmp.UnlockBits(&data);
-		printf("%ls\n", filename);
-		std::cout << "afsafdsafsdafdsafa" << std::endl;
+		//printf("%ls\n", filename);
+		//std::cout << "afsafdsafsdafdsafa" << std::endl;
 	}
 	void SetImage(GLuint tex) {
 		//std::cout << "SET IMAGE!!" << std::endl;
@@ -274,7 +280,6 @@ public:
 	void SizeChange(double x, double y) {
 
 	}
-
 	void ImageChange(GLuint tex_change) {
 		//glBindTexture(GL_TEXTURE_2D, tex_change);
 		tex = tex_change;
@@ -291,12 +296,14 @@ public :
 	double size_y = 0;
 	const wchar_t *file;
 	GLuint tex;
-	GameObject(double x, double y, double size_x, double size_y, const wchar_t *file)
+	GameObject(double x, double y, double size_x, double size_y, const wchar_t *filename)
 		:center_x(x), center_y(y), size_x(size_x), size_y(size_y) {
-		file = file;
+		std::cout << "GameObjectコンストラクタ" << std::endl;
+		file = filename;
+		tex = -1;
 		GdiplusStartup(&gdiPT, &gdiPSI, NULL);
 		glEnable(GL_TEXTURE_2D);
-		Bitmap bmp(file);
+		Bitmap bmp(filename);
 		BitmapData data;
 		bmp.LockBits(0, ImageLockModeRead, PixelFormat32bppARGB, &data);
 		glGenTextures(1, &tex);
@@ -305,14 +312,11 @@ public :
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexImage2D(GL_TEXTURE_2D, 0, 4, data.Width, data.Height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, data.Scan0);
 		glBindTexture(GL_TEXTURE_2D, 0);
-		bmp.UnlockBits(&data);
+		bmp.UnlockBits(&data);	
 		Update();
-	};
-
+	}
 	void Update() {
-		std::cout << "画像更新" << std::endl;
 		if (center_x <= camera_x + 500 && center_x >= camera_x - 1500) {
-			//std::cout << "SETIMAGE" << std::endl;
 			glBindTexture(GL_TEXTURE_2D, tex);
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -322,7 +326,7 @@ public :
 			glTexCoord2f(0.0f, 1.0f); glVertex2d(center_x + (double)grid / 2, center_y + (double)grid / 2);//左下
 			glTexCoord2f(0.0f, 0.0f); glVertex2d(center_x + (double)grid / 2, center_y - (double)grid / 2);//左上
 			glTexCoord2f(1.0f, 0.0f); glVertex2d(center_x - (double)grid / 2, center_y - (double)grid / 2);//右上
-			glTexCoord2f(1.0f, 1.0f); glVertex2d(center_x + (double)grid / 2, center_y + (double)grid / 2);//右下
+			glTexCoord2f(1.0f, 1.0f); glVertex2d(center_x - (double)grid / 2, center_y + (double)grid / 2);//右下
 			glEnd();
 			glDisable(GL_ALPHA_TEST);
 			glDisable(GL_TEXTURE_2D);
@@ -330,8 +334,117 @@ public :
 		}
 	}
 
+	void Set(double x, double y) {
+		center_x = x;
+		center_y = y;
+		Update();
+	}
+
+	double Get_x() {
+		return center_x;
+	}
+	double Get_y() {
+		return center_y;
+	}
+
 };
 
+class MoveObject:public GameObject {
+public:
+	MoveObject(double x, double y, double size_x, double size_y, const wchar_t *filename) 
+		:GameObject(x, y, size_x, size_y, filename){
+		std::cout << "MoveObjectのコンストラクタ" << std::endl;
+	}
+	void Move(double x, double y) {
+		center_x += x;
+		center_y += y;
+		Update();
+	}
+};
+
+class AnimationChara :public MoveObject {
+public :
+	std::vector<GLuint> texes;
+	
+	AnimationChara(double x, double y, double size_x, double size_y, const wchar_t *filename)
+		:MoveObject(x, y, size_x, size_y, filename){
+		std::cout << "AnimationObjectのコンストラクタ" << std::endl;
+		texes.push_back(tex);
+		//texes.resize(num);
+	}
+	
+	void LoadPNGImage(const wchar_t *filename) {
+		GLuint texture = 0;
+		GdiplusStartup(&gdiPT, &gdiPSI, NULL);
+		glEnable(GL_TEXTURE_2D);
+		Bitmap bmp(filename);
+		BitmapData data;
+		bmp.LockBits(0, ImageLockModeRead, PixelFormat32bppARGB, &data);
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexImage2D(GL_TEXTURE_2D, 0, 4, data.Width, data.Height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, data.Scan0);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		bmp.UnlockBits(&data);
+		Update();
+		texes.push_back(texture);
+		std::cout << texes.size() << std::endl;
+	}
+
+	void ChangeImage(const int num) {
+		tex = texes.at(num);
+		Update();
+	}
+
+	void UpdateDirR() {
+		if (center_x <= camera_x + 500 && center_x >= camera_x - 1500) {
+			glBindTexture(GL_TEXTURE_2D, tex);
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glEnable(GL_TEXTURE_2D);
+			glEnable(GL_ALPHA_TEST);
+			glBegin(GL_POLYGON);
+			glTexCoord2f(0.0f, 1.0f); glVertex2d(center_x + (double)grid / 2, center_y + (double)grid / 2);//左下
+			glTexCoord2f(0.0f, 0.0f); glVertex2d(center_x + (double)grid / 2, center_y - (double)grid / 2);//左上
+			glTexCoord2f(1.0f, 0.0f); glVertex2d(center_x - (double)grid / 2, center_y - (double)grid / 2);//右上
+			glTexCoord2f(1.0f, 1.0f); glVertex2d(center_x - (double)grid / 2, center_y + (double)grid / 2);//右下
+			glEnd();
+			glDisable(GL_ALPHA_TEST);
+			glDisable(GL_TEXTURE_2D);
+			glDisable(GL_BLEND);
+		}
+		//glTexCoord2f(0.0f, 1.0f); glVertex2d(64 + player2.center.x, 0 + player2.center.y);//左下
+//glTexCoord2f(0.0f, 0.0f); glVertex2d(64 + player2.center.x, -64 + player2.center.y);//左上
+//glTexCoord2f(1.0f, 0.0f); glVertex2d(0 + player2.center.x, -64 + player2.center.y);//右上
+//glTexCoord2f(1.0f, 1.0f); glVertex2d(0 + player2.center.x, 0 + player2.center.y);//右下
+	}
+	void UpdateDirL() {
+		if (center_x <= camera_x + 500 && center_x >= camera_x - 1500) {
+			glBindTexture(GL_TEXTURE_2D, tex);
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glEnable(GL_TEXTURE_2D);
+			glEnable(GL_ALPHA_TEST);
+			glBegin(GL_POLYGON);
+			glTexCoord2f(0.0f, 1.0f); glVertex2d(center_x - (double)grid / 2, center_y + (double)grid / 2);//左下
+			glTexCoord2f(0.0f, 0.0f); glVertex2d(center_x - (double)grid / 2, center_y - (double)grid / 2);//左上
+			glTexCoord2f(1.0f, 0.0f); glVertex2d(center_x + (double)grid / 2, center_y - (double)grid / 2);//右上
+			glTexCoord2f(1.0f, 1.0f); glVertex2d(center_x + (double)grid / 2, center_y + (double)grid / 2);//右下
+			glEnd();
+			glDisable(GL_ALPHA_TEST);
+			glDisable(GL_TEXTURE_2D);
+			glDisable(GL_BLEND);
+			//glTexCoord2f(0.0f, 1.0f); glVertex2d(0 + player2.center.x, 0 + player2.center.y);//左下
+//glTexCoord2f(0.0f, 0.0f); glVertex2d(0 + player2.center.x, -64 + player2.center.y);//左上
+//glTexCoord2f(1.0f, 0.0f); glVertex2d(64 + player2.center.x, -64 + player2.center.y);//右上
+//glTexCoord2f(1.0f, 1.0f); glVertex2d(64 + player2.center.x, 0 + player2.center.y);//右下
+		}
+	}
+
+
+
+};
 
 Object floor2 = Object(50, 50, L"./pic/block1.png");
 Object floor1 = Object(114, 50, L"./pic/block1.png");
@@ -339,7 +452,10 @@ Object player1 = Object(0, 0, L"./pic/walk1.png");
 Object player2 = Object(0, 0, L"./pic/walk2.png");
 Object player3 = Object(0, 0, L"./pic/walk3.png");
 //floor2.LoadImagePNG2(L"./pic/block.png");
-GameObject gameObject(10.0, -10.0, 64.0, 64.0, L"./pic/arrow.png");
+//GameObject *gameObject;
+//GameObject *gameObject2;
+AnimationChara *player10;
+AnimationChara *sample;
 
 
 
@@ -387,10 +503,10 @@ void display(void)
 	{
 		switch (walk_timer)
 		{
-		case 1:  player2.ImageChange(player3.tex); break;//glBindTexture(GL_TEXTURE_2D, player3.tex); break;
-		case 2:  player2.ImageChange(player2.tex); break;//glBindTexture(GL_TEXTURE_2D, player2.tex); break;
-		case 3:  player2.ImageChange(player1.tex);break;//glBindTexture(GL_TEXTURE_2D, player1.tex); break;
-		case 0:  player2.ImageChange(player2.tex);break;// glBindTexture(GL_TEXTURE_2D, player2.tex); break;
+		case 1:  sample->ChangeImage(2); break;//glBindTexture(GL_TEXTURE_2D, player3.tex); break;
+		case 2:  sample->ChangeImage(1); break;//glBindTexture(GL_TEXTURE_2D, player2.tex); break;
+		case 3:  sample->ChangeImage(0); break;//glBindTexture(GL_TEXTURE_2D, player1.tex); break;
+		case 0:  sample->ChangeImage(1); break;// glBindTexture(GL_TEXTURE_2D, player2.tex); break;
 		}
 	}
 	glEnable(GL_BLEND);
@@ -402,7 +518,8 @@ void display(void)
 	{
 	case 0:
 	{
-		player2.SetImage(player2.center.x, player2.center.y, player2.tex);
+		//player2.SetImage(player2.center.x, player2.center.y, player2.tex);
+		sample->UpdateDirL();
 		//glTexCoord2f(0.0f, 1.0f); glVertex2d(0 + player2.center.x, 0 + player2.center.y);//左下
 		//glTexCoord2f(0.0f, 0.0f); glVertex2d(0 + player2.center.x, -64 + player2.center.y);//左上
 		//glTexCoord2f(1.0f, 0.0f); glVertex2d(64 + player2.center.x, -64 + player2.center.y);//右上
@@ -412,7 +529,8 @@ void display(void)
 
 	case 1:
 	{
-		player2.SetImage(player2.center.x, player2.center.y, player2.tex);
+		//player2.SetImage(player2.center.x, player2.center.y, player2.tex);
+		sample->UpdateDirR();
 		//glTexCoord2f(0.0f, 1.0f); glVertex2d(64 + player2.center.x, 0 + player2.center.y);//左下
 		//glTexCoord2f(0.0f, 0.0f); glVertex2d(64 + player2.center.x, -64 + player2.center.y);//左上
 		//glTexCoord2f(1.0f, 0.0f); glVertex2d(0 + player2.center.x, -64 + player2.center.y);//右上
@@ -424,25 +542,31 @@ void display(void)
 	glDisable(GL_ALPHA_TEST);
 	glDisable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
-	gameObject.Update();
-
+	//gameObject->Update();
+	//gameObject2->Update();
+	player10->Update();
+	//sample->Update();
+	
 	for (int i = -1000; i < 4; i++) {
 		//SetImage(i * 64, 0, tex_ground);
 		floor1.SetImage(i * 64, 50, floor1.tex);
+		//floor2.SetImage(i * 64, 200, floor2.tex);
 	}
 	glutSwapBuffers();
 }
 
 void idle(void)
 {
-	double speed = 5;
+	double speed = 2;
 
 	if (onMoveKeyPress_L == true){
 		//player.x += speed;
 		camera_x += speed;
 		//floor2.Move(speed, 0);
 		//glLoadIdentity();
-		player2.Move(speed, 0);
+		//player2.Move(speed, 0);
+		sample->Move(speed, 0);
+		
 		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 	}
 
@@ -451,25 +575,30 @@ void idle(void)
 		camera_x -= speed;
 		//floor2.Move(-speed, 0);
 		//glLoadIdentity();
-		player2.Move(-speed, 0);
+		//player2.Move(-speed, 0);
+		sample->Move(-speed, 0);
 		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 	}
 
 	if (player_jump == true)
 	{
+		std::cout << "ジャンプ" << std::endl;
 		if (jump_timer < 10)
 		{
-			player2.center.y = player2.center.y - (15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 50;//ジャンプのときのプレイヤーの動き
+			//player2.center.y = player2.center.y - (15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 50;//ジャンプのときのプレイヤーの動き
+			sample->Move(0, -(15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 7);
 		}
 
 		else if (jump_timer >= 10)
 		{
-			player2.center.y = player2.center.y - (15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.0015 * 50;//ジャンプのときのプレイヤーの動き
+			//player2.center.y = player2.center.y - (15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.0015 * 50;//ジャンプのときのプレイヤーの動き
+			sample->Move(0, -(15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.0015 * 7);
 		}
 
-		if (player2.center.y > 0) //ブロックの上に着地する場合，その座標とする
+		if (sample->center_y > 0) //ブロックの上に着地する場合，その座標とする
 		{
-			player2.center.y = 0;
+			sample->Set(sample->center_x, 0);
+			//player2.center.y = 0;
 			jump_timer = 0;
 			player_jump = false;
 		}
@@ -537,7 +666,19 @@ void Init() {
 	player3.LoadImagePNG2(player3.file, player3.tex);
 	floor2.LoadImagePNG2(floor2.file, floor2.tex);
 	floor1.LoadImagePNG2(floor1.file, floor1.tex);
+	//gameObject = new GameObject(10.0, -100.0, 64.0, 64.0, L"./pic/block1.png");
+	//gameObject2 = new GameObject(10.0, -200.0, 64.0, 64.0, L"./pic/arrow.png");
+	//gameObject.LoadPNGImage(gameObject.file, gameObject.tex);
+	player10 = new AnimationChara(10.0, -300.0, 64.0, 64.0, L"./pic/block1.png");
+	player10->LoadPNGImage(L"./pic/arrow.png");
+	player10->ChangeImage(1);
+	player10->LoadPNGImage(L"./pic/walk1.png");
+	player10->ChangeImage(0);
+	sample = new AnimationChara(10.0, -20.0, 64.0, 64.0, L"./pic/walk1.png");
+	sample->LoadPNGImage(L"./pic/walk2.png");
+	sample->LoadPNGImage(L"./pic/walk3.png");
 	
+	//player10->ChangeImage(1);
 	player.x = 0;
 	player.y = 0;
 	player.direction = 1;

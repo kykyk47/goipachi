@@ -674,9 +674,9 @@ void Init() {
 	player10->ChangeImage(1);
 	player10->LoadPNGImage(L"./pic/walk1.png");
 	player10->ChangeImage(0);
-	sample = new AnimationChara(10.0, -20.0, 64.0, 64.0, L"./pic/walk1.png");
-	sample->LoadPNGImage(L"./pic/walk2.png");
-	sample->LoadPNGImage(L"./pic/walk3.png");
+	sample = new AnimationChara(10.0, -20.0, 64.0, 64.0, L"./pic/walk4.png");
+	sample->LoadPNGImage(L"./pic/walk5.png");
+	sample->LoadPNGImage(L"./pic/walk6.png");
 	
 	//player10->ChangeImage(1);
 	player.x = 0;

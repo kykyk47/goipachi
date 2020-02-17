@@ -130,20 +130,20 @@ struct Position
 
 Position player = {};
 
-void LoadImagePNG(const wchar_t* filename, GLuint &texture)
-{
-	glEnable(GL_TEXTURE_2D);
-	Bitmap bmp(filename);
-	BitmapData data;
-	bmp.LockBits(0, ImageLockModeRead, PixelFormat32bppARGB, &data);
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, 4, data.Width, data.Height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, data.Scan0);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	bmp.UnlockBits(&data);
-}
+	void LoadImagePNG(const wchar_t* filename, GLuint &texture)
+	{
+		glEnable(GL_TEXTURE_2D);
+		Bitmap bmp(filename);
+		BitmapData data;
+		bmp.LockBits(0, ImageLockModeRead, PixelFormat32bppARGB, &data);
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexImage2D(GL_TEXTURE_2D, 0, 4, data.Width, data.Height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, data.Scan0);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		bmp.UnlockBits(&data);
+	}
 
 void end()
 {

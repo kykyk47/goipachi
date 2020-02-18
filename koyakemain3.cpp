@@ -31,6 +31,7 @@ using namespace Gdiplus;
 #define WIDTH 1280
 #define HEIGHT 720
 
+#define TIME_LIMIT 50
 
 
 GdiplusStartupInput gdiPSI;
@@ -71,6 +72,7 @@ int score_enemy = 0;
 int score_cleared = 0;
 int score = 0; //ゲーム中でのスコア
 int high_score[5] = { 0,0,0,0,0 }; //レコードされているハイスコア
+int time = TIME_LIMIT*60;
 
 FILE *fp; //スコアファイル
 FILE *fp_dic; //辞書ファイル
@@ -948,12 +950,15 @@ void display(void)
 		glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
 		gluLookAt(camera_x, camera_y+128, 0, camera_x, camera_y+128, 1, 0, 1, 0);
 
-		UI_10.SetImage(128+sample->center_x,200);
-		UI_11.SetImage(128 + sample->center_x, 200);
-		UI_12.SetImage(128 + sample->center_x, 200);
+		UI_10.SetImage(440 +sample->center_x,200);
+		UI_11.SetImage(0 + sample->center_x, 272);
+		UI_12.SetImage(-440 + sample->center_x, 200);
 		UI_slot_base.SetImage(0 + sample->center_x,200);
-		UI_slot_highlight.SetImage(0 + sample->center_x,129);
-		UI_slot_decision.SetImage(0 + sample->center_x,50);
+		SetNumImage(360 + sample->center_x,132,160,20,time/60);
+
+		UI_slot_highlight.SetImage(0 + sample->center_x,176);
+
+		UI_slot_decision.SetImage(0 + sample->center_x,176);
 
 		for (int i = -6400; i < 6400; i++) {
 			BG_05.SetImage(i * 1024 + (sample->center_x *1.0), -224);
@@ -1104,6 +1109,12 @@ void idle(void)
 		flag_02 = false;
 	}
 	//printf("%.2f,%.2f %d %d \n", player.x, player.y, jump_timer, walk_timer100);
+	if (time < 0)
+	{
+		scene = 6;
+		time = TIME_LIMIT;
+	}
+
 	glutPostRedisplay();
 }
 
@@ -1426,6 +1437,16 @@ void timer(int value) {
 
 	flag_01 = true;
 	flag_02 = true;
+
+	if (scene == 5) //ゲーム中，タイマー起動
+	{
+		time--;
+	}
+
+	if (scene == 6)
+	{
+		temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544;
+	}
 
 	if (player_jump == true)
 	{

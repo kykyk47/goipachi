@@ -82,6 +82,13 @@ double temp_camera_x = 0; //◇シーン移動によりカメラの位置をリ�
 double temp_camera_y = 0;
 //void LoadImagePNG(const wchar_t* filename, GLuint &texture);
 
+bool flag_01 = true; //★次のタイマー関数が呼び出されるまでx方向の移動を与えないための制御
+bool flag_02 = true; //★次のタイマー関数が呼び出されるまでy方向の移動を与えないための制御
+int time_1flame; //★デバッグ用，1フレームでどれだけ進んだか，どれだけ時間がたっているか（ms）
+double speed_1flame;
+int time_temp;
+double speed_temp;
+
 struct Position
 {
 	double x, y;
@@ -1047,9 +1054,9 @@ void display(void)
 
 void idle(void)
 {
-	double speed = 2;
+	double speed = 8;
 
-	if (onMoveKeyPress_L == true) {
+	if (onMoveKeyPress_L == true && flag_01 == true) {
 		//player.x += speed;
 		camera_x += speed;
 		//floor2.Move(speed, 0);
@@ -1058,9 +1065,10 @@ void idle(void)
 		sample->Move(speed, 0);
 
 		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
+		flag_01 = false;
 	}
 
-	if (onMoveKeyPress_R == true) {
+	if (onMoveKeyPress_R == true && flag_01 == true) {
 		//player.x -= speed;
 		camera_x -= speed;
 		//floor2.Move(-speed, 0);
@@ -1068,21 +1076,22 @@ void idle(void)
 		//player2.Move(-speed, 0);
 		sample->Move(-speed, 0);
 		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
+		flag_01 = false;
 	}
 
-	if (player_jump == true)
+	if (player_jump == true && flag_02 == true)
 	{
 		//std::cout << "ジャンプ" << std::endl;
 		if (jump_timer < 10)
 		{
 			//player2.center.y = player2.center.y - (15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 50;//ジャンプのときのプレイヤーの動き
-			sample->Move(0, -(15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 7);
+			sample->Move(0, -(15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 128);
 		}
 
 		else if (jump_timer >= 10)
 		{
 			//player2.center.y = player2.center.y - (15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.0015 * 50;//ジャンプのときのプレイヤーの動き
-			sample->Move(0, -(15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.0015 * 7);
+			sample->Move(0, -(15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.0015 * 36);
 		}
 
 		if (sample->center_y > 0) //ブロックの上に着地する場合，その座標とする
@@ -1092,6 +1101,7 @@ void idle(void)
 			jump_timer = 0;
 			player_jump = false;
 		}
+		flag_02 = false;
 	}
 	//printf("%.2f,%.2f %d %d \n", player.x, player.y, jump_timer, walk_timer100);
 	glutPostRedisplay();
@@ -1412,21 +1422,28 @@ void Init() {
 void timer(int value) {
 
 	glutPostRedisplay();
-	glutTimerFunc(50, timer, 0);
+	glutTimerFunc(16, timer, 0);
 
-
+	flag_01 = true;
+	flag_02 = true;
 
 	if (player_jump == true)
 	{
 		jump_timer++;
+		printf("jump_timer = %d   ",jump_timer);
+		printf("player_y = %.4f\n",sample->center_y);
 	}
 
 
-
+	
 	
 
 	if (onMoveKeyPress_L == true || onMoveKeyPress_R == true) //歩きアニメーションのため （画像１→２→３→２というふうに歩き中には４枚の画像を連続で表示する）
 	{
+		
+		//speed_1flame = sample->center_x - speed_temp;
+		//printf("speed_temp = %.4f\n",speed_1flame);
+
 		if (walk_timer100 == 300)
 		{
 			walk_timer100 = 0;
@@ -1436,10 +1453,13 @@ void timer(int value) {
 		{
 			walk_timer100 += 100;
 		}
+
+		//speed_temp = sample->center_x;
 	}
 
 	else
 	{
+		//speed_temp = 0;
 		walk_timer100 = 0;
 	}
 
@@ -1457,7 +1477,7 @@ int main(int argc, char *argv[])
 	glutCreateWindow("goipachi ver.0.0.0");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
-	glutTimerFunc(50, timer, 0);
+	glutTimerFunc(16, timer, 0);
 	glutKeyboardFunc(keyboard);
 	glutKeyboardUpFunc(keyboardUp);
 	glutIdleFunc(idle);

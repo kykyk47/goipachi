@@ -31,7 +31,7 @@ using namespace Gdiplus;
 #define WIDTH 1280
 #define HEIGHT 720
 
-#define TIME_LIMIT 50
+#define TIME_LIMIT 100
 #define dic_index_4 43226 //4文字辞書の単語数
 
 
@@ -89,9 +89,12 @@ int score_tango = 0;
 int score_enemy = 0;
 int score_cleared = 0;
 int score = 0; //ゲーム中でのスコア
+
+
 int high_score[5] = { 0,0,0,0,0 }; //レコードされているハイスコア
 int slot[5] = { 0,0,0,0,0 }; //★スロット（のちのち5文字でもできるように）
 int slot_select = 0; //★どの文字をさしているか
+int score_word = 0; //１つ１つのワードのスコア
 int time = TIME_LIMIT*60;
 
 FILE *fp; //スコアファイル
@@ -129,7 +132,7 @@ public:
 	double x, y;
 
 	Coordinate(double x, double y) : x(x), y(y) {
-		std::cout << "CORDINATE コンストラクタ" << std::endl;
+		//std::cout << "CORDINATE コンストラクタ" << std::endl;
 	};
 
 	Coordinate() { x = 0; y = 0; };
@@ -615,7 +618,7 @@ GameObject UI_slot_decision = GameObject(0, 0, 192, 192, L"./pic/slot_decision.p
 GameObject arrow = GameObject(0, 0, 128, 128, L"./pic/arrow.png");
 GameObject select_highlight = GameObject(0, 0, 136, 136, L"./pic/Y.png");
 
-GameObject player_penalty = GameObject(0, 0, 32, 16, L"./pic/player_penalty.png");
+GameObject player_penalty = GameObject(0, 0, 96, 24, L"./pic/player_penalty.png");
 GameObject player_maru = GameObject(0, 0, 64, 64, L"./pic/maru.png");
 GameObject player_batsu = GameObject(0, 0, 64, 64, L"./pic/batsu.png");
 GameObject player_fukidashi01 = GameObject(0, 0, 64, 64, L"./pic/fukidashi1.png");
@@ -752,12 +755,17 @@ void check_goi(int moji[])
 		{
 			printf("辞書番号%dと一致：%d点獲得\n", i, 0);
 			word_hit = true;
+			score_word = 45;
+
+			score += score_word;
+
 			break;
 		}
 		
 	}
 	if (word_hit == false)
 	{
+		time -= 3000;
 		printf("辞書と一致せず\n");
 	}
 }
@@ -1379,22 +1387,22 @@ void display(void)
 		UI_12.SetImage(-440 + sample->center_x, 200);
 		UI_slot_base.SetImage(0 + sample->center_x,200); //スロットの基盤
 		SetNumImage(360 + sample->center_x,132,160,20,time/60); //タイマー
+		SetNumImage(360 + sample->center_x, 200, 160, 20, score); //スコア
+		SetNumImage(360 + sample->center_x, 268, 160, 20, high_score[0]); //ハイスコア
 
 		block_hiragana[slot[0]].SetImage(216 + sample->center_x, 176); //ひらがなスロット
 		block_hiragana[slot[1]].SetImage(72 + sample->center_x, 176);
 		block_hiragana[slot[2]].SetImage(-72 + sample->center_x, 176);
 		block_hiragana[slot[3]].SetImage(-216 + sample->center_x, 176);
 
-		UI_slot_highlight.SetImage(216-slot_select*144 + sample->center_x,176); //★スロットの選択箇所
+
+		if (lamp_timer_01 == 0)
+		{
+			UI_slot_highlight.SetImage(216 - slot_select * 144 + sample->center_x, 176); //★スロットの選択箇所
+		}
 
 	
-		if (lamp_timer_01 % 10 >= 6) //★Ｋキーを押した後スロットを点滅させる
-		{
-			UI_slot_decision.SetImage(216 + sample->center_x, 176);
-			UI_slot_decision.SetImage(72 + sample->center_x, 176);
-			UI_slot_decision.SetImage(-72 + sample->center_x, 176);
-			UI_slot_decision.SetImage(-216 + sample->center_x, 176);
-		}
+		
 
 		for (int i = -6400; i < 6400; i++) {
 			BG_05.SetImage(i * 1024 + (sample->center_x *1.0), -224);
@@ -1476,7 +1484,54 @@ void display(void)
 		}
 
 		
+		if (lamp_timer_01 % 10 >= 6 && lamp_timer_01 > 0) //★Ｋキーを押した後スロットを点滅させる
+		{
+			UI_slot_decision.SetImage(216 + sample->center_x, 176);
+			UI_slot_decision.SetImage(72 + sample->center_x, 176);
+			UI_slot_decision.SetImage(-72 + sample->center_x, 176);
+			UI_slot_decision.SetImage(-216 + sample->center_x, 176);
+		}
 
+		if (lamp_timer_02 > 0) //★Ｋキーを押した後ふきだしとエフェクト点灯
+		{
+			switch (word_hit)
+			{
+			case true: //プレイヤーの吹き出しと加点スコアを描画
+			{
+				player_fukidashi01.SetImage(sample->center_x,  sample->center_y-80);
+				if (score >= 100000) { SetNumImage_2(sample->center_x -12*9, sample->center_y - 128, 192, 24, score_word); }
+				else if (score >= 10000 && score <= 99999) { SetNumImage_2(  sample->center_x - 12 * 8, sample->center_y - 128, 192, 24, score_word); }
+				else if (score >= 1000 && score <= 9999) { SetNumImage_2( sample->center_x - 12 * 7, sample->center_y - 128, 192, 24, score_word); }
+				else if (score >= 100 && score <= 999) { SetNumImage_2( sample->center_x - 12 * 6, sample->center_y - 128, 192, 24, score_word); }
+				else if (score >= 10 && score <= 99) { SetNumImage_2( sample->center_x - 12 *5, sample->center_y - 128, 192, 24, score_word); }
+				else if (score >= 0 && score <= 9) { SetNumImage_2( sample->center_x - 12 * 4, sample->center_y - 128, 192, 24, score_word); }
+
+			}break;
+
+			case false: //プレイヤーの吹き出しとペナルティを描画
+			{
+				player_fukidashi02.SetImage(sample->center_x,  sample->center_y-80);
+				player_penalty.SetImage(sample->center_x, sample->center_y - 120);
+
+			}break;
+			}
+		}
+
+		if (lamp_timer_02 % 7 >= 3 && lamp_timer_02 > 0) //★Ｋキーを押した後プレイヤーエフェクト点滅
+		{
+			switch (word_hit)
+			{
+			case true:
+			{
+				player_maru.SetImage(sample->center_x, sample->center_y);
+			}break;
+
+			case false:
+			{
+				player_batsu.SetImage(sample->center_x, sample->center_y);
+			}break;
+			}
+		}
 	
 
 	}break;
@@ -1551,6 +1606,12 @@ void idle(void)
 	{
 		scene = 6;
 		time = TIME_LIMIT;
+	}
+
+	if (lamp_timer_02 <= 0)
+	{
+		word_hit = false;
+		
 	}
 
 	glutPostRedisplay();
@@ -1704,11 +1765,11 @@ void keyboard(unsigned char key, int x, int y)
 		case 'a': onMoveKeyPress_L = true; /*MoveLock_R = true;*/ player.direction = 0; break;
 		case 'd': onMoveKeyPress_R = true; /*MoveLock_L = true;*/ player.direction = 1; break;
 
-		case 'j': if (slot_select >0 ) { slot_select--; } break; //スロット移動
-		case 'l': if (slot_select  <3) { slot_select++; } break;
-		case 'i': slot[slot_select] = 0; break; //選択中のスロットの場所をからっぽにする
+		case 'j': if (slot_select >0 && lamp_timer_02 == 0) { slot_select--; } break; //スロット移動
+		case 'l': if (slot_select  <3 && lamp_timer_02 == 0) { slot_select++; } break;
+		case 'i': if (lamp_timer_02 == 0) { slot[slot_select] = 0;  } break; //選択中のスロットの場所をからっぽにする
 
-		case 'k': check_goi(slot); lamp_timer_01 = 50; slot[0] = 0; slot[1] = 0; slot[2] = 0; slot[3] = 0; break;//単語チェック
+		case 'k': if (lamp_timer_02 == 0) { check_goi(slot); lamp_timer_02 = 100;  lamp_timer_01 = 50; slot[0] = 0; slot[1] = 0; slot[2] = 0; slot[3] = 0; }  break;//単語チェック
 
 
 		case 'p': scene = 2; temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544; break; //ポーズ カメラの位置をＧＵＩ用にリセット
@@ -1726,7 +1787,7 @@ void keyboard(unsigned char key, int x, int y)
 	case 6: //ゲームオーバー画面
 	{
 		switch (key) {
-		case 'l': scene = 3; break; //リザルト画面へ
+		case 'l': scene = 3; time = TIME_LIMIT * 60; lamp_timer_01 = 0; lamp_timer_02 = 0;  break; //リザルト画面へ
 		case '\033':  /* '\033' は ESC の ASCII コード */
 			fclose(fp); fclose(fp_dic_4);
 			exit(0); break;
@@ -1956,8 +2017,8 @@ void timer(int value) {
 	if (player_jump == true)
 	{
 		jump_timer++;
-		printf("jump_timer = %d   ",jump_timer);
-		printf("player_y = %.4f\n",sample->center_y);
+		//printf("jump_timer = %d   ",jump_timer);
+		//printf("player_y = %.4f\n",sample->center_y);
 	}
 
 

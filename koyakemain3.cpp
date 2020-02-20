@@ -77,6 +77,7 @@ int walk_timer = 0;
 int walk_timer100 = 0;
 int lamp_timer_01 = 0; //★Ｋキー（決定ボタン）を押した後の赤ライトの点灯
 int lamp_timer_02 = 0; //★プレイヤーのリアクションのエフェクト
+int gun_timer = 0; //★銃を構えているイラストの表示
 
 int scene = 0; //◇シーンの追加．0:タイトル 1:ステージ選択 2:ポーズ画面 3:リザルト画面A 4リザルト画面B 5:プレイ画面 6:GAME OVER画面
 int difficulty = 0; //◇難易度：松竹梅（+0~2）文字数（+00～20）はやさ（+000～200）
@@ -549,10 +550,10 @@ public:
 			glEnable(GL_TEXTURE_2D);
 			glEnable(GL_ALPHA_TEST);
 			glBegin(GL_POLYGON);
-			glTexCoord2f(0.0f, 1.0f); glVertex2d(center_x - (double)grid / 2, center_y + (double)grid / 2);//左下
-			glTexCoord2f(0.0f, 0.0f); glVertex2d(center_x - (double)grid / 2, center_y - (double)grid / 2);//左上
-			glTexCoord2f(1.0f, 0.0f); glVertex2d(center_x + (double)grid / 2, center_y - (double)grid / 2);//右上
-			glTexCoord2f(1.0f, 1.0f); glVertex2d(center_x + (double)grid / 2, center_y + (double)grid / 2);//右下
+			glTexCoord2f(1.0f, 1.0f); glVertex2d(center_x + (double)grid / 2, center_y + (double)grid / 2);//左下
+			glTexCoord2f(1.0f, 0.0f); glVertex2d(center_x + (double)grid / 2, center_y - (double)grid / 2);//左上
+			glTexCoord2f(0.0f, 0.0f); glVertex2d(center_x - (double)grid / 2, center_y - (double)grid / 2);//右上
+			glTexCoord2f(0.0f, 1.0f); glVertex2d(center_x - (double)grid / 2, center_y + (double)grid / 2);//右下
 			glEnd();
 			glDisable(GL_ALPHA_TEST);
 			glDisable(GL_TEXTURE_2D);
@@ -1539,21 +1540,40 @@ void display(void)
 			BG_01.SetImage(i * 1024 + (sample->center_x *0.0), -224);
 		}
 		
+		glBindTexture(GL_TEXTURE_2D, player2.tex);
 
-		if (walk_timer == 0)
+		if (gun_timer > 0)
 		{
-			glBindTexture(GL_TEXTURE_2D, player2.tex);
+			if (player.direction == 1) { sample->ChangeImage(4); }
+			else { sample->ChangeImage(9); }
+		}
+
+		else if (player_jump == true)
+		{
+			if(player.direction == 1) { sample->ChangeImage(3); }
+			else { sample->ChangeImage(8); }
+		}
+
+		else if (walk_timer == 0)
+		{
+			if (player.direction == 1) { sample->ChangeImage(1); }
+			else { sample->ChangeImage(6); }
 		}
 		else
 		{
 			switch (walk_timer)
 			{
-			case 1:  sample->ChangeImage(2); break;//glBindTexture(GL_TEXTURE_2D, player3.tex); break;
-			case 2:  sample->ChangeImage(1); break;//glBindTexture(GL_TEXTURE_2D, player2.tex); break;
-			case 3:  sample->ChangeImage(0); break;//glBindTexture(GL_TEXTURE_2D, player1.tex); break;
-			case 0:  sample->ChangeImage(1); break;// glBindTexture(GL_TEXTURE_2D, player2.tex); break;
+			case 1:  if (player.direction == 1) { sample->ChangeImage(2); } else { sample->ChangeImage(7); } break;//glBindTexture(GL_TEXTURE_2D, player3.tex); break;
+			case 2:  if (player.direction == 1) { sample->ChangeImage(1); } else { sample->ChangeImage(6); } break;//glBindTexture(GL_TEXTURE_2D, player2.tex); break;
+			case 3:  if (player.direction == 1) { sample->ChangeImage(0); } else { sample->ChangeImage(5); } break;//glBindTexture(GL_TEXTURE_2D, player1.tex); break;
+			case 0:  if (player.direction == 1) { sample->ChangeImage(1); } else { sample->ChangeImage(6); } break;// glBindTexture(GL_TEXTURE_2D, player2.tex); break;
 			}
+
 		}
+
+		//if (player.direction == 1) { sample->ChangeImage(0); } else { sample->ChangeImage(5); }
+
+
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -1564,13 +1584,13 @@ void display(void)
 		case 0:
 		{
 			//player2.SetImage(player2.center.x, player2.center.y, player2.tex);
-			sample->UpdateDirL();
+			sample->UpdateDirR();
 			//glTexCoord2f(0.0f, 1.0f); glVertex2d(0 + player2.center.x, 0 + player2.center.y);//左下
 			//glTexCoord2f(0.0f, 0.0f); glVertex2d(0 + player2.center.x, -64 + player2.center.y);//左上
 			//glTexCoord2f(1.0f, 0.0f); glVertex2d(64 + player2.center.x, -64 + player2.center.y);//右上
 			//glTexCoord2f(1.0f, 1.0f); glVertex2d(64 + player2.center.x, 0 + player2.center.y);//右下
-			break;
-		}
+		}	break;
+
 
 		case 1:
 		{
@@ -1580,8 +1600,8 @@ void display(void)
 			//glTexCoord2f(0.0f, 0.0f); glVertex2d(64 + player2.center.x, -64 + player2.center.y);//左上
 			//glTexCoord2f(1.0f, 0.0f); glVertex2d(0 + player2.center.x, -64 + player2.center.y);//右上
 			//glTexCoord2f(1.0f, 1.0f); glVertex2d(0 + player2.center.x, 0 + player2.center.y);//右下
-			break;
-		}
+	
+		}break;
 		}
 		glEnd();
 		glDisable(GL_ALPHA_TEST);
@@ -2049,7 +2069,7 @@ void keyboard(unsigned char key, int x, int y)
 		case 'i': if (lamp_timer_02 == 0) { slot[slot_select] = 0;  } break; //選択中のスロットの場所をからっぽにする
 
 		case 'k': if (lamp_timer_02 == 0) { check_goi(slot); lamp_timer_02 = 100;  lamp_timer_01 = 50; slot[0] = 0; slot[1] = 0; slot[2] = 0; slot[3] = 0; }  break;//単語チェック
-
+		case 'v': gun_timer = 60; break;
 
 		case 'p': scene = 2; temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544; break; //ポーズ カメラの位置をＧＵＩ用にリセット
 		case 't': scene = 6; temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544; break; //デバッグ用トリガー1 強制ゲームオーバー
@@ -2226,6 +2246,13 @@ void Init() {
 	sample = new AnimationChara(0.0, 0, 64.0, 64.0, L"./pic/player_walk1.png");
 	sample->LoadPNGImage(L"./pic/player_walk2.png");
 	sample->LoadPNGImage(L"./pic/player_walk3.png");
+	sample->LoadPNGImage(L"./pic/player_jump.png");
+	sample->LoadPNGImage(L"./pic/player_kamae.png");
+	sample->LoadPNGImage(L"./pic/player_walk1_r.png");
+	sample->LoadPNGImage(L"./pic/player_walk2_r.png");
+	sample->LoadPNGImage(L"./pic/player_walk3_r.png");
+	sample->LoadPNGImage(L"./pic/player_jump_r.png");
+	sample->LoadPNGImage(L"./pic/player_kamae_r.png");
 
 	//player10->ChangeImage(1);
 	player.x = 0;
@@ -2291,17 +2318,17 @@ void timer(int value) {
 			lamp_timer_02--;
 		}
 
+		if (gun_timer > 0) //キャラクターのリアクションの時間
+		{
+			gun_timer--;
+		}
+
 
 		if (player_jump == true)
 		{
 			jump_timer++;
 			//printf("jump_timer = %d   ",jump_timer);
 			//printf("player_y = %.4f\n",sample->center_y);
-		}
-
-		if (player_jump == false && flag_06 == false) //崖から自由落下状態
-		{
-			printf("自由落下222\n");
 		}
 	}
 
@@ -2310,11 +2337,6 @@ void timer(int value) {
 		temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544;
 	}
 
-	
-
-
-	
-	
 
 	if (onMoveKeyPress_L == true || onMoveKeyPress_R == true) //歩きアニメーションのため （画像１→２→３→２というふうに歩き中には４枚の画像を連続で表示する）
 	{

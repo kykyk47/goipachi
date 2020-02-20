@@ -33,6 +33,7 @@ using namespace Gdiplus;
 
 #define TIME_LIMIT 100
 #define dic_index_4 43226 //4文字辞書の単語数
+#define OBJECT_LIMIT 5000
 
 
 GdiplusStartupInput gdiPSI;
@@ -97,6 +98,9 @@ int slot_select = 0; //★どの文字をさしているか
 int score_word = 0; //１つ１つのワードのスコア
 int time = TIME_LIMIT*60;
 
+int object_block[OBJECT_LIMIT][3] = { {} }; //★衝突判定に使う，プレイヤーとの距離の条件を満たすためにこの配列にオブジェクトの情報を記載（ブロックの種類,中心座標（ｘとｙ））
+int height_c=0; //★衝突判定に使う，ジャンプした後着地できる位置（高さ）最も高い座標
+
 FILE *fp; //スコアファイル
 FILE *fp_dic_4; //辞書ファイル
 int dic_4_all = 0;
@@ -112,6 +116,14 @@ double temp_camera_y = 0;
 
 bool flag_01 = true; //★次のタイマー関数が呼び出されるまでx方向の移動を与えないための制御
 bool flag_02 = true; //★次のタイマー関数が呼び出されるまでy方向の移動を与えないための制御
+bool flag_03 = false; //★衝突判定（プレイヤーの左方向）
+bool flag_04 = false; //★衝突判定（右方向）
+bool flag_05 = false; //★衝突判定（上方向）
+bool flag_06 = false; //★衝突判定（下方向）
+
+bool flag_07 = false; //★ジャンプ→落下時ゆっくり降りるかんじにするトリガー
+
+
 int time_1flame; //★デバッグ用，1フレームでどれだけ進んだか，どれだけ時間がたっているか（ms）
 double speed_1flame;
 int time_temp;
@@ -624,8 +636,11 @@ GameObject player_batsu = GameObject(0, 0, 64, 64, L"./pic/batsu.png");
 GameObject player_fukidashi01 = GameObject(0, 0, 64, 64, L"./pic/fukidashi1.png");
 GameObject player_fukidashi02 = GameObject(0, 0, 64, 64, L"./pic/fukidashi2.png");
 
-GameObject block_hiragana[76] = { 
-GameObject(0, 0, 96, 96, L"./pic/block_blank.png"), //空白
+GameObject bullet = GameObject(0, 0, 64, 64, L"./pic/bullet.png");
+
+
+GameObject block_hiragana_UI[80] = { 
+GameObject(0, 0, 96, 96, L"./pic/block_blank.png"), //空白 ID:0
 GameObject(0, 0, 96, 96, L"./pic/block_hiragana_01.png"), //あ
 GameObject(0, 0, 96, 96, L"./pic/block_hiragana_02.png"), //い
 GameObject(0, 0, 96, 96, L"./pic/block_hiragana_03.png"), //う
@@ -670,12 +685,12 @@ GameObject(0, 0, 96, 96, L"./pic/block_hiragana_41.png"), //る
 GameObject(0, 0, 96, 96, L"./pic/block_hiragana_42.png"), //れ
 GameObject(0, 0, 96, 96, L"./pic/block_hiragana_43.png"), //ろ
 GameObject(0, 0, 96, 96, L"./pic/block_hiragana_44.png"), //わ
-GameObject(0, 0, 96, 96, L"./pic/block_hiragana_45.png"), //を
-GameObject(0, 0, 96, 96, L"./pic/block_hiragana_46.png"), //ん
-GameObject(0, 0, 96, 96, L"./pic/block_hiragana_73.png"), //っ
+GameObject(0, 0, 96, 96, L"./pic/block_hiragana_45.png"), //を ID:45
+GameObject(0, 0, 96, 96, L"./pic/block_hiragana_46.png"), //ん ID:46
+GameObject(0, 0, 96, 96, L"./pic/block_hiragana_73.png"), //っ ID:47
 GameObject(0, 0, 96, 96, L"./pic/block_hiragana_74.png"), //ヴ
-GameObject(0, 0, 96, 96, L"./pic/block_blank.png"), //未使用（お題箱？）４９は未使用
-GameObject(0, 0, 96, 96, L"./pic/block_hiragana_47.png"), //ー
+GameObject(0, 0, 96, 96, L"./pic/block_wood.png"), //木材（足場ブロック）ID:49
+GameObject(0, 0, 96, 96, L"./pic/block_hiragana_47.png"), //ー ID:50
 GameObject(0, 0, 96, 96, L"./pic/block_hiragana_48.png"), //が
 GameObject(0, 0, 96, 96, L"./pic/block_hiragana_49.png"), //ぎ
 GameObject(0, 0, 96, 96, L"./pic/block_hiragana_50.png"), //ぐ
@@ -700,18 +715,101 @@ GameObject(0, 0, 96, 96, L"./pic/block_hiragana_68.png"), //ぱ
 GameObject(0, 0, 96, 96, L"./pic/block_hiragana_69.png"), //ぴ
 GameObject(0, 0, 96, 96, L"./pic/block_hiragana_70.png"), //ぷ
 GameObject(0, 0, 96, 96, L"./pic/block_hiragana_71.png"), //ぺ
-GameObject(0, 0, 96, 96, L"./pic/block_hiragana_72.png") //ぽ
+GameObject(0, 0, 96, 96, L"./pic/block_hiragana_72.png"),//ぽ
+GameObject(0, 0, 96, 96, L"./pic/ground.png"), //地面 ID:76
+GameObject(0, 0, 96, 96, L"./pic/block_undifined.png"), //未使用（お題箱とかに使う？
+GameObject(0, 0, 96, 96, L"./pic/block_undifined.png"), //未使用（お題箱とかに使う？
+GameObject(0, 0, 96, 96, L"./pic/block_undifined.png") //未使用（お題箱とかに使う？
 };
 
-
+GameObject block_hiragana[80] = {
+GameObject(0, 0, 64, 64, L"./pic/block_blank.png"), //空白 ID:0
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_01.png"), //あ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_02.png"), //い
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_03.png"), //う
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_04.png"), //え
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_05.png"), //お
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_06.png"), //か
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_07.png"), //き
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_08.png"), //く
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_09.png"), //け
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_10.png"), //こ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_11.png"), //さ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_12.png"), //し
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_13.png"), //す
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_14.png"), //せ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_15.png"), //そ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_16.png"), //た
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_17.png"), //ち
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_18.png"), //つ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_19.png"), //て
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_20.png"), //と
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_21.png"), //な
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_22.png"), //に
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_23.png"), //ぬ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_24.png"), //ね
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_25.png"), //の
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_26.png"), //は
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_27.png"), //ひ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_28.png"), //ふ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_29.png"), //へ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_30.png"), //ほ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_31.png"), //ま
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_32.png"), //み
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_33.png"), //む
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_34.png"), //め
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_35.png"), //も
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_36.png"), //や
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_37.png"), //ゆ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_38.png"), //よ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_39.png"), //ら
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_40.png"), //り
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_41.png"), //る
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_42.png"), //れ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_43.png"), //ろ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_44.png"), //わ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_45.png"), //を ID:45
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_46.png"), //ん ID:46
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_73.png"), //っ ID:47
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_74.png"), //ヴ
+GameObject(0, 0, 64, 64, L"./pic/block_wood.png"), //木材（足場ブロック）ID:49
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_47.png"), //ー ID:50
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_48.png"), //が
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_49.png"), //ぎ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_50.png"), //ぐ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_51.png"), //げ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_52.png"), //ご
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_53.png"), //ざ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_54.png"), //じ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_55.png"), //ず
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_56.png"), //ｚｗ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_57.png"), //ぞ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_58.png"), //だ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_59.png"), //ぢ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_60.png"), //づ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_61.png"), //で
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_62.png"), //ど
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_63.png"), //ば
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_64.png"), //び
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_65.png"), //ぶ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_66.png"), //べ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_67.png"), //ぼ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_68.png"), //ぱ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_69.png"), //ぴ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_70.png"), //ぷ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_71.png"), //ぺ
+GameObject(0, 0, 64, 64, L"./pic/block_hiragana_72.png"),//ぽ
+GameObject(0, 0, 64, 64, L"./pic/ground.png"), //地面 ID:76
+GameObject(0, 0, 64, 64, L"./pic/block_undifined.png"), //未使用（お題箱とかに使う？
+GameObject(0, 0, 64, 64, L"./pic/block_undifined.png"), //未使用（お題箱とかに使う？
+GameObject(0, 0, 64, 64, L"./pic/block_undifined.png") //未使用（お題箱とかに使う？
+};
 
 //floor2.LoadImagePNG2(L"./pic/block.png");
 //GameObject *gameObject;
 //GameObject *gameObject2;
 //AnimationChara *player10;
 AnimationChara *sample;
-
-
 
 //void SetImage1(Object obj, GLuint &tex) {
 //	if (obj.center.x <= camera_x + 500 && obj.center.x >= camera_x - 1500){
@@ -740,8 +838,6 @@ AnimationChara *sample;
 void end() {
 	GdiplusShutdown(gdiPT);
 }
-
-
 
 void check_goi(int moji[])
 {
@@ -1257,6 +1353,25 @@ void SetNumImage_2(double x, double y, int size_x, int size_y, int num) { //プ�
 	}
 }
 
+void block_standby(void)
+{
+	object_block[0][0] = 49; object_block[0][1] = -64; object_block[0][2] = -320;
+	object_block[1][0] = 1; object_block[1][1] = -192; object_block[1][2] = -192;
+	object_block[2][0] = 2; object_block[2][1] = -128; object_block[2][2] = -64;
+	object_block[3][0] = 3; object_block[3][1] = -192; object_block[3][2] = -128;
+	object_block[4][0] = 4; object_block[4][1] = -128; object_block[4][2] = 64;
+	object_block[5][0] = 5; object_block[5][1] = -64; object_block[5][2] = 64;
+	object_block[6][0] = 6; object_block[6][1] = 0; object_block[6][2] = 64;
+	object_block[7][0] = 7; object_block[7][1] = 64; object_block[7][2] = 64;
+	object_block[8][0] = 8; object_block[8][1] = 128; object_block[8][2] = 64;
+	object_block[9][0] = 9; object_block[9][1] = 192; object_block[9][2] = 64;
+	object_block[10][0] = 10; object_block[10][1] = 256; object_block[10][2] = 64;
+	object_block[11][0] = 11; object_block[11][1] = 320; object_block[11][2] = 64;
+	object_block[12][0] = 12; object_block[12][1] = 384; object_block[12][2] = 64;
+	object_block[13][0] = 13; object_block[13][1] = 448; object_block[13][2] = 64;
+	object_block[14][0] = 14; object_block[14][1] = 320; object_block[14][2] = 0;
+}
+
 void display(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1390,10 +1505,10 @@ void display(void)
 		SetNumImage(360 + sample->center_x, 200, 160, 20, score); //スコア
 		SetNumImage(360 + sample->center_x, 268, 160, 20, high_score[0]); //ハイスコア
 
-		block_hiragana[slot[0]].SetImage(216 + sample->center_x, 176); //ひらがなスロット
-		block_hiragana[slot[1]].SetImage(72 + sample->center_x, 176);
-		block_hiragana[slot[2]].SetImage(-72 + sample->center_x, 176);
-		block_hiragana[slot[3]].SetImage(-216 + sample->center_x, 176);
+		block_hiragana_UI[slot[0]].SetImage(216 + sample->center_x, 176); //ひらがなスロット
+		block_hiragana_UI[slot[1]].SetImage(72 + sample->center_x, 176);
+		block_hiragana_UI[slot[2]].SetImage(-72 + sample->center_x, 176);
+		block_hiragana_UI[slot[3]].SetImage(-216 + sample->center_x, 176);
 
 
 		if (lamp_timer_01 == 0)
@@ -1477,12 +1592,19 @@ void display(void)
 		//player10->Update();
 		//sample->Update();
 
-		for (int i = -6400; i < 100; i++) {
+		//for (int i = -6400; i < 100; i++) {
 			//SetImage(i * 64, 0, tex_ground);
-			floor1.SetImage(i * 64, 64);
+		//	floor1.SetImage(i * 64, 64);
 			//floor2.SetImage(i * 64, 200, floor2.tex);
-		}
+		//}
 
+		for (i = 0; i < OBJECT_LIMIT; i++) //★オブジェクトとなるブロックここで全部描画
+		{
+			if (object_block[i][0] != 0)
+			{
+				block_hiragana[object_block[i][0]].SetImage(double(object_block[i][1]), double(object_block[i][2]));
+			}
+		}
 		
 		if (lamp_timer_01 % 10 >= 6 && lamp_timer_01 > 0) //★Ｋキーを押した後スロットを点滅させる
 		{
@@ -1553,45 +1675,158 @@ void display(void)
 void idle(void)
 {
 	double speed = 8;
+	double delta_y = 0;
+	double player_y_before = 0;
 
-	if (onMoveKeyPress_L == true && flag_01 == true) {
-		//player.x += speed;
+	if (onMoveKeyPress_L == true && flag_01 == true) { //左に移動
+
+
 		camera_x += speed;
-		//floor2.Move(speed, 0);
-		//glLoadIdentity();
-		//player2.Move(speed, 0);
+
 		sample->Move(speed, 0);
 
+		for (i = 0; i < OBJECT_LIMIT; i++)
+		{
+			if (sample->center_x < object_block[i][1] && object_block[i][0]!=0) //プレイやーがブロックより←側にいる時，かつ比較するオブジェクトブロックが空白でないとき
+			{
+				if (abs(sample->center_x - double(object_block[i][1]))<48 && abs(sample->center_y-double(object_block[i][2])) < 64) //ブロックとの距離がx<48 y<64であるとき
+				{
+					//printf("左へいこうとしてblock[%d]と衝突しています d=%.2f player(x,y)=%.2f %.2f\n", i, abs(sample->center_x - double(object_block[i][1])), sample->center_x, sample->center_y);
+					flag_03 = true;
+				}
+			}
+		}
+
+		if (flag_03 == true)
+		{
+			//printf("player(x,y)=%.2f %.2f\n",sample->center_x, sample->center_y);
+			camera_x -= speed;
+
+			sample->Move(-speed, 0);
+		}
+		
 		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 		flag_01 = false;
+		flag_03 = false;
 	}
 
-	if (onMoveKeyPress_R == true && flag_01 == true) {
-		//player.x -= speed;
+	if (onMoveKeyPress_R == true && flag_01 == true) { //右に移動
+
 		camera_x -= speed;
-		//floor2.Move(-speed, 0);
-		//glLoadIdentity();
-		//player2.Move(-speed, 0);
+
 		sample->Move(-speed, 0);
+
+		for (i = 0; i < OBJECT_LIMIT; i++)
+		{
+			if (sample->center_x > object_block[i][1] && object_block[i][0] != 0) //プレイやーがブロックより←側にいる時，かつ比較するオブジェクトブロックが空白でないとき
+			{
+				if (abs(sample->center_x - double(object_block[i][1])) < 48 && abs(sample->center_y - double(object_block[i][2])) < 64) //ブロックとの距離がx<48 y<64であるとき
+				{
+					//printf("左へいこうとしてblock[%d]と衝突しています d=%.2f player(x,y)=%.2f %.2f\n", i, abs(sample->center_x - double(object_block[i][1])), sample->center_x, sample->center_y);
+					flag_04 = true;
+				}
+			}
+		}
+
+		if (flag_04 == true)
+		{
+			//printf("player(x,y)=%.2f %.2f\n",sample->center_x, sample->center_y);
+			camera_x += speed;
+
+			sample->Move(speed, 0);
+		}
+
 		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 		flag_01 = false;
+		flag_04 = false;
 	}
 
-	if (player_jump == true && flag_02 == true)
+
+	if (player_jump == true && flag_02 == true) //ジャンプ
 	{
-		//std::cout << "ジャンプ" << std::endl;
-		if (jump_timer < 10)
+
+		printf("jump_timer=%d player(x,y)=%.2f %.2f\n", jump_timer, sample->center_x, sample->center_y);
+		player_y_before = sample->center_y;
+
+
+		switch (flag_07)
+		{
+		case true://ふわふわ落下モード
+		{
+			printf("ジャンプふわふわｑ\n");
+			sample->Move(0, -(15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.0015 * 36);
+		}break;
+
+		case false:
+		{
+			printf("ジャンプ\n"); 
+			sample->Move(0, -(15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 128);
+		}break;
+		}
+
+		if(sample->center_y - player_y_before >0) //★前のフレームのｙ座標よりも落ちていたらふわふわ落下モードに
+		{
+			flag_07 = true;
+		}
+
+		flag_05 = false;
+		flag_06 = false;
+
+		for (i = 0; i < OBJECT_LIMIT; i++)
+		{
+			if (sample->center_y < object_block[i][2] && object_block[i][0] != 0) //プレイやーがブロックより下側にいる時，かつ比較するオブジェクトブロックが空白でないとき
+			{
+				if (abs(sample->center_x - double(object_block[i][1])) < 48 && abs(sample->center_y - double(object_block[i][2])) <= 64) //ブロックとの距離がx<48 y<64であるとき
+				{
+					printf("下へいこうとしてblock[%d]と衝突しています d=%.2f player(x,y)=%.2f %.2f\n", i, abs(sample->center_y - double(object_block[i][2])), sample->center_x, sample->center_y);
+					flag_06 = true;
+					
+					if (height_c > object_block[i][2])
+					{
+						height_c = object_block[i][2];
+						printf("次着地する高さは%d\n",height_c-63);
+					}
+				}
+			}
+		}
+
+		for (i = 0; i < OBJECT_LIMIT; i++)
+		{
+			if (sample->center_y > object_block[i][2] && object_block[i][0] != 0) //プレイやーがブロックより上側にいる時，かつ比較するオブジェクトブロックが空白でないとき
+			{
+				if (abs(sample->center_x - double(object_block[i][1])) < 48 && abs(sample->center_y - double(object_block[i][2])) <= 64) //ブロックとの距離がx<48 y<64であるとき
+				{
+					printf("上へいこうとしてblock[%d]と衝突しています d=%.2f player(x,y)=%.2f %.2f\n", i, abs(sample->center_y - double(object_block[i][2])), sample->center_x, sample->center_y);
+					flag_05 = true;
+					
+				}
+			}
+		}
+		
+		if (flag_05 == true) //天井との衝突を感知したフレームでの処理
 		{
 			//player2.center.y = player2.center.y - (15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 50;//ジャンプのときのプレイヤーの動き
-			sample->Move(0, -(15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 128);
+
+			jump_timer = 11;
 		}
 
-		else if (jump_timer >= 10)
+		if (flag_06 == true) //地面との衝突を感知したフレームでの処理
 		{
-			//player2.center.y = player2.center.y - (15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.0015 * 50;//ジャンプのときのプレイヤーの動き
-			sample->Move(0, -(15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.0015 * 36);
+	//player2.center.y = player2.center.y - (15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 50;//ジャンプのときのプレイヤーの動き
+			sample->center_y = height_c - 64;
+
+			player_jump = false;
+			jump_timer = 0;
+			flag_07 = false;
 		}
 
+		else if (flag_06 == false) //地面との衝突を感知したフレームでの処理
+		{
+			height_c = 8000;
+		}
+
+
+		/*
 		if (sample->center_y > 0) //ブロックの上に着地する場合，その座標とする
 		{
 			sample->Set(sample->center_x, 0);
@@ -1599,19 +1834,63 @@ void idle(void)
 			jump_timer = 0;
 			player_jump = false;
 		}
+		*/
+
+
+	
 		flag_02 = false;
+	
 	}
 	//printf("%.2f,%.2f %d %d \n", player.x, player.y, jump_timer, walk_timer100);
+
+	else if (player_jump == false && flag_02 == true) //★自由落下の制御
+	{
+		flag_06 = false;
+
+		for (i = 0; i < OBJECT_LIMIT; i++)
+		{
+			if (sample->center_y < object_block[i][2] && object_block[i][0] != 0) //プレイやーがブロックより下側にいる時，かつ比較するオブジェクトブロックが空白でないとき
+			{
+				if (abs(sample->center_x - double(object_block[i][1])) < 48 && abs(sample->center_y - double(object_block[i][2])) <= 64) //ブロックとの距離がx<48 y<64であるとき
+				{
+					printf("下へいこうとしてblock[%d]と衝突しています d=%.2f player(x,y)=%.2f %.2f\n", i, abs(sample->center_y - double(object_block[i][2])), sample->center_x, sample->center_y);
+					flag_06 = true;
+
+					if (height_c > object_block[i][2])
+					{
+						height_c = object_block[i][2];
+						printf("次着地する高さは%d\n", height_c - 63);
+					}
+				}
+			}
+		}
+
+		if (flag_06 == false) //地面との衝突を感知したフレームでの処理
+		{
+			height_c = 8000;
+		}
+
+		if (flag_06 == false) { jump_timer = 11; player_jump = true; } //足場がなくなると自由落下（タイマー11で鉛直投げ上げ最高点）
+
+		flag_02 = false;
+	}
+
+
+
+
+
+
+
 	if (time < 0)
 	{
+		printf("%.2f まですすんだ\n", sample->center_x);
 		scene = 6;
 		time = TIME_LIMIT;
 	}
 
 	if (lamp_timer_02 <= 0)
 	{
-		word_hit = false;
-		
+		word_hit = false; //★正解or間違いの演出のエフェクト終了後，語彙スロット未完成状態に
 	}
 
 	glutPostRedisplay();
@@ -1774,11 +2053,11 @@ void keyboard(unsigned char key, int x, int y)
 
 		case 'p': scene = 2; temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544; break; //ポーズ カメラの位置をＧＵＩ用にリセット
 		case 't': scene = 6; temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544; break; //デバッグ用トリガー1 強制ゲームオーバー
-		case 'b': slot[3] = 19; break; //★デバッグ用トリガー2
-		case 'n': slot[0] = 5; slot[1] = 12; slot[2] = 47;  slot[3] = 10; break; //★デバッグ用トリガー3（成功時シミュレーション）
-		case 'm': slot[0] = 5; slot[1] = 12; slot[2] = 47;  slot[3] = 6; break; //★デバッグ用トリガー4（失敗時シミュレーション）
+		//case 'b': slot[3] = 19; break; //★デバッグ用トリガー2
+		//case 'n': slot[0] = 5; slot[1] = 12; slot[2] = 47;  slot[3] = 10; break; //★デバッグ用トリガー3（成功時シミュレーション）
+		//case 'm': slot[0] = 5; slot[1] = 12; slot[2] = 47;  slot[3] = 6; break; //★デバッグ用トリガー4（失敗時シミュレーション）
 
-		case '\040': if (player_jump == false) { player_jump = true; } break;
+		case '\040': if (player_jump == false) { player_jump = true; flag_06 = false; } break;
 		default:
 			break;
 		}
@@ -1922,12 +2201,16 @@ void Init() {
 	player_batsu.LoadImagePNG2(player_batsu.file, player_batsu.tex);
 	player_fukidashi01.LoadImagePNG2(player_fukidashi01.file, player_fukidashi01.tex);
 	player_fukidashi02.LoadImagePNG2(player_fukidashi02.file, player_fukidashi02.tex);
+	bullet.LoadImagePNG2(bullet.file, bullet.tex);
 
 	
-	for (i = 0; i <= 76; i++)
+	for (i = 0; i <= 79; i++)
 	{
+		block_hiragana_UI[i].LoadImagePNG2(block_hiragana_UI[i].file, block_hiragana_UI[i].tex);
 		block_hiragana[i].LoadImagePNG2(block_hiragana[i].file, block_hiragana[i].tex);
 	}
+
+	block_standby(); //★ブロックの配置
 
 	//コピー用
 	//.LoadImagePNG2(.file, .tex);
@@ -2007,6 +2290,19 @@ void timer(int value) {
 		{
 			lamp_timer_02--;
 		}
+
+
+		if (player_jump == true)
+		{
+			jump_timer++;
+			//printf("jump_timer = %d   ",jump_timer);
+			//printf("player_y = %.4f\n",sample->center_y);
+		}
+
+		if (player_jump == false && flag_06 == false) //崖から自由落下状態
+		{
+			printf("自由落下222\n");
+		}
 	}
 
 	if (scene == 6)
@@ -2014,12 +2310,7 @@ void timer(int value) {
 		temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544;
 	}
 
-	if (player_jump == true)
-	{
-		jump_timer++;
-		//printf("jump_timer = %d   ",jump_timer);
-		//printf("player_y = %.4f\n",sample->center_y);
-	}
+	
 
 
 	

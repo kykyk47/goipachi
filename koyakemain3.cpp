@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <gdiplus.h>
 #include <vector>
+#include <random>
 
 
 //松本用
@@ -33,7 +34,8 @@ using namespace Gdiplus;
 
 #define TIME_LIMIT 100
 #define dic_index_4 43226 //4文字辞書の単語数
-#define OBJECT_LIMIT 5000
+#define OBJECT_LIMIT 50000 //ブロックの制限
+#define PATTERN_LIMIT 300 //横に並べるブロック配置パターンの上限
 
 
 GdiplusStartupInput gdiPSI;
@@ -78,6 +80,7 @@ int walk_timer100 = 0;
 int lamp_timer_01 = 0; //★Ｋキー（決定ボタン）を押した後の赤ライトの点灯
 int lamp_timer_02 = 0; //★プレイヤーのリアクションのエフェクト
 int gun_timer = 0; //★銃を構えているイラストの表示
+int bullet_timer = 0; //★弾丸が発射されてからの秒数 一定時間たつと消える（無限に飛び続けるのいやでしょ）
 
 int scene = 0; //◇シーンの追加．0:タイトル 1:ステージ選択 2:ポーズ画面 3:リザルト画面A 4リザルト画面B 5:プレイ画面 6:GAME OVER画面
 int difficulty = 0; //◇難易度：松竹梅（+0~2）文字数（+00～20）はやさ（+000～200）
@@ -98,6 +101,9 @@ int slot[5] = { 0,0,0,0,0 }; //★スロット（のちのち5文字でもでき
 int slot_select = 0; //★どの文字をさしているか
 int score_word = 0; //１つ１つのワードのスコア
 int time = TIME_LIMIT*60;
+
+int stage_structure[PATTERN_LIMIT] = {};
+int set_leftside = 0;
 
 int object_block[OBJECT_LIMIT][3] = { {} }; //★衝突判定に使う，プレイヤーとの距離の条件を満たすためにこの配列にオブジェクトの情報を記載（ブロックの種類,中心座標（ｘとｙ））
 int height_c=0; //★衝突判定に使う，ジャンプした後着地できる位置（高さ）最も高い座標
@@ -123,12 +129,16 @@ bool flag_05 = false; //★衝突判定（上方向）
 bool flag_06 = false; //★衝突判定（下方向）
 
 bool flag_07 = false; //★ジャンプ→落下時ゆっくり降りるかんじにするトリガー
-
+bool flag_08 = false; //★弾丸が存在して動いている状態（当たり判定起動）
 
 int time_1flame; //★デバッグ用，1フレームでどれだけ進んだか，どれだけ時間がたっているか（ms）
 double speed_1flame;
 int time_temp;
 double speed_temp;
+
+std::random_device rnd;
+std::mt19937 mt(rnd()); //なんか乱数のタネを決定するやつ
+std::uniform_int_distribution<> rand100(1,75);
 
 struct Position
 {
@@ -1354,23 +1364,178 @@ void SetNumImage_2(double x, double y, int size_x, int size_y, int num) { //プ�
 	}
 }
 
+int choose_hiragana(void)
+{
+	int a;
+
+	do {
+		a = rand100(mt);
+	} while (rand100(mt)!=49 && rand100(mt)!=50);
+	
+	return a;
+}
+
+int choose_pattern(void)
+{
+	int a;
+
+	do {
+		a = rand100(mt);
+	} while (rand100(mt) >= 5);
+
+	return a;
+}
+
+
+void set_block_info(int type, int x_grid, int y_grid, int leftside) //★leftsideはそのまま使う 
+{
+	object_block[j][0] = type; object_block[j][1] = (-64)*(leftside + x_grid); object_block[j][2] = (-64)*(y_grid); 
+}
+
 void block_standby(void)
 {
-	object_block[0][0] = 49; object_block[0][1] = -64; object_block[0][2] = -320;
-	object_block[1][0] = 1; object_block[1][1] = -192; object_block[1][2] = -192;
-	object_block[2][0] = 2; object_block[2][1] = -128; object_block[2][2] = -64;
-	object_block[3][0] = 3; object_block[3][1] = -192; object_block[3][2] = -128;
-	object_block[4][0] = 4; object_block[4][1] = -128; object_block[4][2] = 64;
-	object_block[5][0] = 5; object_block[5][1] = -64; object_block[5][2] = 64;
-	object_block[6][0] = 6; object_block[6][1] = 0; object_block[6][2] = 64;
-	object_block[7][0] = 7; object_block[7][1] = 64; object_block[7][2] = 64;
-	object_block[8][0] = 8; object_block[8][1] = 128; object_block[8][2] = 64;
-	object_block[9][0] = 9; object_block[9][1] = 192; object_block[9][2] = 64;
-	object_block[10][0] = 10; object_block[10][1] = 256; object_block[10][2] = 64;
-	object_block[11][0] = 11; object_block[11][1] = 320; object_block[11][2] = 64;
-	object_block[12][0] = 12; object_block[12][1] = 384; object_block[12][2] = 64;
-	object_block[13][0] = 13; object_block[13][1] = 448; object_block[13][2] = 64;
-	object_block[14][0] = 14; object_block[14][1] = 320; object_block[14][2] = 0;
+
+	j = 0; //オブジェクトブロックを配置するための添え字，1個設置したらもちろん1増える．添え字（重要
+
+	object_block[0][0] = 49;
+	object_block[0][1] = 0;
+	object_block[0][2] = 64; //暫定的な最初の地面
+
+
+	object_block[1][0] = 49;
+	object_block[1][1] = 0;
+	object_block[1][2] = 64; //暫定的な最初の地面
+	set_leftside = 2;
+	j = 2;
+
+	for (i = 0; i <= PATTERN_LIMIT; i++) //★structureの配列をもとに左から配置していく
+	{
+		switch (stage_structure[i])
+		{
+		case 1:
+		{
+			set_block_info(49, 0, -1, set_leftside); j++;
+			set_block_info(49, 1, -1, set_leftside); j++;
+			set_block_info(49, 2, -1, set_leftside); j++;
+			set_block_info(49, 3, -1, set_leftside); j++;
+			set_block_info(49, 4, -1, set_leftside); j++;
+			set_block_info(49, 1, 0, set_leftside); j++;
+			set_block_info(49, 2, 0, set_leftside); j++;
+			set_block_info(49, 3, 0, set_leftside); j++;
+			set_block_info(49, 2, 1, set_leftside); j++;
+			set_block_info(choose_hiragana(), 2, 4, set_leftside); j++;
+			
+			set_leftside += 5;
+		}break;
+
+		case 2:
+		{
+			set_block_info(49, 0, -1, set_leftside); j++;
+			set_block_info(49, 1, -1, set_leftside); j++;
+			set_block_info(49, 2, -1, set_leftside); j++;
+			set_block_info(49, 3, -1, set_leftside); j++;
+			set_block_info(49, 4, -1, set_leftside); j++;
+			set_block_info(49, 5, -1, set_leftside); j++;
+			set_block_info(49, 6, -1, set_leftside); j++;
+			set_block_info(49, 1, 0, set_leftside); j++;
+			set_block_info(49, 5, 0, set_leftside); j++;
+			set_block_info(49, 1, 1, set_leftside); j++;
+			set_block_info(49, 5, 1, set_leftside); j++;
+			set_block_info(49, 1, 2, set_leftside); j++;
+			set_block_info(49, 5, 2, set_leftside); j++;
+			//set_block_info(49, 1, 3, set_leftside); j++;
+			//set_block_info(49, 5, 3, set_leftside); j++;
+			set_block_info(choose_hiragana(), 2, 0, set_leftside); j++;
+			set_block_info(choose_hiragana(), 3, 1, set_leftside); j++;
+			set_block_info(choose_hiragana(), 4, 0, set_leftside); j++;
+
+			set_leftside += 7;
+		}break;
+
+		case 3:
+		{
+			set_block_info(49, 0, -1, set_leftside); j++;
+			set_block_info(49, 1, -1, set_leftside); j++;
+			set_block_info(49, 2, -1, set_leftside); j++;
+			set_block_info(49, 3, -1, set_leftside); j++;
+			set_block_info(49, 4, -1, set_leftside); j++;
+			set_block_info(49, 1, 0, set_leftside); j++;
+			set_block_info(49, 2, 0, set_leftside); j++;
+			set_block_info(49, 3, 0, set_leftside); j++;
+			set_block_info(choose_hiragana(), 2, 1, set_leftside); j++;
+
+			set_leftside += 5;
+		}break;
+
+		case 4:
+		{
+			set_block_info(49, 0, -1, set_leftside); j++;
+			set_block_info(49, 1, -1, set_leftside); j++;
+			set_block_info(49, 2, -1, set_leftside); j++;
+			set_block_info(49, 3, -1, set_leftside); j++;
+			set_block_info(49, 4, -1, set_leftside); j++;
+			set_block_info(49, 5, -1, set_leftside); j++;
+			set_block_info(49, 6, -1, set_leftside); j++;
+			set_block_info(49, 7, -1, set_leftside); j++;
+			set_block_info(49, 8, -1, set_leftside); j++;
+			set_block_info(49, 9, -1, set_leftside); j++;
+			set_block_info(49, 10, -1, set_leftside); j++;
+			set_block_info(choose_hiragana(), 4, 0, set_leftside); j++;
+			set_block_info(choose_hiragana(), 4, 2, set_leftside); j++;
+			set_block_info(choose_hiragana(), 4, 4, set_leftside); j++;
+			set_block_info(choose_hiragana(), 4, 6, set_leftside); j++;
+			set_block_info(choose_hiragana(), 6, 0, set_leftside); j++;
+			set_block_info(choose_hiragana(), 6, 2, set_leftside); j++;
+			set_block_info(choose_hiragana(), 6, 4, set_leftside); j++;
+			set_block_info(choose_hiragana(), 6, 6, set_leftside); j++;
+
+			set_leftside += 11;
+		}break;
+
+		case 5:
+		{
+			set_block_info(49, 0, -1, set_leftside); j++;
+			set_block_info(49, 1, -1, set_leftside); j++;
+			set_block_info(49, 2, -1, set_leftside); j++;
+			set_block_info(49, 3, -1, set_leftside); j++;
+			set_block_info(49, 4, -1, set_leftside); j++;
+			set_block_info(49, 5, -1, set_leftside); j++;
+			set_block_info(49, 6, -1, set_leftside); j++;
+			set_block_info(49, 7, -1, set_leftside); j++;
+			set_block_info(49, 8, -1, set_leftside); j++;
+			set_block_info(49, 9, -1, set_leftside); j++;
+			set_block_info(49, 10, -1, set_leftside); j++;
+			set_block_info(49, 1, 0, set_leftside); j++;
+			set_block_info(49, 1, 1, set_leftside); j++;
+			set_block_info(49, 2, 1, set_leftside); j++;
+			set_block_info(49, 3, 1, set_leftside); j++;
+			set_block_info(49, 4, 1, set_leftside); j++;
+			set_block_info(49, 5, 1, set_leftside); j++;
+			set_block_info(49, 6, 1, set_leftside); j++;
+			set_block_info(49, 7, 1, set_leftside); j++;
+			set_block_info(49, 9, 1, set_leftside); j++;
+			set_block_info(49, 2, 2, set_leftside); j++;
+			set_block_info(49, 9, 2, set_leftside); j++;
+			set_block_info(49, 2, 3, set_leftside); j++;
+			set_block_info(49, 4, 3, set_leftside); j++;
+			set_block_info(49, 5, 3, set_leftside); j++;
+			set_block_info(49, 6, 3, set_leftside); j++;
+			set_block_info(49, 7, 3, set_leftside); j++;
+			set_block_info(49, 8, 3, set_leftside); j++;
+			set_block_info(49, 9, 3, set_leftside); j++;
+			set_block_info(choose_hiragana(), 6, 4, set_leftside); j++;
+			set_block_info(choose_hiragana(), 7, 4, set_leftside); j++;
+			set_block_info(choose_hiragana(), 8, 4, set_leftside); j++;
+			set_block_info(choose_hiragana(), 7, 5, set_leftside); j++;
+
+
+			set_leftside += 11;
+		}break;
+		default:
+		{
+		}break;
+		}
+	}
 }
 
 void display(void)
@@ -1674,6 +1839,11 @@ void display(void)
 			}break;
 			}
 		}
+
+		if (flag_08 == true)
+		{
+			bullet.SetImage(bullet.center_x, bullet.center_y);
+		}
 	
 
 	}break;
@@ -1697,69 +1867,9 @@ void idle(void)
 	double speed = 8;
 	double delta_y = 0;
 	double player_y_before = 0;
-
-	if (onMoveKeyPress_L == true && flag_01 == true) { //左に移動
-
-
-		camera_x += speed;
-
-		sample->Move(speed, 0);
-
-		for (i = 0; i < OBJECT_LIMIT; i++)
-		{
-			if (sample->center_x < object_block[i][1] && object_block[i][0]!=0) //プレイやーがブロックより←側にいる時，かつ比較するオブジェクトブロックが空白でないとき
-			{
-				if (abs(sample->center_x - double(object_block[i][1]))<48 && abs(sample->center_y-double(object_block[i][2])) < 64) //ブロックとの距離がx<48 y<64であるとき
-				{
-					//printf("左へいこうとしてblock[%d]と衝突しています d=%.2f player(x,y)=%.2f %.2f\n", i, abs(sample->center_x - double(object_block[i][1])), sample->center_x, sample->center_y);
-					flag_03 = true;
-				}
-			}
-		}
-
-		if (flag_03 == true)
-		{
-			//printf("player(x,y)=%.2f %.2f\n",sample->center_x, sample->center_y);
-			camera_x -= speed;
-
-			sample->Move(-speed, 0);
-		}
-		
-		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
-		flag_01 = false;
-		flag_03 = false;
-	}
-
-	if (onMoveKeyPress_R == true && flag_01 == true) { //右に移動
-
-		camera_x -= speed;
-
-		sample->Move(-speed, 0);
-
-		for (i = 0; i < OBJECT_LIMIT; i++)
-		{
-			if (sample->center_x > object_block[i][1] && object_block[i][0] != 0) //プレイやーがブロックより←側にいる時，かつ比較するオブジェクトブロックが空白でないとき
-			{
-				if (abs(sample->center_x - double(object_block[i][1])) < 48 && abs(sample->center_y - double(object_block[i][2])) < 64) //ブロックとの距離がx<48 y<64であるとき
-				{
-					//printf("左へいこうとしてblock[%d]と衝突しています d=%.2f player(x,y)=%.2f %.2f\n", i, abs(sample->center_x - double(object_block[i][1])), sample->center_x, sample->center_y);
-					flag_04 = true;
-				}
-			}
-		}
-
-		if (flag_04 == true)
-		{
-			//printf("player(x,y)=%.2f %.2f\n",sample->center_x, sample->center_y);
-			camera_x += speed;
-
-			sample->Move(speed, 0);
-		}
-
-		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
-		flag_01 = false;
-		flag_04 = false;
-	}
+	int gap_into_wall = 0; //横に1ブロック穴があるときの潜入できるトリガー
+	int migishita = 0;
+	
 
 
 	if (player_jump == true && flag_02 == true) //ジャンプ
@@ -1774,13 +1884,13 @@ void idle(void)
 		case true://ふわふわ落下モード
 		{
 			printf("ジャンプふわふわｑ\n");
-			sample->Move(0, -(15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.0015 * 36);
+			sample->Move(0, -(16.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.0015 * 36);
 		}break;
 
 		case false:
 		{
 			printf("ジャンプ\n"); 
-			sample->Move(0, -(15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 128);
+			sample->Move(0, -(16.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 128);
 		}break;
 		}
 
@@ -1828,6 +1938,8 @@ void idle(void)
 			//player2.center.y = player2.center.y - (15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 50;//ジャンプのときのプレイヤーの動き
 
 			jump_timer = 11;
+			sample->center_y -= ((int)(sample->center_y)
+				)%64;
 		}
 
 		if (flag_06 == true) //地面との衝突を感知したフレームでの処理
@@ -1895,7 +2007,171 @@ void idle(void)
 		flag_02 = false;
 	}
 
+	if (onMoveKeyPress_L == true && flag_01 == true) { //左に移動
 
+
+		camera_x += speed;
+
+		sample->Move(speed, 0);
+
+		for (i = 0; i < OBJECT_LIMIT; i++)
+		{
+			if (sample->center_x < object_block[i][1] && object_block[i][0]!=0) //プレイやーがブロックより←側にいる時，かつ比較するオブジェクトブロックが空白でないとき
+			{
+				if (abs(sample->center_x - double(object_block[i][1]))<48 && abs(sample->center_y-double(object_block[i][2])) < 60
+					) //ブロックとの距離がx<48 y<64であるとき
+				{
+					//printf("左へいこうとしてblock[%d]と衝突しています d=%.2f player(x,y)=%.2f %.2f\n", i, abs(sample->center_x - double(object_block[i][1])), sample->center_x, sample->center_y);
+					flag_03 = true;
+				}
+			}
+		}
+
+		if (flag_03 == true)
+		{
+			//printf("player(x,y)=%.2f %.2f\n",sample->center_x, sample->center_y);
+			camera_x -= speed;
+
+			sample->Move(-speed, 0);
+		}
+		/*
+		if (flag_03 == false && player_jump == true) //★すきま1ブロックに入り込む処理
+		{
+			printf("@@@@\n");
+			if (sample->center_x < object_block[i][1] && object_block[i][0] != 0) //プレイやーがブロックより←かつ上側にいる時，かつ比較するオブジェクトブロックが空白でないとき
+			{
+				if (abs(sample->center_x - double(object_block[i][1])) < 56 && abs(sample->center_y - double(object_block[i][2]-64)) < 80) //1個上のブロックとの距離がx<48 y<64であるとき
+				{
+					
+					printf("@@@@\n");
+					//printf("→へいこうとしてblock[%d]と衝突しています d=%.2f player(x,y)=%.2f %.2f\n", i, abs(sample->center_x - double(object_block[i][1])), sample->center_x, sample->center_y);
+					gap_into_wall++;
+				}
+
+				if (abs(sample->center_x - double(object_block[i][1])) < 56 && abs(sample->center_y - double(object_block[i][2] + 64)) < 80) //1個下のブロックとの距離がx<48 y<64であるとき
+				{
+					printf("@@@@@\n");
+					//printf("→へいこうとしてblock[%d]と衝突しています d=%.2f player(x,y)=%.2f %.2f\n", i, abs(sample->center_x - double(object_block[i][1])), sample->center_x, sample->center_y);
+					gap_into_wall++;
+				}
+			}
+
+			if (gap_into_wall == 2)
+			{
+				sample->Move(-16, 0);
+				printf("隙間に右向きに入った！\n");
+			}
+		}
+		*/
+		
+		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
+		flag_01 = false;
+		flag_03 = false;
+		gap_into_wall = 0;
+	}
+
+	if (onMoveKeyPress_R == true && flag_01 == true) { //右に移動
+
+		camera_x -= speed;
+
+		sample->Move(-speed, 0);
+
+		for (i = 0; i < OBJECT_LIMIT; i++)
+		{
+			if (sample->center_x > object_block[i][1] && object_block[i][0] != 0) //プレイやーがブロックより→側にいる時，かつ比較するオブジェクトブロックが空白でないとき
+			{
+				if (abs(sample->center_x - double(object_block[i][1])) < 48 && abs(sample->center_y - double(object_block[i][2])) < 60) //ブロックとの距離がx<48 y<64であるとき
+				{
+					//printf("→へいこうとしてblock[%d]と衝突しています d=%.2f player(x,y)=%.2f %.2f\n", i, abs(sample->center_x - double(object_block[i][1])), sample->center_x, sample->center_y);
+					flag_04 = true;
+				}
+			}
+		}
+
+		if (flag_04 == true)
+		{
+			//printf("player(x,y)=%.2f %.2f\n",sample->center_x, sample->center_y);
+			camera_x += speed;
+
+			sample->Move(speed, 0);
+		}
+		/*
+		if (flag_04 == false && player_jump == true && jump_timer >12) //★すきま1ブロックに入り込む処理
+		{
+			printf("@@@@@[[[[\n");
+
+			for (i = 0; i < OBJECT_LIMIT; i++)
+			{
+				gap_into_wall = 0;
+
+				if (sample->center_x > object_block[i][1] && object_block[i][0] != 0 && player_jump == true) //プレイやーがブロックより←かつ上側にいる時，かつ比較するオブジェクトブロックが空白でないとき
+				{
+
+					if (abs(sample->center_x - double(object_block[i][1])) < 56 && abs(sample->center_y - double(object_block[i][2] - 64)) < 64) //1個上のブロックとの距離がx<48 y<64であるとき
+					{
+						//printf("左へいこうとしてblock[%d]と衝突しています d=%.2f player(x,y)=%.2f %.2f\n", i, abs(sample->center_x - double(object_block[i][1])), sample->center_x, sample->center_y);
+						gap_into_wall++;
+					}
+
+					if (abs(sample->center_x - double(object_block[i][1])) < 56 && abs(sample->center_y - double(object_block[i][2] + 64)) < 64) //1個下のブロックとの距離がx<48 y<64であるとき
+					{
+						//printf("左へいこうとしてblock[%d]と衝突しています d=%.2f player(x,y)=%.2f %.2f\n", i, abs(sample->center_x - double(object_block[i][1])), sample->center_x, sample->center_y);
+						gap_into_wall++;
+					}
+
+					if (gap_into_wall == 2)
+					{
+						printf("sukima !!!!!!\n");
+						sample->Move(-16, 0);
+						sample->center_y = object_block[i][2];
+						player_jump = false;
+						
+					}
+
+				}
+
+			}
+
+		}
+		*/
+
+
+		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
+		flag_01 = false;
+		flag_04 = false;
+		gap_into_wall = 0;
+	}
+
+	if (flag_08 == true) //弾丸と語彙ブロックの衝突判定
+	{
+		switch (player.direction)
+		{
+		case 0:
+		{
+			bullet.center_x += 16;
+		}break;
+
+		case 1:
+		{
+			bullet.center_x -= 16;
+		}break;
+		}
+
+		for (i = 0; i < OBJECT_LIMIT; i++)
+		{
+			if (flag_08 == true && object_block[i][0] != 0 && abs(bullet.center_x - double(object_block[i][1])) < 32 && abs(bullet.center_y - double(object_block[i][2])) < 32) //ブロックとの距離がx<32 y<64で32あるとき（ブロックＩＤ＝０すなわち空気の時はスルー）
+			{
+				//printf("弾丸がブロックにＨＩＴ！\n", i, abs(sample->center_y - double(object_block[i][2])), sample->center_x, sample->center_y);
+				flag_08 = false;
+				if (slot[slot_select] == 0 && object_block[i][0] != 49)//すでにスロットにひらがなが入っている場合は衝突してもブロック消えないしひらがなも保持されない,あと木はスロットには入れられない（当然
+				{
+					slot[slot_select] = object_block[i][0]; //弾丸が衝突したブロックをスロットに格納
+					object_block[i][0] = 0; //★弾丸とブロックが衝突したらお互いの情報を０にする
+				}
+			}
+			
+		}
+	}
 
 
 
@@ -2069,12 +2345,12 @@ void keyboard(unsigned char key, int x, int y)
 		case 'i': if (lamp_timer_02 == 0) { slot[slot_select] = 0;  } break; //選択中のスロットの場所をからっぽにする
 
 		case 'k': if (lamp_timer_02 == 0) { check_goi(slot); lamp_timer_02 = 100;  lamp_timer_01 = 50; slot[0] = 0; slot[1] = 0; slot[2] = 0; slot[3] = 0; }  break;//単語チェック
-		case 'v': gun_timer = 60; break;
+		case 'v': if (flag_08 == false) { bullet_timer = 0; gun_timer = 60; flag_08 = true; bullet.center_x = sample->center_x; bullet.center_y = sample->center_y; } break;
 
 		case 'p': scene = 2; temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544; break; //ポーズ カメラの位置をＧＵＩ用にリセット
 		case 't': scene = 6; temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544; break; //デバッグ用トリガー1 強制ゲームオーバー
 		//case 'b': slot[3] = 19; break; //★デバッグ用トリガー2
-		//case 'n': slot[0] = 5; slot[1] = 12; slot[2] = 47;  slot[3] = 10; break; //★デバッグ用トリガー3（成功時シミュレーション）
+		case 'n': slot[0] = 5; slot[1] = 12; slot[2] = 47;  slot[3] = 10; break; //★デバッグ用トリガー3（成功時シミュレーション）
 		//case 'm': slot[0] = 5; slot[1] = 12; slot[2] = 47;  slot[3] = 6; break; //★デバッグ用トリガー4（失敗時シミュレーション）
 
 		case '\040': if (player_jump == false) { player_jump = true; flag_06 = false; } break;
@@ -2230,6 +2506,12 @@ void Init() {
 		block_hiragana[i].LoadImagePNG2(block_hiragana[i].file, block_hiragana[i].tex);
 	}
 
+	//ステージの構造
+	for (i = 0; i < PATTERN_LIMIT; i++)
+	{
+		stage_structure[i] = choose_pattern();
+	}
+
 	block_standby(); //★ブロックの配置
 
 	//コピー用
@@ -2260,6 +2542,7 @@ void Init() {
 	player.direction = 1;
 
 	scene = 0;
+
 
 	if ((fopen_s(&fp, "score.dat", "r")) != 0) //スコアファイルを読み込む
 	{
@@ -2294,6 +2577,8 @@ void Init() {
 		i++;
 	}
 
+	
+
 }
 
 void timer(int value) {
@@ -2321,6 +2606,16 @@ void timer(int value) {
 		if (gun_timer > 0) //キャラクターのリアクションの時間
 		{
 			gun_timer--;
+		}
+
+		if (flag_08 == true) //キャラクターのリアクションの時間
+		{
+			bullet_timer++;
+		}
+
+		if (bullet_timer > 30)
+		{
+			flag_08 = false;
 		}
 
 

@@ -903,8 +903,12 @@ void game_reset(void)
 	score_leave_hiragana = 0;
 	max_most_hiragana = 0;
 	score_most_hiragana = 0;
-	time = TIME_LIMIT * 60
-		;
+	score_tango = 0;
+	time = TIME_LIMIT * 60;
+	slot[0] = 0;
+	slot[1] = 0;
+	slot[2] = 0;
+	slot[3] = 0;
 }
 
 
@@ -936,7 +940,7 @@ void check_goi(int moji[])
 	}
 	if (word_hit == false)
 	{
-		time -= 3000;
+		time -= 30*60;
 		//printf("辞書と一致せず\n");
 	}
 }
@@ -1985,7 +1989,7 @@ void display(void)
 		SetNumImage(-244, -244, 320, 40, score_get_hiragana);
 		SetNumImage(-244, -200, 320, 40, score_leave_hiragana);
 
-		SetNumImage(-244, -104, 320, 40, score_cleared);
+		SetNumImage(-244, -104, 320, 40, score_tango);
 
 	}break;
 
@@ -2792,7 +2796,7 @@ void keyboard(unsigned char key, int x, int y)
 
 		case 'j': if (slot_select > 0 && lamp_timer_02 == 0) { slot_select--; } break; //スロット移動
 		case 'l': if (slot_select < 3 && lamp_timer_02 == 0) { slot_select++; } break;
-		case 'i': if (lamp_timer_02 == 0) { if (slot[slot_select] != 0) { score_leave_hiragana; } slot[slot_select] = 0; }  break; //選択中のスロットの場所をからっぽにする
+		case 'i': if (lamp_timer_02 == 0) { if (slot[slot_select] != 0) { score_leave_hiragana++; } slot[slot_select] = 0; }  break; //選択中のスロットの場所をからっぽにする
 
 		case 'k': if (lamp_timer_02 == 0 && slot[0] != 0 && slot[1] != 0 && slot[2] != 0 && slot[3] != 0) { check_goi(slot); lamp_timer_02 = 100;  lamp_timer_01 = 50; slot[0] = 0; slot[1] = 0; slot[2] = 0; slot[3] = 0; }  break;//単語チェック
 		case 'v': if (flag_08 == false) { bullet_direction = player.direction; bullet_timer = 0; gun_timer = 60; flag_08 = true; bullet.center_x = sample->center_x; bullet.center_y = sample->center_y; } break;
@@ -2812,7 +2816,7 @@ void keyboard(unsigned char key, int x, int y)
 	case 6: //ゲームオーバー画面
 	{
 		switch (key) {
-		case 'l': scene = 3; game_reset();
+		case 'l': scene = 3; 
 			lamp_timer_01 = 0; lamp_timer_02 = 0;  break; //リザルト画面へ
 		case '\033':  /* '\033' は ESC の ASCII コード */
 			fclose(fp); fclose(fp_dic_4);
@@ -2833,7 +2837,7 @@ void keyboardUp(unsigned char key, int x, int y)
 }
 
 void resize(int w, int h) {
-
+	//1280 //720
 	//std::cout << camera_x << std::endl;
 	//std::cout << camera_y << std::endl;
 	//printf("%d ",w);
@@ -2847,7 +2851,16 @@ void resize(int w, int h) {
 	//printf("resize\n");
 
 	/* ウィンドウ全体をビューポートにする */
-	glViewport(0, 0, w, h);
+	if ((double)h/(double)w <= (double)HEIGHT / (double)WIDTH) //規定のあすひより横長の場合
+	{
+		glViewport((w-(double)h/0.5625)/2, 0, (double)h / 0.5625, h);
+	}
+
+	else //規定のあすひより縦長の場合
+	{
+		glViewport(0, (h-(double)w * 0.5625)/2 , w, (double)w * 0.5625);
+		//glViewport(0, 0, w, h);
+	}
 	/* 変換行列の初期化 */
 	//glLoadIdentity();
 	/* スクリーン上の表示領域をビューポートの大きさに比例させる */

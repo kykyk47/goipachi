@@ -857,7 +857,7 @@ GameObject(0, 0, 64, 64, L"./pic/block_hiragana_71.png"), //ぺ
 GameObject(0, 0, 64, 64, L"./pic/block_hiragana_72.png"),//ぽ
 GameObject(0, 0, 64, 64, L"./pic/ground.png"), //地面 ID:76
 GameObject(0, 0, 64, 64, L"./pic/block_odai.png"), //おだいばこ
-GameObject(0, 0, 64, 64, L"./pic/block_undifined.png"), //未使用（お題箱とかに使う？
+GameObject(0, 0, 64, 64, L"./pic/block_odai_off.png"), //お題箱オフ
 GameObject(0, 0, 64, 64, L"./pic/block_undifined.png") //未使用（お題箱とかに使う？
 };
 
@@ -896,20 +896,7 @@ void end() {
 	GdiplusShutdown(gdiPT);
 }
 
-void game_reset(void)
-{
-	score = 0;
-	score_get_hiragana = 0;
-	score_leave_hiragana = 0;
-	max_most_hiragana = 0;
-	score_most_hiragana = 0;
-	score_tango = 0;
-	time = TIME_LIMIT * 60;
-	slot[0] = 0;
-	slot[1] = 0;
-	slot[2] = 0;
-	slot[3] = 0;
-}
+
 
 
 void check_goi(int moji[])
@@ -1853,6 +1840,37 @@ void block_standby(void)
 	}
 }
 
+void game_reset(void)
+{
+	score = 0;
+	score_get_hiragana = 0;
+	score_leave_hiragana = 0;
+	max_most_hiragana = 0;
+	score_most_hiragana = 0;
+	score_tango = 0;
+	time = TIME_LIMIT * 60;
+	slot[0] = 0;
+	slot[1] = 0;
+	slot[2] = 0;
+	slot[3] = 0;
+
+	//ステージの構造を再構成
+
+	for (i = 0; i < OBJECT_LIMIT; i++) //ブロックの情報をリセット
+	{
+		object_block[i][0] = 0;
+		object_block[i][1] = 0;
+		object_block[i][2] = 0;
+	}
+
+	for (i = 0; i < PATTERN_LIMIT; i++)
+	{
+		stage_structure[i] = choose_pattern();
+	}
+
+	block_standby(); //★ブロックの配置（再構成）
+}
+
 void display(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -2124,9 +2142,23 @@ void display(void)
 
 		for (i = 0; i < OBJECT_LIMIT; i++) //★オブジェクトとなるブロックここで全部描画
 		{
-			if (object_block[i][0] != 0)
+			if (object_block[i][0] != 0 && object_block[i][0] != 77)
 			{
 				block_hiragana[object_block[i][0]].SetImage(double(object_block[i][1]), double(object_block[i][2]));
+			}
+
+			else if (object_block[i][0] == 77) //★お題箱描画
+			{
+				if (slot[0] == 0 && slot[1] == 0 && slot[2] == 0 && slot[3] == 0)
+				{
+					block_hiragana[77].SetImage(double(object_block[i][1]), double(object_block[i][2]));
+				}
+
+				else //スロットが空っぽじゃなかったらお題箱は起動しない
+				{
+					block_hiragana[78].SetImage(double(object_block[i][1]), double(object_block[i][2]));
+				}
+
 			}
 		}
 
@@ -2517,15 +2549,14 @@ void idle(void)
 			{
 				//printf("弾丸がブロックにＨＩＴ！\n", i, abs(sample->center_y - double(object_block[i][2])), sample->center_x, sample->center_y);
 				flag_08 = false;
-				if (slot[slot_select] == 0 && object_block[i][0] != 49 && object_block[i][0] != 76 && object_block[i][0]
-					!= 77)//すでにスロットにひらがなが入っている場合は衝突してもブロック消えないしひらがなも保持されない,あと木はスロットには入れられない（当然
+				if (slot[slot_select] == 0 && object_block[i][0] != 49 && object_block[i][0] != 76 && object_block[i][0]!= 77 && object_block[i][0] != 78 && object_block[i][0] != 79)//すでにスロットにひらがなが入っている場合は衝突してもブロック消えないしひらがなも保持されない,あと木はスロットには入れられない（当然
 				{
 					slot[slot_select] = object_block[i][0]; //弾丸が衝突したブロックをスロットに格納
 					object_block[i][0] = 0; //★弾丸とブロックが衝突したらお互いの情報を０にする
 					score_get_hiragana++;
 				}
 
-				else if (object_block[i][0] == 77) //★お題箱にヒットしたとき
+				else if (object_block[i][0] == 77 && slot[0]==0 && slot[1] == 0 && slot[2] == 0 && slot[3] == 0) //★お題箱にヒットしたとき
 				{
 					odai = choose_odai();
 					slot[0] = odai_hiragana[odai][0];
@@ -2766,7 +2797,7 @@ void keyboard(unsigned char key, int x, int y)
 	{
 		switch (key) {
 		case 'l': scene = 4; break; //リザルト画面切り替え
-		case 'o': camera_x = 640; camera_y = -544; sample->center_x = 0; sample->center_y = 0; scene = 5;  game_reset(); break;//リトライ
+		case 'o': camera_x = 640; camera_y = -544; sample->center_x = 0; sample->center_y = 0; scene = 5; game_reset(); break;//リトライ
 		case 'p': camera_x = 640; camera_y = -544; sample->center_x = 0; sample->center_y = 0; scene = 1; game_reset(); break;//メニューに戻る
 		case '\033': fclose(fp); fclose(fp_dic_4); /* '\033' は ESC の ASCII コード */
 			exit(0); break;
@@ -3192,7 +3223,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.0.0.0");
+	glutCreateWindow("goipachi ver.1.0.2");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

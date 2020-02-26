@@ -79,6 +79,7 @@ bool onMoveKeyPress_R = false;
 bool player_jump = false;
 bool player_walk = false;
 int jump_timer = 0;  //キャラクターがジャンプしてからの時間を計測
+#define JUMP_HIGHEST 11 //キャラクターがジャンプしてから最高点に達した瞬間のjump_timer
 int walk_timer = 0;
 int walk_timer100 = 0;
 int lamp_timer_01 = 0; //★Ｋキー（決定ボタン）を押した後の赤ライトの点灯
@@ -181,6 +182,7 @@ std::random_device rnd;
 std::mt19937 mt(rnd()); //なんか乱数のタネを決定するやつ
 std::uniform_int_distribution<> rand100(1, 100);
 std::uniform_int_distribution<> rand1000(1, 1000);
+std::uniform_int_distribution<> rand_dic_4(1, dic_index_4); //4文字辞書のステージで，ブロックを配置するときに使う
 
 struct Position
 {
@@ -1422,21 +1424,12 @@ void SetNumImage_2(double x, double y, int size_x, int size_y, int num) { //プ�
 int choose_hiragana(void)
 {
 	int a;
-	int i = 46;
 
-	while(1) {
-		a = rand1000(mt);
+	do {
+		a = rand100(mt);
+	} while (a == 49 || a >=76);
 
-		for (i = 1; i <= 75	; i++)
-		{
-			if (i != 49)
-			{
-				if (a >= choose_hiragana_weight_add[i] && a <= choose_hiragana_weight_add[i + 1] - 1) { return i; }
-			}
-		}
-	}
-
-	return i;
+	return a;
 }
 
 int choose_pattern(void)
@@ -1445,7 +1438,7 @@ int choose_pattern(void)
 
 	do {
 		a = rand100(mt);
-	} while (a >= 9);
+	} while (a >= 4);
 
 	return a;
 }
@@ -1473,6 +1466,8 @@ void block_standby(void)
 
 	j = 0; //オブジェクトブロックを配置するための添え字，1個設置したらもちろん1増える．添え字（重要
 
+	int Q[12] = {}; //地形パターンを生成する際，同じ辞書の単語に含まれるひらがなを所定の位置に配置するため，その単語の番号を乱数で取得する
+
 
 	set_block_info(76, 0, -1, 0); j++;
 	set_block_info(76, -1, -1, 0); j++;
@@ -1498,9 +1493,87 @@ void block_standby(void)
 	set_block_info(49, -1, 8, 0); j++;
 
 
-	set_leftside = 0;
 
 
+	for (k = 0; k <= 39; k++) //床の配置
+	{
+		set_block_info(76, k, -1, 0); j++;
+	}
+
+	set_block_info(11, 5, 0, 0); j++;
+	set_block_info(2, 6, 0, 0); j++;
+	set_block_info(14, 7, 0, 0); j++;
+	set_block_info(2, 8, 0, 0); j++;
+	set_block_info(49, 11, 0, 0); j++;
+	set_block_info(49, 12, 0, 0); j++;
+	set_block_info(49, 13, 0, 0); j++;
+	set_block_info(49, 14, 0, 0); j++;
+	set_block_info(49, 15, 0, 0); j++;
+	set_block_info(49, 16, 0, 0); j++;
+	set_block_info(49, 17, 0, 0); j++;
+	set_block_info(49, 18, 0, 0); j++;
+	set_block_info(5, 13, 1, 0); j++;
+	set_block_info(10, 14, 1, 0); j++;
+	set_block_info(21, 15, 1, 0); j++;
+	set_block_info(2, 16, 1, 0); j++;
+	set_block_info(14, 23, 0, 0); j++;
+	set_block_info(7, 24, 0, 0); j++;
+	set_block_info(44, 25, 0, 0); j++;
+	set_block_info(9, 26, 0, 0); j++;
+	set_block_info(5, 23, 3, 0); j++;
+	set_block_info(5, 24, 3, 0); j++;
+	set_block_info(59, 25, 3, 0); j++;
+	set_block_info(7, 26, 3, 0); j++;
+	set_block_info(38, 23, 6, 0); j++;
+	set_block_info(10, 24, 6, 0); j++;
+	set_block_info(63, 25, 6, 0); j++;
+	set_block_info(21, 26, 6, 0); j++;
+	set_block_info(49, 20, 2, 0); j++;
+	set_block_info(49, 21, 2, 0); j++;
+	set_block_info(49, 22, 2, 0); j++;
+	set_block_info(49, 23, 2, 0); j++;
+	set_block_info(49, 24, 2, 0); j++;
+	set_block_info(49, 25, 2, 0); j++;
+	set_block_info(49, 26, 2, 0); j++;
+	set_block_info(49, 27, 2, 0); j++;
+	set_block_info(49, 22, 5, 0); j++;
+	set_block_info(49, 23, 5, 0); j++;
+	set_block_info(49, 24, 5, 0); j++;
+	set_block_info(49, 25, 5, 0); j++;
+	set_block_info(49, 26, 5, 0); j++;
+	set_block_info(49, 27, 5, 0); j++;
+	set_block_info(49, 28, 5, 0); j++;
+	set_block_info(49, 29, 5, 0); j++;
+	set_block_info(49, 20, 3, 0); j++;
+	set_block_info(49, 20, 4, 0); j++;
+	set_block_info(49, 20, 5, 0); j++;
+	set_block_info(49, 20, 6, 0); j++;
+	set_block_info(49, 29, 0, 0); j++;
+	set_block_info(49, 29, 1, 0); j++;
+	set_block_info(49, 29, 2, 0); j++;
+	set_block_info(49, 29, 3, 0); j++;
+	set_block_info(49, 29, 4, 0); j++;
+	set_block_info(49, 29, 5, 0); j++;
+	set_block_info(12, 32, 0, 0); j++;
+	set_block_info(12, 32, 1, 0); j++;
+	set_block_info(25, 32, 2, 0); j++;
+	set_block_info(2, 32, 3, 0); j++;
+	set_block_info(12, 34, 0, 0); j++;
+	set_block_info(12, 34, 1, 0); j++;
+	set_block_info(31, 34, 2, 0); j++;
+	set_block_info(2, 34, 3, 0); j++;
+	set_block_info(49, 37, 0, 0); j++;
+	set_block_info(49, 38, 0, 0); j++;
+	set_block_info(49, 38, 1, 0); j++;
+	set_block_info(49, 38, 2, 0); j++;
+	set_block_info(49, 39, 0, 0); j++;
+	set_block_info(49, 39, 1, 0); j++;
+	set_block_info(49, 39, 2, 0); j++;
+	set_block_info(49, 39, 3, 0); j++;
+	set_block_info(49, 39, 4, 0); j++;
+
+
+	set_leftside = 40;
 
 	for (i = 0; i <= PATTERN_LIMIT; i++) //★structureの配列をもとに左から配置していく
 	{
@@ -1508,326 +1581,49 @@ void block_standby(void)
 		{
 		case 1:
 		{
-			set_block_info(76, 0, -1, set_leftside); j++;
-			set_block_info(76, 1, -1, set_leftside); j++;
-			set_block_info(76, 2, -1, set_leftside); j++;
-			set_block_info(76, 3, -1, set_leftside); j++;
-			set_block_info(76, 4, -1, set_leftside); j++;
-			set_block_info(76, 5, -1, set_leftside); j++;
-			set_block_info(76, 6, -1, set_leftside); j++;
-			set_block_info(76, 7, -1, set_leftside); j++;
-			set_block_info(76, 8, -1, set_leftside); j++;
-			set_block_info(76, 9, -1, set_leftside); j++;
-			set_block_info(76, 10, -1, set_leftside); j++;
-			set_block_info(76, 11, -1, set_leftside); j++;
-			set_block_info(49, 1, 1, set_leftside); j++;
-			set_block_info(49, 2, 1, set_leftside); j++;
-			set_block_info(49, 3, 1, set_leftside); j++;
-			set_block_info(49, 4, 1, set_leftside); j++;
-			set_block_info(49, 5, 1, set_leftside); j++;
-			set_block_info(49, 6, 1, set_leftside); j++;
-			set_block_info(49, 7, 1, set_leftside); j++;
-			set_block_info(49, 8, 1, set_leftside); j++;
-			set_block_info(49, 9, 1, set_leftside); j++;
-			set_block_info(49, 10, 1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 2, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 3, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 5, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 6, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 8, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 9, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 2, 2, set_leftside); j++;
-			set_block_info(choose_hiragana(), 3, 2, set_leftside); j++;
-			set_block_info(choose_hiragana(), 5, 2, set_leftside); j++;
-			set_block_info(choose_hiragana(), 6, 2, set_leftside); j++;
-			set_block_info(choose_hiragana(), 8, 2, set_leftside); j++;
-			set_block_info(choose_hiragana(), 9, 2, set_leftside); j++;
+			for (k = 0; k <= 14; k++) //床の配置
+			{
+				set_block_info(76, k, -1, set_leftside); j++;
+			}
 
-			set_leftside += 12;
-		}break;
+			for (k = 0; k <= 5; k++) //配置するブロックがどの単語のひらがなか，の単語の番号を決める
+			{
+				Q[k] = rand_dic_4(mt);
+			}
 
-		case 2:
-		{
-			set_block_info(76, 0, -1, set_leftside); j++;
-			set_block_info(76, 1, -1, set_leftside); j++;
-			set_block_info(76, 2, -1, set_leftside); j++;
-			set_block_info(76, 3, -1, set_leftside); j++;
-			set_block_info(76, 4, -1, set_leftside); j++;
-			set_block_info(76, 5, -1, set_leftside); j++;
-			set_block_info(76, 6, -1, set_leftside); j++;
-			set_block_info(76, 7, -1, set_leftside); j++;
-			set_block_info(76, 8, -1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 2, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 3, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 4, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 5, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 6, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 3, 1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 4, 1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 5, 1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 4, 2, set_leftside); j++;
-
-			set_leftside += 9;
-		}break;
-
-		case 3:
-		{
-			set_block_info(76, 0, -1, set_leftside); j++;
-			set_block_info(76, 1, -1, set_leftside); j++;
-			set_block_info(76, 2, -1, set_leftside); j++;
-			set_block_info(76, 3, -1, set_leftside); j++;
-			set_block_info(76, 4, -1, set_leftside); j++;
-			set_block_info(76, 5, -1, set_leftside); j++;
-			set_block_info(76, 6, -1, set_leftside); j++;
-			set_block_info(76, 7, -1, set_leftside); j++;
-			set_block_info(76, 8, -1, set_leftside); j++;
-			set_block_info(76, 9, -1, set_leftside); j++;
-			set_block_info(76, 10, -1, set_leftside); j++;
-			set_block_info(49, 1, 1, set_leftside); j++;
-			set_block_info(49, 3, 1, set_leftside); j++;
-			set_block_info(49, 5, 1, set_leftside); j++;
-			set_block_info(49, 7, 1, set_leftside); j++;
-			set_block_info(49, 9, 1, set_leftside); j++;
-			set_block_info(49, 3, 3, set_leftside); j++;
-			set_block_info(49, 5, 3, set_leftside); j++;
-			set_block_info(49, 7, 3, set_leftside); j++;
-			set_block_info(choose_hiragana(), 2, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 4, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 6, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 8, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 2, 2, set_leftside); j++;
-			set_block_info(choose_hiragana(), 4, 2, set_leftside); j++;
-			set_block_info(choose_hiragana(), 6, 2, set_leftside); j++;
-			set_block_info(choose_hiragana(), 8, 2, set_leftside); j++;
-			set_block_info(choose_hiragana(), 2, 4, set_leftside); j++;
-			set_block_info(choose_hiragana(), 4, 4, set_leftside); j++;
-			set_block_info(choose_hiragana(), 6, 4, set_leftside); j++;
-			set_block_info(choose_hiragana(), 8, 4, set_leftside); j++;
-
-			set_leftside += 11;
-		}break;
-
-		case 4:
-		{
-			set_block_info(76, 0, -1, set_leftside); j++;
-			set_block_info(76, 1, -1, set_leftside); j++;
-			set_block_info(76, 2, -1, set_leftside); j++;
-			set_block_info(76, 3, -1, set_leftside); j++;
-			set_block_info(76, 4, -1, set_leftside); j++;
-			set_block_info(76, 5, -1, set_leftside); j++;
-			set_block_info(76, 6, -1, set_leftside); j++;
-			set_block_info(76, 7, -1, set_leftside); j++;
-			set_block_info(76, 8, -1, set_leftside); j++;
-			set_block_info(76, 9, -1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 1, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 2, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 4, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 5, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 7, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 8, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 1, 1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 2, 1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 4, 1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 5, 1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 7, 1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 8, 1, set_leftside); j++;
-
-			set_leftside += 10;
-		}break;
-
-		case 5:
-		{
-			set_block_info(76, 0, -1, set_leftside); j++;
-			set_block_info(76, 1, -1, set_leftside); j++;
-			set_block_info(76, 2, -1, set_leftside); j++;
-			set_block_info(76, 3, -1, set_leftside); j++;
-			set_block_info(76, 4, -1, set_leftside); j++;
-			set_block_info(76, 5, -1, set_leftside); j++;
-			set_block_info(76, 6, -1, set_leftside); j++;
-			set_block_info(77, 3, 3, set_leftside); j++;
-
-			set_leftside += 7;
-		}break;
-
-		case 6:
-		{
-			set_block_info(76, 0, -1, set_leftside); j++;
-			set_block_info(76, 1, -1, set_leftside); j++;
-			set_block_info(76, 2, -1, set_leftside); j++;
-			set_block_info(76, 3, -1, set_leftside); j++;
-			set_block_info(76, 4, -1, set_leftside); j++;
-			set_block_info(76, 5, -1, set_leftside); j++;
-			set_block_info(76, 6, -1, set_leftside); j++;
-			set_block_info(76, 7, -1, set_leftside); j++;
-			set_block_info(49, 5, 1, set_leftside); j++;
-			set_block_info(49, 2, 2, set_leftside); j++;
-			set_block_info(49, 5, 4, set_leftside); j++;
-			set_block_info(49, 2, 5, set_leftside); j++;
-			set_block_info(choose_hiragana(), 1, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 2, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 3, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 4, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 5, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 6, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 1, 1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 2, 1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 4, 1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 6, 1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 1, 2, set_leftside); j++;
-			set_block_info(choose_hiragana(), 3, 2, set_leftside); j++;
-			set_block_info(choose_hiragana(), 5, 2, set_leftside); j++;
-			set_block_info(choose_hiragana(), 6, 2, set_leftside); j++;
-			set_block_info(choose_hiragana(), 1, 3, set_leftside); j++;
-			set_block_info(choose_hiragana(), 2, 3, set_leftside); j++;
-			set_block_info(choose_hiragana(), 3, 3, set_leftside); j++;
-			set_block_info(choose_hiragana(), 4, 3, set_leftside); j++;
-			set_block_info(choose_hiragana(), 5, 3, set_leftside); j++;
-			set_block_info(choose_hiragana(), 6, 3, set_leftside); j++;
-			set_block_info(choose_hiragana(), 1, 4, set_leftside); j++;
-			set_block_info(choose_hiragana(), 2, 4, set_leftside); j++;
-			set_block_info(choose_hiragana(), 4, 4, set_leftside); j++;
-			set_block_info(choose_hiragana(), 6, 4, set_leftside); j++;
-			set_block_info(choose_hiragana(), 1, 5, set_leftside); j++;
-			set_block_info(choose_hiragana(), 3, 5, set_leftside); j++;
-			set_block_info(choose_hiragana(), 5, 5, set_leftside); j++;
-			set_block_info(choose_hiragana(), 6, 5, set_leftside); j++;
-			set_block_info(choose_hiragana(), 1, 6, set_leftside); j++;
-			set_block_info(choose_hiragana(), 2, 6, set_leftside); j++;
-			set_block_info(choose_hiragana(), 3, 6, set_leftside); j++;
-			set_block_info(choose_hiragana(), 4, 6, set_leftside); j++;
-			set_block_info(choose_hiragana(), 5, 6, set_leftside); j++;
-			set_block_info(choose_hiragana(), 6, 6, set_leftside); j++;
-
-
-			set_leftside += 8;
-
-		}break;
-
-		case 7:
-		{
-			set_block_info(76, 0, -1, set_leftside); j++;
-			set_block_info(76, 1, -1, set_leftside); j++;
-			set_block_info(76, 2, -1, set_leftside); j++;
-			set_block_info(76, 3, -1, set_leftside); j++;
-			set_block_info(76, 4, -1, set_leftside); j++;
-			set_block_info(76, 5, -1, set_leftside); j++;
-			set_block_info(76, 6, -1, set_leftside); j++;
-			set_block_info(76, 7, -1, set_leftside); j++;
-			set_block_info(76, 8, -1, set_leftside); j++;
-			set_block_info(76, 9, -1, set_leftside); j++;
-			set_block_info(76, 10, -1, set_leftside); j++;
-			set_block_info(76, 11, -1, set_leftside); j++;
-			set_block_info(49, 1, 2, set_leftside); j++;
-			set_block_info(49, 2, 2, set_leftside); j++;
-			set_block_info(49, 3, 2, set_leftside); j++;
-			set_block_info(49, 4, 2, set_leftside); j++;
-			set_block_info(49, 7, 2, set_leftside); j++;
-			set_block_info(49, 8, 2, set_leftside); j++;
-			set_block_info(49, 9, 2, set_leftside); j++;
-			set_block_info(49, 10, 2, set_leftside); j++;
-			set_block_info(choose_hiragana(), 2, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 3, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 8, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 9, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 2, 1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 3, 1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 8, 1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 9, 1, set_leftside); j++;
-			set_block_info(choose_hiragana(), 4, 3, set_leftside); j++;
-			set_block_info(choose_hiragana(), 4, 4, set_leftside); j++;
-			set_block_info(choose_hiragana(), 7, 3, set_leftside); j++;
+			//printf("%d ::::\n", (dic[Q[1]][0]));
+			set_block_info(dic[Q[0]][0], 3, 0, set_leftside); j++;
+			set_block_info(dic[Q[0]][2], 3, 2, set_leftside); j++;
+			set_block_info(dic[Q[0]][3], 3, 4, set_leftside); j++;
+			set_block_info(dic[Q[0]][1], 4, 0, set_leftside); j++;
+			set_block_info(dic[Q[1]][2], 4, 2, set_leftside); j++;
+			set_block_info(dic[Q[1]][0], 4, 4, set_leftside); j++;
+			set_block_info(dic[Q[1]][3], 5, 0, set_leftside); j++;
+			set_block_info(dic[Q[2]][1], 5, 2, set_leftside); j++;
+			set_block_info(dic[Q[1]][1], 5, 4, set_leftside); j++;
+			set_block_info(dic[Q[2]][0], 6, 0, set_leftside); j++;
+			set_block_info(dic[Q[2]][2], 6, 2, set_leftside); j++;
+			set_block_info(choose_hiragana() , 6, 4, set_leftside); j++;
+			set_block_info(dic[Q[2]][3], 7, 0, set_leftside); j++;
+			set_block_info(choose_hiragana(), 7, 2, set_leftside); j++;
 			set_block_info(choose_hiragana(), 7, 4, set_leftside); j++;
-
-
-			set_leftside += 12;
-		}break;
-
-		case 8:
-		{
-			set_block_info(76, 0, -1, set_leftside); j++;
-			set_block_info(76, 1, -1, set_leftside); j++;
-			set_block_info(76, 2, -1, set_leftside); j++;
-			set_block_info(76, 3, -1, set_leftside); j++;
-			set_block_info(76, 4, -1, set_leftside); j++;
-			set_block_info(76, 5, -1, set_leftside); j++;
-			set_block_info(76, 6, -1, set_leftside); j++;
-			set_block_info(76, 7, -1, set_leftside); j++;
-			set_block_info(76, 8, -1, set_leftside); j++;
-			set_block_info(76, 9, -1, set_leftside); j++;
-			set_block_info(76, 10, -1, set_leftside); j++;
-			set_block_info(49, 1, 0, set_leftside); j++;
-			set_block_info(49, 2, 0, set_leftside); j++;
-			set_block_info(49, 3, 0, set_leftside); j++;
-			set_block_info(49, 4, 0, set_leftside); j++;
-			set_block_info(49, 5, 0, set_leftside); j++;
-			set_block_info(49, 6, 0, set_leftside); j++;
-			set_block_info(49, 7, 0, set_leftside); j++;
-			set_block_info(49, 8, 0, set_leftside); j++;
-			set_block_info(49, 9, 0, set_leftside); j++;
-			set_block_info(49, 4, 1, set_leftside); j++;
-			set_block_info(49, 5, 1, set_leftside); j++;
-			set_block_info(49, 6, 1, set_leftside); j++;
-			set_block_info(77, 5, 5, set_leftside); j++;
-			set_block_info(choose_hiragana(), 2, 4, set_leftside); j++;
+			set_block_info(dic[Q[4]][1], 8, 0, set_leftside); j++;
+			set_block_info(dic[Q[4]][0], 8, 2, set_leftside); j++;
 			set_block_info(choose_hiragana(), 8, 4, set_leftside); j++;
+			set_block_info(dic[Q[5]][1], 9, 0, set_leftside); j++;
+			set_block_info(dic[Q[5]][3], 9, 2, set_leftside); j++;
+			set_block_info(dic[Q[4]][2], 9, 4, set_leftside); j++;
+			set_block_info(dic[Q[5]][0], 10, 0, set_leftside); j++;
+			set_block_info(dic[Q[5]][2], 10, 2, set_leftside); j++;
+			set_block_info(dic[Q[4]][3], 10, 4, set_leftside); j++;
 
-			set_leftside += 11;
-		}break;
+			set_block_info(49, 0, 1, set_leftside); j++;
+			set_block_info(49, 1, 3, set_leftside); j++;
+			set_block_info(49, 13, 1, set_leftside); j++;
+			set_block_info(49, 12
+				, 3, set_leftside); j++;
 
-		case 9:
-		{
-			set_block_info(76, 0, -1, set_leftside); j++;
-			set_block_info(76, 1, -1, set_leftside); j++;
-			set_block_info(76, 2, -1, set_leftside); j++;
-			set_block_info(76, 3, -1, set_leftside); j++;
-			set_block_info(76, 4, -1, set_leftside); j++;
-			set_block_info(76, 5, -1, set_leftside); j++;
-			set_block_info(76, 6, -1, set_leftside); j++;
-			set_block_info(76, 7, -1, set_leftside); j++;
-			set_block_info(76, 8, -1, set_leftside); j++;
-			set_block_info(76, 9, -1, set_leftside); j++;
-			set_block_info(76, 10, -1, set_leftside); j++;
-			set_block_info(76, 11, -1, set_leftside); j++;
-			set_block_info(76, 12, -1, set_leftside); j++;
-			set_block_info(76, 13, -1, set_leftside); j++;
-			set_block_info(76, 14, -1, set_leftside); j++;
-			set_block_info(76, 15, -1, set_leftside); j++;
-			set_block_info(76, 16, -1, set_leftside); j++;
-			set_block_info(49, 1, 2, set_leftside); j++;
-			set_block_info(49, 2, 2, set_leftside); j++;
-			set_block_info(49, 3, 2, set_leftside); j++;
-			set_block_info(49, 4, 2, set_leftside); j++;
-			set_block_info(49, 5, 2, set_leftside); j++;
-			set_block_info(49, 6, 2, set_leftside); j++;
-			set_block_info(49, 7, 2, set_leftside); j++;
-			set_block_info(49, 9, 2, set_leftside); j++;
-			set_block_info(49, 10, 2, set_leftside); j++;
-			set_block_info(49, 11, 2, set_leftside); j++;
-			set_block_info(49, 12, 2, set_leftside); j++;
-			set_block_info(49, 13, 2, set_leftside); j++;
-			set_block_info(49, 14, 2, set_leftside); j++;
-			set_block_info(49, 15, 2, set_leftside); j++;
-			set_block_info(77, 8, 0, set_leftside); j++;
-
-			set_block_info(choose_hiragana(), 2, 3, set_leftside); j++;
-			set_block_info(choose_hiragana(), 3, 3, set_leftside); j++;
-			set_block_info(choose_hiragana(), 13, 3, set_leftside); j++;
-			set_block_info(choose_hiragana(), 14, 3, set_leftside); j++;
-			set_block_info(choose_hiragana(), 2, 4, set_leftside); j++;
-			set_block_info(choose_hiragana(), 3, 4, set_leftside); j++;
-			set_block_info(choose_hiragana(), 5, 4, set_leftside); j++;
-			set_block_info(choose_hiragana(), 6, 4, set_leftside); j++;
-			set_block_info(choose_hiragana(), 10, 4, set_leftside); j++;
-			set_block_info(choose_hiragana(), 11, 4, set_leftside); j++;
-			set_block_info(choose_hiragana(), 13, 4, set_leftside); j++;
-			set_block_info(choose_hiragana(), 14, 4, set_leftside); j++;
-			set_block_info(choose_hiragana(), 5, 5, set_leftside); j++;
-			set_block_info(choose_hiragana(), 6, 5, set_leftside); j++;
-			set_block_info(choose_hiragana(), 10, 5, set_leftside); j++;
-			set_block_info(choose_hiragana(), 11, 5, set_leftside); j++;
-
-
-			set_leftside += 17;
+			set_leftside += 15;
 		}break;
 
 
@@ -2270,13 +2066,13 @@ void idle(void)
 		case true://ふわふわ落下モード
 		{
 			//printf("ジャンプふわふわｑ\n");
-			sample->Move(0, -(16.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.0015 * 36);
+			sample->Move(0, -(15.8 * jump_timer - 9.8* jump_timer * sqrt(jump_timer) *0.5)*0.0015 * 36);
 		}break;
 
 		case false:
 		{
 			//printf("ジャンプ\n"); 
-			sample->Move(0, -(16.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 128);
+			sample->Move(0, -(15.8 * jump_timer - 9.8* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 128);
 		}break;
 		}
 
@@ -2323,7 +2119,7 @@ void idle(void)
 		{
 			//player2.center.y = player2.center.y - (15.0 * jump_timer - 9.68* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 50;//ジャンプのときのプレイヤーの動き
 
-			jump_timer = 11;
+			jump_timer = JUMP_HIGHEST;
 			sample->center_y -= ((int)(sample->center_y)
 				) % 64;
 		}
@@ -2388,7 +2184,7 @@ void idle(void)
 			height_c = 8000;
 		}
 
-		if (flag_06 == false) { jump_timer = 11; player_jump = true; } //足場がなくなると自由落下（タイマー11で鉛直投げ上げ最高点）
+		if (flag_06 == false) { jump_timer = JUMP_HIGHEST; player_jump = true; } //足場がなくなると自由落下（タイマー11で鉛直投げ上げ最高点）
 
 		flag_02 = false;
 	}
@@ -2906,6 +2702,36 @@ void resize(int w, int h) {
 }
 
 void Init() {
+
+
+	if ((fopen_s(&fp, "score.dat", "r")) != 0) //スコアファイルを読み込む
+	{
+		printf("スコアファイルを開けませんでした\n");
+		exit(1);
+	}
+
+	if ((fopen_s(&fp_dic_4, "4moji_dic.dat", "r")) != 0) //★辞書ファイルを読み込む
+	{
+		printf("辞書ファイルを開けませんでした\n");
+		exit(10);
+	}
+
+	i = 0;
+	while (fscanf_s(fp_dic_4, "%d,%d,%d,%d,", &dic[i][0], &dic[i][1], &dic[i][2], &dic[i][3]) != EOF)
+	{
+		/*
+		if (dic[i][0] == 0 || dic[i][1] == 0 || dic[i][2] == 0 || dic[i][3] == 0)
+		{
+			printf("%d番目の単語が読み取れませんでした\n",i);
+			exit(3);
+		}
+		*/
+		i++;
+	}
+
+	dic_4_all = i; printf("4文字辞書%d単語を読み込みました\n", dic_4_all);
+
+
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glOrtho(0, WIDTH, HEIGHT, 0, -1, 1);
 	GdiplusStartup(&gdiPT, &gdiPSI, NULL);
@@ -3059,33 +2885,7 @@ void Init() {
 	scene = 0;
 
 
-	if ((fopen_s(&fp, "score.dat", "r")) != 0) //スコアファイルを読み込む
-	{
-		printf("スコアファイルを開けませんでした\n");
-		exit(1);
-	}
-
-	if ((fopen_s(&fp_dic_4, "4moji_dic.dat", "r")) != 0) //★辞書ファイルを読み込む
-	{
-		printf("辞書ファイルを開けませんでした\n");
-		exit(10);
-	}
-
-	i = 0;
-	while (fscanf_s(fp_dic_4, "%d,%d,%d,%d,", &dic[i][0], &dic[i][1], &dic[i][2], &dic[i][3]) != EOF)
-	{
-		/*
-		if (dic[i][0] == 0 || dic[i][1] == 0 || dic[i][2] == 0 || dic[i][3] == 0)
-		{
-			printf("%d番目の単語が読み取れませんでした\n",i);
-			exit(3);
-		}
-		*/
-		i++;
-	}
-
-	dic_4_all = i; printf("4文字辞書%d単語を読み込みました\n", dic_4_all);
-
+	
 	i = 0;
 	while (fscanf_s(fp, "%d", &high_score[i]) != EOF)
 	{
@@ -3223,7 +3023,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.0.2");
+	glutCreateWindow("goipachi ver.1.0.3");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

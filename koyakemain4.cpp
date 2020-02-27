@@ -35,7 +35,7 @@ using namespace Gdiplus;
 #define TIME_LIMIT 600
 #define dic_index_4 43226 //4文字辞書の単語数
 #define OBJECT_LIMIT 100000 //ブロックの制限
-#define PATTERN_LIMIT 300 //横に並べるブロック配置パターンの上限
+#define PATTERN_LIMIT 45 //横に並べるブロック配置パターンの上限
 
 int get_ww;
 int get_wh;
@@ -84,6 +84,9 @@ int walk_timer = 0;
 int walk_timer100 = 0;
 int lamp_timer_01 = 0; //★Ｋキー（決定ボタン）を押した後の赤ライトの点灯
 int lamp_timer_02 = 0; //★プレイヤーのリアクションのエフェクト
+int lamp_timer_block = 0; //ルーレットブロックのエフェクトのアニメーション
+int hiragana_roulette_timer = 0; //ルーレットブロックの中身のタイマー
+int hiragana_roulette[74] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75 }; //ルーレットの中身
 int gun_timer = 0; //★銃を構えているイラストの表示
 int bullet_timer = 0; //★弾丸が発射されてからの秒数 一定時間たつと消える（無限に飛び続けるのいやでしょ）
 
@@ -139,6 +142,7 @@ int choose_hiragana_weight_add[80] = {}; //最終的に乱数よりひらがな�
 int high_score[5] = { 0,0,0,0,0 }; //レコードされているハイスコア
 int slot[5] = { 0,0,0,0,0 }; //★スロット（のちのち5文字でもできるように）
 int slot_select = 0; //★どの文字をさしているか
+int slot_start[OBJECT_LIMIT] = {}; //オブジェクトがルーレットだった場合ルーレットはどっから始まるか
 int score_word = 0; //１つ１つのワードのスコア
 int time = TIME_LIMIT * 60;
 
@@ -153,7 +157,7 @@ FILE *fp_dic_4; //辞書ファイル
 int dic_4_all = 0;
 bool word_hit = false; //Ｋキー押下後，辞書に存在していたかどうか(trueなら得点＋エフェクト，falseなら時間減少＋エフェクト）
 
-int i, j, k;
+int i, j, k, l;
 
 double camera_x = 0; //カメラの位置
 double camera_y = 0;
@@ -863,6 +867,9 @@ GameObject(0, 0, 64, 64, L"./pic/block_odai_off.png"), //お題箱オフ
 GameObject(0, 0, 64, 64, L"./pic/block_undifined.png") //未使用（お題箱とかに使う？
 };
 
+GameObject block_light_1 = GameObject(0, 0, 64, 64, L"./pic/block_highlight_1.png"); //ルーレットブロックのライトエフェクト（明
+GameObject block_light_2 = GameObject(0, 0, 64, 64, L"./pic/block_highlight_2.png"); //ルーレットブロックのライトエフェクト（暗
+
 //floor2.LoadImagePNG2(L"./pic/block.png");
 //GameObject *gameObject;
 //GameObject *gameObject2;
@@ -1438,7 +1445,7 @@ int choose_pattern(void)
 
 	do {
 		a = rand100(mt);
-	} while (a >= 4);
+	} while (a >= 15);
 
 	return a;
 }
@@ -1579,7 +1586,7 @@ void block_standby(void)
 	{
 		switch (stage_structure[i])
 		{
-		case 1:
+		case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 9: case 10: case 11: case 12: case 13:
 		{
 			for (k = 0; k <= 14; k++) //床の配置
 			{
@@ -1620,12 +1627,63 @@ void block_standby(void)
 			set_block_info(49, 0, 1, set_leftside); j++;
 			set_block_info(49, 1, 3, set_leftside); j++;
 			set_block_info(49, 13, 1, set_leftside); j++;
-			set_block_info(49, 12
-				, 3, set_leftside); j++;
+			set_block_info(49, 12, 3, set_leftside); j++;
 
 			set_leftside += 15;
 		}break;
 
+		case 14: case 15:
+		{
+			for (k = 0; k <= 16; k++) //床の配置
+			{
+				set_block_info(76, k, -1, set_leftside); j++;
+			}
+
+			set_block_info(79, 4, 0, set_leftside); j++;
+			set_block_info(79, 5, 0, set_leftside); j++;
+			set_block_info(79, 4, 2, set_leftside); j++;
+			set_block_info(79, 5, 2, set_leftside); j++;
+			set_block_info(79, 4, 4, set_leftside); j++;
+			set_block_info(79, 5, 4, set_leftside); j++;
+			set_block_info(79, 11, 0, set_leftside); j++;
+			set_block_info(79, 12, 0, set_leftside); j++;
+			set_block_info(79, 11, 2, set_leftside); j++;
+			set_block_info(79, 12, 2, set_leftside); j++;
+			set_block_info(79, 11, 4, set_leftside); j++;
+			set_block_info(79, 12, 4, set_leftside); j++;
+
+			set_block_info(77, 5, 6, set_leftside); j++;
+			set_block_info(77, 11, 6, set_leftside); j++;
+
+			set_block_info(49, 1, 3, set_leftside); j++;
+			set_block_info(49, 2, 1, set_leftside); j++;
+			set_block_info(49, 7, 1, set_leftside); j++;
+			set_block_info(49, 8, 3, set_leftside); j++;
+			set_block_info(49, 9, 1, set_leftside); j++;
+			set_block_info(49, 14, 1, set_leftside); j++;
+			set_block_info(49, 15, 3, set_leftside); j++;
+
+
+			set_leftside += 17;
+		}break;
+
+		case 255:
+		{
+			for (k = 0; k <= 10; k++) //床の配置
+			{
+				set_block_info(76, k, -1, set_leftside); j++;
+			}
+
+			for (k = 0; k <= 10; k++) //床の配置
+			{
+				for (l = 0; l <= 10; l++) //床の配置
+				{
+					set_block_info(49, l, k, set_leftside); j++;
+				}
+			}
+
+			set_leftside += 11;
+		}break;
 
 		default:
 		{
@@ -1663,6 +1721,8 @@ void game_reset(void)
 	{
 		stage_structure[i] = choose_pattern();
 	}
+
+	stage_structure[13] = 255; //最後の壁（暫定）なんか無限だとクソヌルゲーになるらしいので
 
 	block_standby(); //★ブロックの配置（再構成）
 }
@@ -1938,7 +1998,7 @@ void display(void)
 
 		for (i = 0; i < OBJECT_LIMIT; i++) //★オブジェクトとなるブロックここで全部描画
 		{
-			if (object_block[i][0] != 0 && object_block[i][0] != 77)
+			if (object_block[i][0] != 0 && object_block[i][0] != 77 && object_block[i][0] != 79)
 			{
 				block_hiragana[object_block[i][0]].SetImage(double(object_block[i][1]), double(object_block[i][2]));
 			}
@@ -1955,6 +2015,14 @@ void display(void)
 					block_hiragana[78].SetImage(double(object_block[i][1]), double(object_block[i][2]));
 				}
 
+			}
+
+			else if (object_block[i][0] == 79) //★お題箱描画
+			{
+				block_hiragana[hiragana_roulette[((hiragana_roulette_timer + (slot_start[i])*60))%(74*60) / 60]].SetImage(double(object_block[i][1]), double(object_block[i][2]));
+				if (lamp_timer_block % 20 >= 0 && lamp_timer_block % 20 <= 4) { block_light_2.SetImage(double(object_block[i][1]), double(object_block[i][2])); }
+				if (lamp_timer_block % 20 >= 5 && lamp_timer_block % 20 <= 9) { block_light_1.SetImage(double(object_block[i][1]), double(object_block[i][2])); }
+				if (lamp_timer_block % 20 >= 10 && lamp_timer_block % 20 <= 14) { block_light_2.SetImage(double(object_block[i][1]), double(object_block[i][2])); }
 			}
 		}
 
@@ -2136,7 +2204,7 @@ void idle(void)
 
 		else if (flag_06 == false) //地面との衝突を感知したフレームでの処理
 		{
-			height_c = 8000;
+			height_c = 8000; //自分の位置よりも十分に低い場所に衝突判定を戻す
 		}
 
 
@@ -2352,7 +2420,7 @@ void idle(void)
 					score_get_hiragana++;
 				}
 
-				else if (object_block[i][0] == 77 && slot[0]==0 && slot[1] == 0 && slot[2] == 0 && slot[3] == 0) //★お題箱にヒットしたとき
+				else if (object_block[i][0] == 77 && slot[0]==0 && slot[1] == 0 && slot[2] == 0 && slot[3] == 0) //★お題箱にヒットしたとき（ごいスロットに何かあるときはＯＦＦ状態になる）
 				{
 					odai = choose_odai();
 					slot[0] = odai_hiragana[odai][0];
@@ -2360,8 +2428,13 @@ void idle(void)
 					slot[2] = odai_hiragana[odai][2];
 					slot[3] = odai_hiragana[odai][3];
 					object_block[i][0] = 0; //★弾丸とブロックが衝突したらお互いの情報を０にする
+				}
 
-
+				else if (object_block[i][0] == 79) //★ひらがなルーレットにヒットした場合
+				{
+					slot[slot_select] = hiragana_roulette[((hiragana_roulette_timer + (slot_start[i]) * 60)) % (74 * 60) / 60]; //弾丸が衝突したブロックをスロットに格納
+					object_block[i][0] = 0; //★弾丸とブロックが衝突したらお互いの情報を０にする
+					score_get_hiragana++;
 				}
 			}
 
@@ -2830,6 +2903,8 @@ void Init() {
 	player_fukidashi01.LoadImagePNG2(player_fukidashi01.file, player_fukidashi01.tex);
 	player_fukidashi02.LoadImagePNG2(player_fukidashi02.file, player_fukidashi02.tex);
 	bullet.LoadImagePNG2(bullet.file, bullet.tex);
+	block_light_1.LoadImagePNG2(block_light_1.file, block_light_1.tex);
+	block_light_2.LoadImagePNG2(block_light_2.file, block_light_2.tex);
 
 
 	for (i = 0; i <= 79; i++)
@@ -2851,6 +2926,12 @@ void Init() {
 	for (i = 0; i < PATTERN_LIMIT; i++)
 	{
 		stage_structure[i] = choose_pattern();
+	}
+	stage_structure[13] = 255;
+
+	for (i = 0; i <OBJECT_LIMIT; i++)
+	{
+		slot_start[i] = choose_hiragana();
 	}
 
 	block_standby(); //★ブロックの配置
@@ -2972,6 +3053,19 @@ void timer(int value) {
 			flag_08 = false;
 		}
 
+		lamp_timer_block++;
+		if (lamp_timer_block > 400) //ルーレットブロックのランプの点灯エフェクト
+		{
+			lamp_timer_block=0;
+		}
+
+		hiragana_roulette_timer++;
+		if (hiragana_roulette_timer > 74*60) //ルーレットブロックの中身の遷移のタイマー
+		{
+			hiragana_roulette_timer = 0;
+		}
+
+
 
 		if (player_jump == true)
 		{
@@ -3023,7 +3117,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.0.3");
+	glutCreateWindow("goipachi ver.1.0.4");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

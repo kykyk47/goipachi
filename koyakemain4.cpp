@@ -34,7 +34,7 @@ using namespace Gdiplus;
 
 #define TIME_LIMIT 600
 #define dic_index_4 43226 //4文字辞書の単語数
-#define OBJECT_LIMIT 100000 //ブロックの制限
+#define OBJECT_LIMIT 10000 //ブロックの制限
 #define PATTERN_LIMIT 45 //横に並べるブロック配置パターンの上限
 
 int get_ww;
@@ -1632,7 +1632,7 @@ void block_standby(void)
 			set_leftside += 15;
 		}break;
 
-		case 14: case 15:
+		case 254:
 		{
 			for (k = 0; k <= 16; k++) //床の配置
 			{
@@ -1717,12 +1717,22 @@ void game_reset(void)
 		object_block[i][2] = 0;
 	}
 
+	for (i = 0; i < OBJECT_LIMIT; i++)
+	{
+		slot_start[i] = choose_hiragana();
+	}
+
 	for (i = 0; i < PATTERN_LIMIT; i++)
 	{
 		stage_structure[i] = choose_pattern();
+
+		if (i % 6 == 5) //6パターンおきにボーナスステージ配置
+		{
+			stage_structure[i] = 254;
+		}
 	}
 
-	stage_structure[13] = 255; //最後の壁（暫定）なんか無限だとクソヌルゲーになるらしいので
+	stage_structure[18] = 255; //最後の壁（暫定）なんか無限だとクソヌルゲーになるらしいので
 
 	block_standby(); //★ブロックの配置（再構成）
 }
@@ -2922,19 +2932,7 @@ void Init() {
 
 	}
 
-	//ステージの構造
-	for (i = 0; i < PATTERN_LIMIT; i++)
-	{
-		stage_structure[i] = choose_pattern();
-	}
-	stage_structure[13] = 255;
-
-	for (i = 0; i <OBJECT_LIMIT; i++)
-	{
-		slot_start[i] = choose_hiragana();
-	}
-
-	block_standby(); //★ブロックの配置
+	game_reset();
 
 	//コピー用
 	//.LoadImagePNG2(.file, .tex);
@@ -3117,7 +3115,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.0.4");
+	glutCreateWindow("goipachi ver.1.0.5");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

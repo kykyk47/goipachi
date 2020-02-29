@@ -2320,8 +2320,14 @@ void keyboard(unsigned char key, int x, int y)
 		case 'l': if (slot_select < 3 && lamp_timer_02 == 0) { slot_select++; } break;
 		case 'i': if (lamp_timer_02 == 0) { if (slot[slot_select] != 0) { score_leave_hiragana++; } slot[slot_select] = 0; }  break; //選択中のスロットの場所をからっぽにする
 
-		case 'k': if (lamp_timer_02 == 0 && slot[0] != 0 && slot[1] != 0 && slot[2] != 0 && slot[3] != 0) { check_goi(slot); lamp_timer_02 = 100;  lamp_timer_01 = 50; slot[0] = 0; slot[1] = 0; slot[2] = 0; slot[3] = 0; }  break;//単語チェック
-		case 'v': if (flag_bullet_exist == false) { bullet_direction = player->direction; bullet_timer = 0; gun_timer = 60; flag_bullet_exist = true; bullet.center_x = player->center_x; bullet.center_y = player->center_y; } break;
+		case 'k': if (lamp_timer_02 == 0 && slot[0] != 0 && slot[1] != 0 && slot[2] != 0 && slot[3] != 0) 
+		{ check_goi(slot); lamp_timer_02 = 100;  lamp_timer_01 = 50; slot[0] = 0; slot[1] = 0; slot[2] = 0; slot[3] = 0; }  break;//単語チェック
+		case 'v': if (flag_bullet_exist == false) 
+		{ 
+			bullet_direction = player->direction; bullet_timer = 0; gun_timer = 60; flag_bullet_exist = true; 
+			if (player->direction == 0) { bullet.center_x = player->center_x+40; bullet.center_y = player->center_y; }
+			else if (player->direction == 1) { bullet.center_x = player->center_x-40; bullet.center_y = player->center_y; }
+		} break;
 
 		case 'p': scene = 2; temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544; break; //ポーズ カメラの位置をＧＵＩ用にリセット
 		case 't': scene = 6; temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544; break; //デバッグ用トリガー1 強制ゲームオーバー

@@ -80,8 +80,8 @@ bool player_jump = false;
 bool player_walk = false;
 int jump_timer = 0;  //キャラクターがジャンプしてからの時間を計測
 #define JUMP_HIGHEST 11 //キャラクターがジャンプしてから最高点に達した瞬間のjump_timer
-int walk_timer = 0;
-int walk_timer100 = 0;
+
+int walk_timer = 0; //★キャラクターのアニメーション
 int lamp_timer_01 = 0; //★Ｋキー（決定ボタン）を押した後の赤ライトの点灯
 int lamp_timer_02 = 0; //★プレイヤーのリアクションのエフェクト
 int lamp_timer_block = 0; //ルーレットブロックのエフェクトのアニメーション
@@ -425,8 +425,6 @@ public:
 			
 		}
 	}
-
-
 
 };
 
@@ -1686,7 +1684,7 @@ void display(void)
 			BG_01.SetImage(i * 1024 + (player->center_x *0.0), -224);
 		}
 
-		glBindTexture(GL_TEXTURE_2D, player2.tex);
+		//glBindTexture(GL_TEXTURE_2D, player2.tex);
 
 		if (gun_timer > 0)
 		{
@@ -1707,19 +1705,14 @@ void display(void)
 		}
 		else
 		{
-			switch (walk_timer)
-			{
-			case 1:  if (player->direction == 1) { player->ChangeImage(2); }
-					 else { player->ChangeImage(7); } break;//glBindTexture(GL_TEXTURE_2D, player3.tex); break;
-			case 2:  if (player->direction == 1) { player->ChangeImage(1); }
-					 else { player->ChangeImage(6); } break;//glBindTexture(GL_TEXTURE_2D, player2.tex); break;
-			case 3:  if (player->direction == 1) { player->ChangeImage(0); }
-					 else { player->ChangeImage(5); } break;//glBindTexture(GL_TEXTURE_2D, player1.tex); break;
-			case 0:  if (player->direction == 1) { player->ChangeImage(1); }
-					 else { player->ChangeImage(6); } break;// glBindTexture(GL_TEXTURE_2D, player2.tex); break;
-			}
+			if (walk_timer % 12 >= 0 && walk_timer % 12 <= 2) { if (player->direction == 1) { player->ChangeImage(1); } else { player->ChangeImage(6); } }
+			else if (walk_timer % 12 >= 3 && walk_timer % 12 <= 5) { if (player->direction == 1) { player->ChangeImage(2); } else { player->ChangeImage(7); } }
+			else if (walk_timer % 12 >= 6 && walk_timer % 12 <= 8) { if (player->direction == 1) { player->ChangeImage(1); } else { player->ChangeImage(6); } }
+			else if (walk_timer % 12 >= 9 && walk_timer % 12 <= 11) { if (player->direction == 1) { player->ChangeImage(0); } else { player->ChangeImage(5); } }
 
 		}
+
+
 
 		//if (player->direction == 1) { player->ChangeImage(0); } else { player->ChangeImage(5); }
 
@@ -2655,23 +2648,10 @@ void timer(int value) {
 
 	if (onMoveKeyPress_L == true || onMoveKeyPress_R == true) //歩きアニメーションのため （画像１→２→３→２というふうに歩き中には４枚の画像を連続で表示する）
 	{
-		if (walk_timer100 == 300)
-		{
-			walk_timer100 = 0;
-		}
-
-		else
-		{
-			walk_timer100 += 100;
-		}
+		walk_timer++;
 	}
 
-	else
-	{
-		walk_timer100 = 0;
-	}
 
-	walk_timer = walk_timer100 / 100;
 }
 
 
@@ -2682,7 +2662,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.0.7");
+	glutCreateWindow("goipachi ver.1.0.8");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

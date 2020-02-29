@@ -1588,7 +1588,7 @@ void block_standby(void)
 		{
 		case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 9: case 10: case 11: case 12: case 13:
 		{
-			for (k = 0; k <= 14; k++) //床の配置
+			for (k = 0; k <= 16; k++) //床の配置
 			{
 				set_block_info(76, k, -1, set_leftside); j++;
 			}
@@ -1605,31 +1605,31 @@ void block_standby(void)
 			set_block_info(dic[Q[0]][1], 4, 0, set_leftside); j++;
 			set_block_info(dic[Q[1]][2], 4, 2, set_leftside); j++;
 			set_block_info(dic[Q[1]][0], 4, 4, set_leftside); j++;
-			set_block_info(dic[Q[1]][3], 5, 0, set_leftside); j++;
+			set_block_info(dic[Q[1]][3], 6, 0, set_leftside); j++;
 			set_block_info(dic[Q[2]][1], 5, 2, set_leftside); j++;
-			set_block_info(dic[Q[1]][1], 5, 4, set_leftside); j++;
-			set_block_info(dic[Q[2]][0], 6, 0, set_leftside); j++;
-			set_block_info(dic[Q[2]][2], 6, 2, set_leftside); j++;
-			set_block_info(choose_hiragana() , 6, 4, set_leftside); j++;
-			set_block_info(dic[Q[2]][3], 7, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 7, 2, set_leftside); j++;
-			set_block_info(choose_hiragana(), 7, 4, set_leftside); j++;
-			set_block_info(dic[Q[4]][1], 8, 0, set_leftside); j++;
-			set_block_info(dic[Q[4]][0], 8, 2, set_leftside); j++;
+			set_block_info(dic[Q[1]][1], 6, 4, set_leftside); j++;
+			set_block_info(dic[Q[2]][0], 7, 0, set_leftside); j++;
+			set_block_info(dic[Q[2]][2], 7, 2, set_leftside); j++;
+			set_block_info(choose_hiragana() , 7, 4, set_leftside); j++;
+			set_block_info(dic[Q[2]][3], 8, 0, set_leftside); j++;
+			set_block_info(choose_hiragana(), 8, 2, set_leftside); j++;
 			set_block_info(choose_hiragana(), 8, 4, set_leftside); j++;
-			set_block_info(dic[Q[5]][1], 9, 0, set_leftside); j++;
-			set_block_info(dic[Q[5]][3], 9, 2, set_leftside); j++;
-			set_block_info(dic[Q[4]][2], 9, 4, set_leftside); j++;
-			set_block_info(dic[Q[5]][0], 10, 0, set_leftside); j++;
-			set_block_info(dic[Q[5]][2], 10, 2, set_leftside); j++;
-			set_block_info(dic[Q[4]][3], 10, 4, set_leftside); j++;
+			set_block_info(dic[Q[4]][1], 10, 0, set_leftside); j++;
+			set_block_info(dic[Q[4]][0], 9, 2, set_leftside); j++;
+			set_block_info(choose_hiragana(), 10, 4, set_leftside); j++;
+			set_block_info(dic[Q[5]][1], 11, 0, set_leftside); j++;
+			set_block_info(dic[Q[5]][3], 11, 2, set_leftside); j++;
+			set_block_info(dic[Q[4]][2], 11, 4, set_leftside); j++;
+			set_block_info(dic[Q[5]][0], 12, 0, set_leftside); j++;
+			set_block_info(dic[Q[5]][2], 12, 2, set_leftside); j++;
+			set_block_info(dic[Q[4]][3], 12, 4, set_leftside); j++;
 
 			set_block_info(49, 0, 1, set_leftside); j++;
 			set_block_info(49, 1, 3, set_leftside); j++;
-			set_block_info(49, 13, 1, set_leftside); j++;
-			set_block_info(49, 12, 3, set_leftside); j++;
+			set_block_info(49, 15, 1, set_leftside); j++;
+			set_block_info(49, 14, 3, set_leftside); j++;
 
-			set_leftside += 15;
+			set_leftside += 17;
 		}break;
 
 		case 254:
@@ -3115,7 +3115,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.0.5");
+	glutCreateWindow("goipachi ver.1.0.6");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

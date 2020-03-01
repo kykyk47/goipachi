@@ -65,7 +65,8 @@ int scene = 0; //◇シーンの追加．0:タイトル 1:スタンバイ画面 
 int difficulty = 0; //◇難易度：松竹梅（+0~2）文字数（+00～20）はやさ（+000～200）
 int difficulty_select = 0; //◇0：松竹梅選択 1：文字数選択 2：はやさ選択
 
-int dic[dic_4_LIMIT][4] = { {} }; //辞書の情報を格納
+int dic_4moji[dic_4_LIMIT][4] = { {} }; //辞書の情報を格納
+
 int score_get_hiragana = 0; //入手したひらがなの数
 int score_leave_hiragana = 0; //捨てたひらがなの数
 int score_most_hiragana = 0; //最も単語に使ったひらがなの数
@@ -77,6 +78,7 @@ int list_most_hiragana[80] = {}; //最も入手したひらがなを決めるの
 
 int hiragana_weight_4[80][5] = { {} }; //各何文字目かの登場回数（単語を構成するひらがなのほかにランダムなひらがなを配置するため，それの生成率を決める重み
 float hiragana_score_4[80][5] = { {} }; //Kキーを押下した際スロットの各文字の点数を合計するための要素
+
 
 int odai; //お題の番号を決める
 int odai_hiragana[75][5] = {
@@ -110,6 +112,7 @@ int high_score[5] = { 0,0,0,0,0 }; //レコードされているハイスコア
 int slot[5] = { 0,0,0,0,0 }; //スロット（のちのち5文字でもできるように）
 int slot_select = 0; //どの文字をさしているか
 int slot_start[OBJECT_LIMIT] = {}; //オブジェクトがルーレットだった場合ルーレットはどっから始まるか
+
 int object_on_stage = 0; //そのセッションで配置されたブロックの総数
 
 int score_word = 0; //１つ１つのワードのスコア
@@ -118,8 +121,10 @@ int time = TIME_LIMIT * 60;
 int stage_structure[PATTERN_LIMIT] = {};
 int set_leftside = 0;
 
+
 int object_block[OBJECT_LIMIT][3] = { {} }; //衝突判定に使う，プレイヤーとの距離の条件を満たすためにこの配列にオブジェクトの情報を記載（ブロックの種類,中心座標（ｘとｙ））
 int height_c = 0; //衝突判定に使う，ジャンプした後着地できる位置（高さ）最も高い座標
+
 
 FILE *fp; //スコアファイル
 FILE *fp_dic_4; //辞書ファイル
@@ -218,7 +223,7 @@ public:
 		:center_x(x), center_y(y), size_x(size_x), size_y(size_y) {
 
 		file = filename;
-		tex = *filename; //
+		tex = *filename; 
 		GdiplusStartup(&gdiPT, &gdiPSI, NULL);
 		glEnable(GL_TEXTURE_2D);
 		Bitmap bmp(filename);
@@ -345,7 +350,7 @@ public:
 		bmp.UnlockBits(&data);
 		Update();
 		texes.push_back(texture);
-		std::cout << texes.size() << std::endl;
+		//std::cout << texes.size() << std::endl;
 	}
 
 	void ChangeImage(const int num) {
@@ -635,13 +640,16 @@ void end() {
 
 void check_goi(int moji[])
 {
+	float *hs4 = &hiragana_score_4[0][0];
+	int *dic4 = &dic_4moji[0][0];
+
 	for (i = 0; i < dic_4_all; i++)
 	{
-		if (moji[0] == dic[i][0] && moji[1] == dic[i][1] && moji[2] == dic[i][2] && moji[3] == dic[i][3])
+		if (moji[0] == *(dic4+i*4) && moji[1] == *(dic4 + i * 4+1) && moji[2] == *(dic4 + i * 4+2) && moji[3] == *(dic4 + i * 4+3))
 		{	
 			word_hit = true;
 			
-			score_word = (int)(hiragana_score_4[moji[0]][0] + hiragana_score_4[moji[1]][1] + hiragana_score_4[moji[2]][2] + hiragana_score_4[moji[3]][3]);
+			score_word = (int)(*(hs4+4*moji[0]) + *(hs4 + 4 * moji[1]+1) + *(hs4 + 4 * moji[2]+2) + *(hs4 + 4 * moji[3]+3));
 
 			score += score_word;
 			score_tango++;
@@ -1182,33 +1190,36 @@ void block_standby(void)
 
 			for (k = 0; k <= 5; k++) //配置するブロックがどの単語のひらがなか，の単語の番号を決める
 			{
-				Q[k] = rand_dic_4(mt);
+				do
+				{
+					Q[k] = rand_dic_4(mt);
+				} while (Q[k]>=dic_4_all);
 			}
 
-			set_block_info(dic[Q[0]][0], 3, 0, set_leftside); j++;
-			set_block_info(dic[Q[0]][2], 3, 2, set_leftside); j++;
-			set_block_info(dic[Q[0]][3], 3, 4, set_leftside); j++;
-			set_block_info(dic[Q[0]][1], 4, 0, set_leftside); j++;
-			set_block_info(dic[Q[1]][2], 4, 2, set_leftside); j++;
-			set_block_info(dic[Q[1]][0], 4, 4, set_leftside); j++;
-			set_block_info(dic[Q[1]][3], 6, 0, set_leftside); j++;
-			set_block_info(dic[Q[2]][1], 5, 2, set_leftside); j++;
-			set_block_info(dic[Q[1]][1], 6, 4, set_leftside); j++;
-			set_block_info(dic[Q[2]][0], 7, 0, set_leftside); j++;
-			set_block_info(dic[Q[2]][2], 7, 2, set_leftside); j++;
+			set_block_info(dic_4moji[Q[0]][0], 3, 0, set_leftside); j++;
+			set_block_info(dic_4moji[Q[0]][2], 3, 2, set_leftside); j++;
+			set_block_info(dic_4moji[Q[0]][3], 3, 4, set_leftside); j++;
+			set_block_info(dic_4moji[Q[0]][1], 4, 0, set_leftside); j++;
+			set_block_info(dic_4moji[Q[1]][2], 4, 2, set_leftside); j++;
+			set_block_info(dic_4moji[Q[1]][0], 4, 4, set_leftside); j++;
+			set_block_info(dic_4moji[Q[1]][3], 6, 0, set_leftside); j++;
+			set_block_info(dic_4moji[Q[2]][1], 5, 2, set_leftside); j++;
+			set_block_info(dic_4moji[Q[1]][1], 6, 4, set_leftside); j++;
+			set_block_info(dic_4moji[Q[2]][0], 7, 0, set_leftside); j++;
+			set_block_info(dic_4moji[Q[2]][2], 7, 2, set_leftside); j++;
 			set_block_info(choose_hiragana() , 7, 4, set_leftside); j++;
-			set_block_info(dic[Q[2]][3], 8, 0, set_leftside); j++;
+			set_block_info(dic_4moji[Q[2]][3], 8, 0, set_leftside); j++;
 			set_block_info(choose_hiragana(), 8, 2, set_leftside); j++;
 			set_block_info(choose_hiragana(), 8, 4, set_leftside); j++;
-			set_block_info(dic[Q[4]][1], 10, 0, set_leftside); j++;
-			set_block_info(dic[Q[4]][0], 9, 2, set_leftside); j++;
+			set_block_info(dic_4moji[Q[4]][1], 10, 0, set_leftside); j++;
+			set_block_info(dic_4moji[Q[4]][0], 9, 2, set_leftside); j++;
 			set_block_info(choose_hiragana(), 10, 4, set_leftside); j++;
-			set_block_info(dic[Q[5]][1], 11, 0, set_leftside); j++;
-			set_block_info(dic[Q[5]][3], 11, 2, set_leftside); j++;
-			set_block_info(dic[Q[4]][2], 11, 4, set_leftside); j++;
-			set_block_info(dic[Q[5]][0], 12, 0, set_leftside); j++;
-			set_block_info(dic[Q[5]][2], 12, 2, set_leftside); j++;
-			set_block_info(dic[Q[4]][3], 12, 4, set_leftside); j++;
+			set_block_info(dic_4moji[Q[5]][1], 11, 0, set_leftside); j++;
+			set_block_info(dic_4moji[Q[5]][3], 11, 2, set_leftside); j++;
+			set_block_info(dic_4moji[Q[4]][2], 11, 4, set_leftside); j++;
+			set_block_info(dic_4moji[Q[5]][0], 12, 0, set_leftside); j++;
+			set_block_info(dic_4moji[Q[5]][2], 12, 2, set_leftside); j++;
+			set_block_info(dic_4moji[Q[4]][3], 12, 4, set_leftside); j++;
 
 			set_block_info(49, 0, 1, set_leftside); j++;
 			set_block_info(49, 1, 3, set_leftside); j++;
@@ -1280,10 +1291,14 @@ void block_standby(void)
 	}
 
 	object_on_stage = j;
+	std::cout << object_on_stage <<"個のオブジェクトが配置されました" << std::endl;
 }
 
 void game_reset(void) //ステージ構造などゲームを開始する直前にゲームを準備する
 {
+	player->center_x = 0;
+	player->center_y = -8;
+
 	score = 0;
 	score_get_hiragana = 0;
 	score_leave_hiragana = 0;
@@ -1296,33 +1311,37 @@ void game_reset(void) //ステージ構造などゲームを開始する直前�
 	slot[2] = 0;
 	slot[3] = 0;
 
+	int *obbl = &object_block[0][0];
+	int *stst = &stage_structure[0];
+	int *slst = &slot_start[0];
+
 	//ステージの構造を再構成
 
 	for (i = 0; i < object_on_stage; i++) //ブロックの情報をリセット
 	{
-		object_block[i][0] = 0;
-		object_block[i][1] = 0;
-		object_block[i][2] = 0;
-	}
-
-	for (i = 0; i < object_on_stage; i++)
-	{
-		slot_start[i] = choose_hiragana();
+		*(obbl + i*3) = 0;
+		*(obbl + i * 3+1) = 0;
+		*(obbl + i * 3+2) = 0;
 	}
 
 	for (i = 0; i < PATTERN_LIMIT; i++)
 	{
-		stage_structure[i] = choose_pattern();
+		*(stst + i) = choose_pattern();
 
 		if (i % 6 == 5) //6パターンおきにボーナスステージ配置
 		{
-			stage_structure[i] = 254;
+			*(stst+i) = 254;
 		}
 	}
 
-	stage_structure[18] = 255; //最後の壁（暫定）なんか無限だとクソヌルゲーになるらしいので
+	*(stst+18) = 255; //最後の壁（暫定）なんか無限だとクソヌルゲーになるらしいので
 
 	block_standby(); //ブロックの配置（再構成）
+
+	for (i = 0; i < object_on_stage; i++)
+	{
+		*(slst + i) = choose_hiragana(); //ヒントブロックの表示ひらがなをばらけさせるためにそれぞれのオブジェクトに割り振る
+	}
 }
 
 void game_shutdown(void) //Escキーを押下されたとき諸々を終了させる
@@ -1337,6 +1356,12 @@ void display(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+
+	int *obbl = &object_block[0][0];
+	GameObject *blhr = &block_hiragana[0];
+	int *hrrl = &hiragana_roulette[0];
+	int *slst = &slot_start[0];
+	
 
 	switch (scene)
 	{
@@ -1536,31 +1561,36 @@ void display(void)
 
 		for (i = 0; i < object_on_stage; i++) //オブジェクトとなるブロックここで全部描画
 		{
-			if (object_block[i][0] != 0 && object_block[i][0] != 77 && object_block[i][0] != 79)
+			if (*(obbl + i * 3) != 0 && *(obbl + i * 3) != 77 && *(obbl + i * 3) != 79)
 			{
-				block_hiragana[object_block[i][0]].SetImage(double(object_block[i][1]), double(object_block[i][2]));
+				block_hiragana[*(obbl + i * 3)].SetImage(double(*(obbl + i * 3+1)), double(*(obbl + i * 3+2)));
 			}
 
-			else if (object_block[i][0] == 77) //お題箱描画
+			else if (*(obbl + i * 3) == 77) //お題箱描画
 			{
 				if (slot[0] == 0 && slot[1] == 0 && slot[2] == 0 && slot[3] == 0)
 				{
-					block_hiragana[77].SetImage(double(object_block[i][1]), double(object_block[i][2]));
+					block_hiragana[77].SetImage(double(*(obbl + i * 3+1)), double(*(obbl + i * 3+2)));
 				}
 
 				else //スロットが空っぽじゃなかったらお題箱は起動しない
 				{
-					block_hiragana[78].SetImage(double(object_block[i][1]), double(object_block[i][2]));
+					block_hiragana[78].SetImage(double(*(obbl + i * 3+1)), double(*(obbl + i * 3+2)));
 				}
 
 			}
 
-			else if (object_block[i][0] == 79) //お題箱描画
+			else if (*(obbl + i * 3) == 79) //お題箱描画
 			{
-				block_hiragana[hiragana_roulette[((hiragana_roulette_timer + (slot_start[i])*60))%(74*60) / 60]].SetImage(double(object_block[i][1]), double(object_block[i][2]));
-				if (lamp_timer_block % 20 >= 0 && lamp_timer_block % 20 <= 4) { block_light_2.SetImage(double(object_block[i][1]), double(object_block[i][2])); }
-				if (lamp_timer_block % 20 >= 5 && lamp_timer_block % 20 <= 9) { block_light_1.SetImage(double(object_block[i][1]), double(object_block[i][2])); }
-				if (lamp_timer_block % 20 >= 10 && lamp_timer_block % 20 <= 14) { block_light_2.SetImage(double(object_block[i][1]), double(object_block[i][2])); }
+				//block_hiragana[hiragana_roulette[((hiragana_roulette_timer + (slot_start[i])*60))%(74*60) / 60]].SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2)));
+
+				//block_hiragana[hiragana_roulette[((hiragana_roulette_timer + *(slst+i) * 60)) % (74 * 60) / 60]].SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2)));
+				//block_hiragana[*(hrrl+ ((hiragana_roulette_timer + *(slst + i) * 60)) % (74 * 60) / 60)].SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2)));
+				(*(blhr+ *(hrrl + ((hiragana_roulette_timer + *(slst + i) * 60)) % (74 * 60) / 60))).SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2)));
+
+				if (lamp_timer_block % 20 >= 0 && lamp_timer_block % 20 <= 4) { block_light_2.SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2))); }
+				if (lamp_timer_block % 20 >= 5 && lamp_timer_block % 20 <= 9) { block_light_1.SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2))); }
+				if (lamp_timer_block % 20 >= 10 && lamp_timer_block % 20 <= 14) { block_light_2.SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2))); }
 			}
 		}
 
@@ -1655,6 +1685,10 @@ void idle(void)
 	double speed = 8;
 	double player_y_before = 0;
 
+	int *obbl = &object_block[0][0]; 
+	int *slst = &slot_start[0];
+	int *hrrl = &hiragana_roulette[0];
+
 
 	if (player_jump == true && flag_move_y == true) //ジャンプ
 	{
@@ -1664,7 +1698,6 @@ void idle(void)
 		{
 		case true://ふわふわ落下モード
 		{
-			//printf("ジャンプふわふわｑ\n");
 			player->Move(0, -(15.8 * jump_timer - 9.8* jump_timer * sqrt(jump_timer) *0.5)*0.0015 * 36);
 		}break;
 
@@ -1684,15 +1717,17 @@ void idle(void)
 
 		for (i = 0; i < object_on_stage; i++)
 		{
-			if (player->center_y < object_block[i][2] && object_block[i][0] != 0) //プレイやーがブロックより下側にいる時，かつ比較するオブジェクトブロックが空白でないとき
+			//printf("{p:[%d] nakami:[%d]\n",object_block[i][0],*(obbl+i*3));
+
+			if (player->center_y < *(obbl + i * 3 + 2) && *(obbl + i * 3) != 0) //プレイやーがブロックより下側にいる時，かつ比較するオブジェクトブロックが空白でないとき
 			{
-				if (abs(player->center_x - double(object_block[i][1])) < 48 && abs(player->center_y - double(object_block[i][2])) <= 64) //ブロックとの距離がx<48 y<64であるとき
+				if (abs(player->center_x - double(*(obbl + i * 3+1))) < 48 && abs(player->center_y - double(*(obbl + i * 3+2))) <= 64) //ブロックとの距離がx<48 y<64であるとき
 				{
 					flag_collision_D = true;
 
-					if (height_c > object_block[i][2])
+					if (height_c > *(obbl + i * 3+2))
 					{
-						height_c = object_block[i][2];
+						height_c = *(obbl + i * 3 + 2);
 					}
 				}
 			}
@@ -1700,9 +1735,9 @@ void idle(void)
 
 		for (i = 0; i < object_on_stage; i++)
 		{
-			if (player->center_y > object_block[i][2] && object_block[i][0] != 0) //プレイやーがブロックより上側にいる時，かつ比較するオブジェクトブロックが空白でないとき
+			if (player->center_y > *(obbl + i * 3 + 2) && *(obbl + i * 3) != 0) //プレイやーがブロックより上側にいる時，かつ比較するオブジェクトブロックが空白でないとき
 			{
-				if (abs(player->center_x - double(object_block[i][1])) < 48 && abs(player->center_y - double(object_block[i][2])) <= 64) //ブロックとの距離がx<48 y<64であるとき
+				if (abs(player->center_x - double(*(obbl + i * 3+1))) < 48 && abs(player->center_y - double(*(obbl + i * 3+2))) <= 64) //ブロックとの距離がx<48 y<64であるとき
 				{
 					flag_collision_U = true;
 				}
@@ -1741,15 +1776,15 @@ void idle(void)
 
 		for (i = 0; i < object_on_stage; i++)
 		{
-			if (player->center_y < object_block[i][2] && object_block[i][0] != 0) //プレイやーがブロックより下側にいる時，かつ比較するオブジェクトブロックが空白でないとき
+			if (player->center_y < *(obbl + i * 3 + 2) && *(obbl + i * 3) != 0) //プレイやーがブロックより下側にいる時，かつ比較するオブジェクトブロックが空白でないとき
 			{
-				if (abs(player->center_x - double(object_block[i][1])) < 48 && abs(player->center_y - double(object_block[i][2])) <= 64) //ブロックとの距離がx<48 y<64であるとき
+				if (abs(player->center_x - double(*(obbl + i * 3 + 1))) < 48 && abs(player->center_y - double(*(obbl + i * 3 + 2))) <= 64) //ブロックとの距離がx<48 y<64であるとき
 				{
 					flag_collision_D = true;
 
-					if (height_c > object_block[i][2])
+					if (height_c > *(obbl + i * 3+2))
 					{
-						height_c = object_block[i][2];
+						height_c = *(obbl + i * 3 + 2);
 					}
 				}
 			}
@@ -1774,9 +1809,9 @@ void idle(void)
 
 		for (i = 0; i < object_on_stage; i++)
 		{
-			if (player->center_x < object_block[i][1] && object_block[i][0] != 0) //プレイやーがブロックより←側にいる時，かつ比較するオブジェクトブロックが空白でないとき
+			if (player->center_x < *(obbl + i * 3+1) && *(obbl + i * 3) != 0) //プレイやーがブロックより←側にいる時，かつ比較するオブジェクトブロックが空白でないとき
 			{
-				if (abs(player->center_x - double(object_block[i][1])) < 48 && abs(player->center_y - double(object_block[i][2])) < 60
+				if (abs(player->center_x - double(*(obbl + i * 3+1))) < 48 && abs(player->center_y - double(*(obbl + i * 3+2))) < 60
 					) //ブロックとの距離がx<48 y<64であるとき
 				{
 					flag_collision_L = true;
@@ -1803,9 +1838,9 @@ void idle(void)
 
 		for (i = 0; i < object_on_stage; i++)
 		{
-			if (player->center_x > object_block[i][1] && object_block[i][0] != 0) //プレイやーがブロックより→側にいる時，かつ比較するオブジェクトブロックが空白でないとき
+			if (player->center_x > *(obbl + i * 3+1) && *(obbl + i * 3) != 0) //プレイやーがブロックより→側にいる時，かつ比較するオブジェクトブロックが空白でないとき
 			{
-				if (abs(player->center_x - double(object_block[i][1])) < 48 && abs(player->center_y - double(object_block[i][2])) < 60) //ブロックとの距離がx<48 y<64であるとき
+				if (abs(player->center_x - double(*(obbl + i * 3+1))) < 48 && abs(player->center_y - double(*(obbl + i * 3+2))) < 60) //ブロックとの距離がx<48 y<64であるとき
 				{
 					flag_collision_R = true;
 				}
@@ -1840,30 +1875,30 @@ void idle(void)
 
 		for (i = 0; i < object_on_stage; i++)
 		{
-			if (flag_bullet_exist == true && object_block[i][0] != 0 && abs(bullet->center_x - double(object_block[i][1])) < 32 && abs(bullet->center_y - double(object_block[i][2])) < 32) //ブロックとの距離がx<32 y<64で32あるとき（ブロックＩＤ＝０すなわち空気の時はスルー）
+			if (flag_bullet_exist == true && *(obbl + i * 3) != 0 && abs(bullet->center_x - double(*(obbl + i * 3+1))) < 32 && abs(bullet->center_y - double(*(obbl + i * 3+2))) < 32) //ブロックとの距離がx<32 y<64で32あるとき（ブロックＩＤ＝０すなわち空気の時はスルー）
 			{
 				flag_bullet_exist = false;
-				if (slot[slot_select] == 0 && object_block[i][0] != 49 && object_block[i][0] != 76 && object_block[i][0]!= 77 && object_block[i][0] != 78 && object_block[i][0] != 79)//すでにスロットにひらがなが入っている場合は衝突してもブロック消えないしひらがなも保持されない,あと木はスロットには入れられない（当然
+				if (slot[slot_select] == 0 && *(obbl + i * 3) != 49 && *(obbl + i * 3) != 76 && *(obbl + i * 3) != 77 && *(obbl + i * 3) != 78 && *(obbl + i * 3) != 79)//すでにスロットにひらがなが入っている場合は衝突してもブロック消えないしひらがなも保持されない,あと木はスロットには入れられない（当然
 				{
-					slot[slot_select] = object_block[i][0]; //弾丸が衝突したブロックをスロットに格納
-					object_block[i][0] = 0; //弾丸とブロックが衝突したらお互いの情報を０にする
+					slot[slot_select] = *(obbl + i * 3); //弾丸が衝突したブロックをスロットに格納
+					*(obbl + i * 3) = 0; //弾丸とブロックが衝突したらお互いの情報を０にする
 					score_get_hiragana++;
 				}
 
-				else if (object_block[i][0] == 77 && slot[0]==0 && slot[1] == 0 && slot[2] == 0 && slot[3] == 0) //お題箱にヒットしたとき（ごいスロットに何かあるときはＯＦＦ状態になる）
+				else if (*(obbl + i * 3) == 77 && slot[0]==0 && slot[1] == 0 && slot[2] == 0 && slot[3] == 0) //お題箱にヒットしたとき（ごいスロットに何かあるときはＯＦＦ状態になる）
 				{
 					odai = choose_odai();
 					slot[0] = odai_hiragana[odai][0];
 					slot[1] = odai_hiragana[odai][1];
 					slot[2] = odai_hiragana[odai][2];
 					slot[3] = odai_hiragana[odai][3];
-					object_block[i][0] = 0; //弾丸とブロックが衝突したらお互いの情報を０にする
+					*(obbl + i * 3) = 0; //弾丸とブロックが衝突したらお互いの情報を０にする
 				}
 
-				else if (object_block[i][0] == 79) //ひらがなルーレットにヒットした場合
+				else if (*(obbl + i * 3) == 79 && slot[slot_select] == 0) //ひらがなルーレットにヒットした場合
 				{
-					slot[slot_select] = hiragana_roulette[((hiragana_roulette_timer + (slot_start[i]) * 60)) % (74 * 60) / 60]; //弾丸が衝突したブロックをスロットに格納
-					object_block[i][0] = 0; //弾丸とブロックが衝突したらお互いの情報を０にする
+					slot[slot_select] = *(hrrl + ((hiragana_roulette_timer + *(slst + i) * 60)) % (74 * 60) / 60); //弾丸が衝突したブロックをスロットに格納（ランダムで選ばれたスロットの開始位置＋ひらがなの総数の結果ひらがなの総数を超えてしまう場合，ひらがなの総数で割ったあまりを求めることでルーレットの中身がひらがなの総数分から外れることを防いでいる）
+					*(obbl + i * 3) = 0; //弾丸とブロックが衝突したらお互いの情報を０にする
 					score_get_hiragana++;
 				}
 			}
@@ -1878,9 +1913,9 @@ void idle(void)
 
 		fclose(fp);
 
-		if ((fopen_s(&fp, "score.dat", "w")) != 0) //スコアファイルを読み込む
+		if ((fopen_s(&fp, "./dat/score.dat", "w")) != 0) //スコアファイルを読み込む
 		{
-			printf("スコアファイルを開けませんでした\n");
+			std::cout << "スコアファイルを開けませんでした\n" << std::endl;
 			exit(4);
 		}
 
@@ -1976,7 +2011,7 @@ void keyboard(unsigned char key, int x, int y)
 		switch (key) {
 		case '\033': game_shutdown(); break;
 
-		case 'l': scene = 5; break;
+		case 'l': scene = 5; game_reset(); break;
 
 		default:
 			break;
@@ -2090,24 +2125,27 @@ void resize(int w, int h) {
 
 void Init() {
 
+	int *dic4 = &dic_4moji[0][0];
+	int *hw4 = &hiragana_weight_4[0][0];
+	float *hs4 = &hiragana_score_4[0][0];
 
-	if ((fopen_s(&fp, "score.dat", "r")) != 0) //スコアファイルを読み込む
+	if ((fopen_s(&fp, "./dat/score.dat", "r")) != 0) //スコアファイルを読み込む
 	{
 		std::cout << "スコアファイルを開けませんでした" << std::endl;
 		exit(1);
 	}
 
-	if ((fopen_s(&fp_dic_4, "4moji_dic.dat", "r")) != 0) //辞書ファイルを読み込む
+	if ((fopen_s(&fp_dic_4, "./dat/4moji_dic.dat", "r")) != 0) //辞書ファイルを読み込む
 	{
 		std::cout << "辞書ファイルを開けませんでした" << std::endl;
 		exit(10);
 	}
 
 	i = 0;
-	while (fscanf_s(fp_dic_4, "%d,%d,%d,%d,", &dic[i][0], &dic[i][1], &dic[i][2], &dic[i][3]) != EOF)
+	while (fscanf_s(fp_dic_4, "%d,%d,%d,%d,", dic4+i*4,  dic4+i*4+1, dic4 + i * 4 + 2, dic4 + i * 4 + 3) != EOF)
 	{
 		/*
-		if (dic[i][0] == 0 || dic[i][1] == 0 || dic[i][2] == 0 || dic[i][3] == 0)
+		if (dic_4moji[i][0] == 0 || dic_4moji[i][1] == 0 || dic_4moji[i][2] == 0 || dic_4moji[i][3] == 0)
 		{
 			std::cout << i << "番目の単語が読み取れませんでした" << std::endl;
 			exit(3);
@@ -2221,7 +2259,6 @@ void Init() {
 		choose_hiragana_weight_add[i] = choose_hiragana_weight_add[i - 1] + choose_hiragana_weight[i];
 	}
 
-	game_reset();
 
 	//コピー用
 	//.LoadImagePNG2(.file, .tex);
@@ -2253,14 +2290,14 @@ void Init() {
 
 	for (k = 0; k < dic_4_all; k++)
 	{
-		//if (k >= 35000 && k< 38000)
+		//if (k >= 35000 && k< 38000) 
 		//{
-		//	printf("%d:%d %d %d %d\n", k, dic[k][0], dic[k][1], dic[k][2], dic[k][3]);
+		//	printf("%d:%d %d %d %d\n", k, dic_4moji[k][0], dic_4moji[k][1], dic_4moji[k][2], dic_4moji[k][3]);
 		//}
 
 		for (j = 0; j <= 3; j++)
 		{
-			hiragana_weight_4[dic[k][j]][j]++; //ひらがなの登場回数を計算して格納する
+			(*(hw4 + (*(dic4+k*4+j)) * 4 + j)) ++; //ひらがなの登場回数を計算して格納する
 		}
 	}
 
@@ -2268,16 +2305,16 @@ void Init() {
 	{
 		for (j = 0; j <= 3; j++)
 		{
-			if (hiragana_weight_4[k][j] >= 2000) { hiragana_score_4[k][j] = 2.5; }
-			else if (hiragana_weight_4[k][j] >= 1600) { hiragana_score_4[k][j] = 3; }
-			else if (hiragana_weight_4[k][j] >= 1300) { hiragana_score_4[k][j] = 5; }
-			else if (hiragana_weight_4[k][j] >= 1000) { hiragana_score_4[k][j] = 7.5; }
-			else if (hiragana_weight_4[k][j] >= 750) { hiragana_score_4[k][j] = 10; }
-			else if (hiragana_weight_4[k][j] >= 500) { hiragana_score_4[k][j] = 15; }
-			else if (hiragana_weight_4[k][j] >= 300) { hiragana_score_4[k][j] = 20; }
-			else if (hiragana_weight_4[k][j] >= 150) { hiragana_score_4[k][j] = 30; }
-			else if (hiragana_weight_4[k][j] >= 75) { hiragana_score_4[k][j] = 50; }
-			else if (hiragana_weight_4[k][j] >= 0) { hiragana_score_4[k][j] = 75; }
+			if (*(hw4+4*k+j) >= 2000) { *(hs4+4*k+j) = 2.5; }
+			else if (*(hw4+4*k+j) >= 1600) {  *(hs4+4*k+j) = 3; }
+			else if (*(hw4+4*k+j) >= 1300) {  *(hs4+4*k+j) = 5; }
+			else if (*(hw4+4*k+j) >= 1000) {  *(hs4+4*k+j) = 7.5; }
+			else if (*(hw4+4*k+j) >= 750) {  *(hs4+4*k+j) = 10; }
+			else if (*(hw4+4*k+j) >= 500) {  *(hs4+4*k+j) = 15; }
+			else if (*(hw4+4*k+j) >= 300) {  *(hs4+4*k+j) = 20; }
+			else if (*(hw4+4*k+j) >= 150) {  *(hs4+4*k+j) = 30; }
+			else if (*(hw4+4*k+j) >= 75) {  *(hs4+4*k+j) = 50; }
+			else if (*(hw4+4*k+j) >= 0) {  *(hs4+4*k+j) = 75; }
 		}
 
 	}
@@ -2360,7 +2397,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.0.9");
+	glutCreateWindow("goipachi ver.1.0.10");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

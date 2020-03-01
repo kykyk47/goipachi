@@ -1,0 +1,5 @@
+﻿  pch.cpp
+  goipachi.cpp
+c:\program files (x86)\windows kits\10\include\10.0.17763.0\shared\minwindef.h(127): warning C4005: 'CALLBACK': マクロが再定義されました。
+  c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\gl\glut.h(34): note: 'CALLBACK' の以前の定義を確認してください
+LINK : fatal error LNK1104: ファイル 'glut32.lib' を開くことができません。

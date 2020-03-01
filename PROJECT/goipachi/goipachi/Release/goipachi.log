@@ -1,0 +1,6 @@
+﻿  pch.cpp
+  goipachi.cpp
+goipachi.obj : error LNK2001: 外部シンボル "__imp__ilInit@0" は未解決です。
+goipachi.obj : error LNK2001: 外部シンボル "__imp__ilutRenderer@4" は未解決です。
+goipachi.obj : error LNK2001: 外部シンボル "__imp__ilutGLLoadImage@4" は未解決です。
+C:\Users\sakos\source\repos\goipachi\Release\goipachi.exe : fatal error LNK1120: 3 件の未解決の外部参照

@@ -1026,7 +1026,7 @@ void SetNumImage_2(double x, double y, int size_x, int size_y, int num) { //プ�
 	}
 }
 
-int choose_hiragana(void)
+int choose_hiragana(void) //ひらがなブロックをランダムに選ぶ関数
 {
 	int a;
 
@@ -1037,7 +1037,7 @@ int choose_hiragana(void)
 	return a;
 }
 
-int choose_pattern(void)
+int choose_pattern(void) //ステージのブロック配置パターンをランダムに選ぶ関数
 {
 	int a;
 
@@ -1048,7 +1048,7 @@ int choose_pattern(void)
 	return a;
 }
 
-int choose_odai(void)
+int choose_odai(void) //ヒントブロックの中身をランダムに選ぶ関数
 {
 	int a;
 
@@ -1752,7 +1752,7 @@ void idle(void)
 		{
 
 			jump_timer = JUMP_HIGHEST;
-			player->Move(0,((int)(player->center_y)) % 64); //衝突したらそのブロックの下にブロックまで戻す
+			player->Move(0,(-((int)(player->center_y))) % 64); //衝突したらそのブロックの下にブロックまで戻す
 
 		}
 
@@ -2407,7 +2407,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.0.11");
+	glutCreateWindow("goipachi ver.1.0.12");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

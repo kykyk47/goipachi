@@ -128,6 +128,7 @@ int height_c = 0; //衝突判定に使う，ジャンプした後着地できる
 
 FILE *fp; //スコアファイル
 FILE *fp_dic_4; //辞書ファイル
+
 int dic_4_all = 0;
 bool word_hit = false; //Ｋキー押下後，辞書に存在していたかどうか(trueなら得点＋エフェクト，falseなら時間減少＋エフェクト）
 
@@ -638,10 +639,11 @@ void end() {
 	GdiplusShutdown(gdiPT);
 }
 
-void check_goi(int moji[])
+void check_goi(int* moji)
 {
 	float *hs4 = &hiragana_score_4[0][0];
 	int *dic4 = &dic_4moji[0][0];
+	int *lmhr = &list_most_hiragana[0];
 
 	for (i = 0; i < dic_4_all; i++)
 	{
@@ -653,16 +655,16 @@ void check_goi(int moji[])
 
 			score += score_word;
 			score_tango++;
-			list_most_hiragana[moji[0]] ++;
-			list_most_hiragana[moji[1]] ++;
-			list_most_hiragana[moji[2]] ++;
-			list_most_hiragana[moji[3]] ++;
+			(*(lmhr + moji[0]))++;
+			(*(lmhr + moji[1]))++;
+			(*(lmhr + moji[2]))++;
+			(*(lmhr + moji[3]))++;
 
 			break;
 		}
 
 	}
-	if (word_hit == false)
+	if (word_hit == false) //ペナルティ
 	{
 		time -= 30*60;
 	}
@@ -1057,9 +1059,10 @@ int choose_odai(void)
 	return a;
 }
 
-void set_block_info(int type, int x_grid, int y_grid, int leftside) //leftsideはそのまま使う 
+void set_block_info(int type, int x_grid, int y_grid, int leftside, int blocknum) //leftsideはそのまま使う 
 {
-	object_block[j][0] = type; object_block[j][1] = (-64)*(leftside + x_grid); object_block[j][2] = (-64)*(y_grid);
+	int *obbl = &object_block[blocknum][0];
+	*(obbl) = type; *(obbl+1) = (-64)*(leftside + x_grid); *(obbl+2) = (-64)*(y_grid);
 }
 
 void block_standby(void)
@@ -1073,106 +1076,106 @@ void block_standby(void)
 
 
 	//ここから100行程度，導入部分のブロックを配置
-	set_block_info(76, 0, -1, 0); j++;
-	set_block_info(76, -1, -1, 0); j++;
-	set_block_info(76, -2, -1, 0); j++;
-	set_block_info(76, -3, -1, 0); j++;
-	set_block_info(76, -4, -1, 0); j++;
-	set_block_info(76, -5, -1, 0); j++;
-	set_block_info(76, -6, -1, 0); j++;
-	set_block_info(76, -7, -1, 0); j++;
-	set_block_info(76, -8, -1, 0); j++;
-	set_block_info(76, -9, -1, 0); j++;
-	set_block_info(76, -10, -1, 0); j++;
-	set_block_info(76, -11, -1, 0); j++;
-	set_block_info(76, -12, -1, 0); j++;
-	set_block_info(49, -1, 0, 0); j++;
-	set_block_info(49, -1, 1, 0); j++;
-	set_block_info(49, -1, 2, 0); j++;
-	set_block_info(49, -1, 3, 0); j++;
-	set_block_info(49, -1, 4, 0); j++;
-	set_block_info(49, -1, 5, 0); j++;
-	set_block_info(49, -1, 6, 0); j++;
-	set_block_info(49, -1, 7, 0); j++;
-	set_block_info(49, -1, 8, 0); j++;
+	set_block_info(76, 0, -1, 0,j); j++;
+	set_block_info(76, -1, -1, 0, j); j++;
+	set_block_info(76, -2, -1, 0, j); j++;
+	set_block_info(76, -3, -1, 0, j); j++;
+	set_block_info(76, -4, -1, 0, j); j++;
+	set_block_info(76, -5, -1, 0, j); j++;
+	set_block_info(76, -6, -1, 0, j); j++;
+	set_block_info(76, -7, -1, 0, j); j++;
+	set_block_info(76, -8, -1, 0, j); j++;
+	set_block_info(76, -9, -1, 0, j); j++;
+	set_block_info(76, -10, -1, 0, j); j++;
+	set_block_info(76, -11, -1, 0, j); j++;
+	set_block_info(76, -12, -1, 0, j); j++;
+	set_block_info(49, -1, 0, 0, j); j++;
+	set_block_info(49, -1, 1, 0, j); j++;
+	set_block_info(49, -1, 2, 0, j); j++;
+	set_block_info(49, -1, 3, 0, j); j++;
+	set_block_info(49, -1, 4, 0, j); j++;
+	set_block_info(49, -1, 5, 0, j); j++;
+	set_block_info(49, -1, 6, 0, j); j++;
+	set_block_info(49, -1, 7, 0, j); j++;
+	set_block_info(49, -1, 8, 0, j); j++;
 
 
 	for (k = 0; k <= 39; k++) //床の配置
 	{
-		set_block_info(76, k, -1, 0); j++;
+		set_block_info(76, k, -1, 0, j); j++;
 	}
 
-	set_block_info(11, 5, 0, 0); j++;
-	set_block_info(2, 6, 0, 0); j++;
-	set_block_info(14, 7, 0, 0); j++;
-	set_block_info(2, 8, 0, 0); j++;
-	set_block_info(49, 11, 0, 0); j++;
-	set_block_info(49, 12, 0, 0); j++;
-	set_block_info(49, 13, 0, 0); j++;
-	set_block_info(49, 14, 0, 0); j++;
-	set_block_info(49, 15, 0, 0); j++;
-	set_block_info(49, 16, 0, 0); j++;
-	set_block_info(49, 17, 0, 0); j++;
-	set_block_info(49, 18, 0, 0); j++;
-	set_block_info(5, 13, 1, 0); j++;
-	set_block_info(10, 14, 1, 0); j++;
-	set_block_info(21, 15, 1, 0); j++;
-	set_block_info(2, 16, 1, 0); j++;
-	set_block_info(14, 23, 0, 0); j++;
-	set_block_info(7, 24, 0, 0); j++;
-	set_block_info(44, 25, 0, 0); j++;
-	set_block_info(9, 26, 0, 0); j++;
-	set_block_info(5, 23, 3, 0); j++;
-	set_block_info(5, 24, 3, 0); j++;
-	set_block_info(59, 25, 3, 0); j++;
-	set_block_info(7, 26, 3, 0); j++;
-	set_block_info(38, 23, 6, 0); j++;
-	set_block_info(10, 24, 6, 0); j++;
-	set_block_info(63, 25, 6, 0); j++;
-	set_block_info(21, 26, 6, 0); j++;
-	set_block_info(49, 20, 2, 0); j++;
-	set_block_info(49, 21, 2, 0); j++;
-	set_block_info(49, 22, 2, 0); j++;
-	set_block_info(49, 23, 2, 0); j++;
-	set_block_info(49, 24, 2, 0); j++;
-	set_block_info(49, 25, 2, 0); j++;
-	set_block_info(49, 26, 2, 0); j++;
-	set_block_info(49, 27, 2, 0); j++;
-	set_block_info(49, 22, 5, 0); j++;
-	set_block_info(49, 23, 5, 0); j++;
-	set_block_info(49, 24, 5, 0); j++;
-	set_block_info(49, 25, 5, 0); j++;
-	set_block_info(49, 26, 5, 0); j++;
-	set_block_info(49, 27, 5, 0); j++;
-	set_block_info(49, 28, 5, 0); j++;
-	set_block_info(49, 29, 5, 0); j++;
-	set_block_info(49, 20, 3, 0); j++;
-	set_block_info(49, 20, 4, 0); j++;
-	set_block_info(49, 20, 5, 0); j++;
-	set_block_info(49, 20, 6, 0); j++;
-	set_block_info(49, 29, 0, 0); j++;
-	set_block_info(49, 29, 1, 0); j++;
-	set_block_info(49, 29, 2, 0); j++;
-	set_block_info(49, 29, 3, 0); j++;
-	set_block_info(49, 29, 4, 0); j++;
-	set_block_info(49, 29, 5, 0); j++;
-	set_block_info(12, 32, 0, 0); j++;
-	set_block_info(12, 32, 1, 0); j++;
-	set_block_info(25, 32, 2, 0); j++;
-	set_block_info(2, 32, 3, 0); j++;
-	set_block_info(12, 34, 0, 0); j++;
-	set_block_info(12, 34, 1, 0); j++;
-	set_block_info(31, 34, 2, 0); j++;
-	set_block_info(2, 34, 3, 0); j++;
-	set_block_info(49, 37, 0, 0); j++;
-	set_block_info(49, 38, 0, 0); j++;
-	set_block_info(49, 38, 1, 0); j++;
-	set_block_info(49, 38, 2, 0); j++;
-	set_block_info(49, 39, 0, 0); j++;
-	set_block_info(49, 39, 1, 0); j++;
-	set_block_info(49, 39, 2, 0); j++;
-	set_block_info(49, 39, 3, 0); j++;
-	set_block_info(49, 39, 4, 0); j++;
+	set_block_info(11, 5, 0, 0, j); j++;
+	set_block_info(2, 6, 0, 0, j); j++;
+	set_block_info(14, 7, 0, 0, j); j++;
+	set_block_info(2, 8, 0, 0, j); j++;
+	set_block_info(49, 11, 0, 0, j); j++;
+	set_block_info(49, 12, 0, 0, j); j++;
+	set_block_info(49, 13, 0, 0, j); j++;
+	set_block_info(49, 14, 0, 0, j); j++;
+	set_block_info(49, 15, 0, 0, j); j++;
+	set_block_info(49, 16, 0, 0, j); j++;
+	set_block_info(49, 17, 0, 0, j); j++;
+	set_block_info(49, 18, 0, 0, j); j++;
+	set_block_info(5, 13, 1, 0, j); j++;
+	set_block_info(10, 14, 1, 0, j); j++;
+	set_block_info(21, 15, 1, 0, j); j++;
+	set_block_info(2, 16, 1, 0, j); j++;
+	set_block_info(14, 23, 0, 0, j); j++;
+	set_block_info(7, 24, 0, 0, j); j++;
+	set_block_info(44, 25, 0, 0, j); j++;
+	set_block_info(9, 26, 0, 0, j); j++;
+	set_block_info(5, 23, 3, 0, j); j++;
+	set_block_info(5, 24, 3, 0, j); j++;
+	set_block_info(59, 25, 3, 0, j); j++;
+	set_block_info(7, 26, 3, 0, j); j++;
+	set_block_info(38, 23, 6, 0, j); j++;
+	set_block_info(10, 24, 6, 0, j); j++;
+	set_block_info(63, 25, 6, 0, j); j++;
+	set_block_info(21, 26, 6, 0, j); j++;
+	set_block_info(49, 20, 2, 0, j); j++;
+	set_block_info(49, 21, 2, 0, j); j++;
+	set_block_info(49, 22, 2, 0, j); j++;
+	set_block_info(49, 23, 2, 0, j); j++;
+	set_block_info(49, 24, 2, 0, j); j++;
+	set_block_info(49, 25, 2, 0, j); j++;
+	set_block_info(49, 26, 2, 0, j); j++;
+	set_block_info(49, 27, 2, 0, j); j++;
+	set_block_info(49, 22, 5, 0, j); j++;
+	set_block_info(49, 23, 5, 0, j); j++;
+	set_block_info(49, 24, 5, 0, j); j++;
+	set_block_info(49, 25, 5, 0, j); j++;
+	set_block_info(49, 26, 5, 0, j); j++;
+	set_block_info(49, 27, 5, 0, j); j++;
+	set_block_info(49, 28, 5, 0, j); j++;
+	set_block_info(49, 29, 5, 0, j); j++;
+	set_block_info(49, 20, 3, 0, j); j++;
+	set_block_info(49, 20, 4, 0, j); j++;
+	set_block_info(49, 20, 5, 0, j); j++;
+	set_block_info(49, 20, 6, 0, j); j++;
+	set_block_info(49, 29, 0, 0, j); j++;
+	set_block_info(49, 29, 1, 0, j); j++;
+	set_block_info(49, 29, 2, 0, j); j++;
+	set_block_info(49, 29, 3, 0, j); j++;
+	set_block_info(49, 29, 4, 0, j); j++;
+	set_block_info(49, 29, 5, 0, j); j++;
+	set_block_info(12, 32, 0, 0, j); j++;
+	set_block_info(12, 32, 1, 0, j); j++;
+	set_block_info(25, 32, 2, 0, j); j++;
+	set_block_info(2, 32, 3, 0, j); j++;
+	set_block_info(12, 34, 0, 0, j); j++;
+	set_block_info(12, 34, 1, 0, j); j++;
+	set_block_info(31, 34, 2, 0, j); j++;
+	set_block_info(2, 34, 3, 0, j); j++;
+	set_block_info(49, 37, 0, 0, j); j++;
+	set_block_info(49, 38, 0, 0, j); j++;
+	set_block_info(49, 38, 1, 0, j); j++;
+	set_block_info(49, 38, 2, 0, j); j++;
+	set_block_info(49, 39, 0, 0, j); j++;
+	set_block_info(49, 39, 1, 0, j); j++;
+	set_block_info(49, 39, 2, 0, j); j++;
+	set_block_info(49, 39, 3, 0, j); j++;
+	set_block_info(49, 39, 4, 0, j); j++;
 
 
 	set_leftside = 40;
@@ -1185,7 +1188,7 @@ void block_standby(void)
 		{
 			for (k = 0; k <= 16; k++) //床の配置
 			{
-				set_block_info(76, k, -1, set_leftside); j++;
+				set_block_info(76, k, -1, set_leftside, j); j++;
 			}
 
 			for (k = 0; k <= 5; k++) //配置するブロックがどの単語のひらがなか，の単語の番号を決める
@@ -1196,35 +1199,35 @@ void block_standby(void)
 				} while (Q[k]>=dic_4_all);
 			}
 
-			set_block_info(dic_4moji[Q[0]][0], 3, 0, set_leftside); j++;
-			set_block_info(dic_4moji[Q[0]][2], 3, 2, set_leftside); j++;
-			set_block_info(dic_4moji[Q[0]][3], 3, 4, set_leftside); j++;
-			set_block_info(dic_4moji[Q[0]][1], 4, 0, set_leftside); j++;
-			set_block_info(dic_4moji[Q[1]][2], 4, 2, set_leftside); j++;
-			set_block_info(dic_4moji[Q[1]][0], 4, 4, set_leftside); j++;
-			set_block_info(dic_4moji[Q[1]][3], 6, 0, set_leftside); j++;
-			set_block_info(dic_4moji[Q[2]][1], 5, 2, set_leftside); j++;
-			set_block_info(dic_4moji[Q[1]][1], 6, 4, set_leftside); j++;
-			set_block_info(dic_4moji[Q[2]][0], 7, 0, set_leftside); j++;
-			set_block_info(dic_4moji[Q[2]][2], 7, 2, set_leftside); j++;
-			set_block_info(choose_hiragana() , 7, 4, set_leftside); j++;
-			set_block_info(dic_4moji[Q[2]][3], 8, 0, set_leftside); j++;
-			set_block_info(choose_hiragana(), 8, 2, set_leftside); j++;
-			set_block_info(choose_hiragana(), 8, 4, set_leftside); j++;
-			set_block_info(dic_4moji[Q[4]][1], 10, 0, set_leftside); j++;
-			set_block_info(dic_4moji[Q[4]][0], 9, 2, set_leftside); j++;
-			set_block_info(choose_hiragana(), 10, 4, set_leftside); j++;
-			set_block_info(dic_4moji[Q[5]][1], 11, 0, set_leftside); j++;
-			set_block_info(dic_4moji[Q[5]][3], 11, 2, set_leftside); j++;
-			set_block_info(dic_4moji[Q[4]][2], 11, 4, set_leftside); j++;
-			set_block_info(dic_4moji[Q[5]][0], 12, 0, set_leftside); j++;
-			set_block_info(dic_4moji[Q[5]][2], 12, 2, set_leftside); j++;
-			set_block_info(dic_4moji[Q[4]][3], 12, 4, set_leftside); j++;
+			set_block_info(dic_4moji[Q[0]][0], 3, 0, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[0]][2], 3, 2, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[0]][3], 3, 4, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[0]][1], 4, 0, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[1]][2], 4, 2, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[1]][0], 4, 4, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[1]][3], 6, 0, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[2]][1], 5, 2, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[1]][1], 6, 4, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[2]][0], 7, 0, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[2]][2], 7, 2, set_leftside, j); j++;
+			set_block_info(choose_hiragana() , 7, 4, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[2]][3], 8, 0, set_leftside, j); j++;
+			set_block_info(choose_hiragana(), 8, 2, set_leftside, j); j++;
+			set_block_info(choose_hiragana(), 8, 4, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[4]][1], 10, 0, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[4]][0], 9, 2, set_leftside, j); j++;
+			set_block_info(choose_hiragana(), 10, 4, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[5]][1], 11, 0, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[5]][3], 11, 2, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[4]][2], 11, 4, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[5]][0], 12, 0, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[5]][2], 12, 2, set_leftside, j); j++;
+			set_block_info(dic_4moji[Q[4]][3], 12, 4, set_leftside, j); j++;
 
-			set_block_info(49, 0, 1, set_leftside); j++;
-			set_block_info(49, 1, 3, set_leftside); j++;
-			set_block_info(49, 15, 1, set_leftside); j++;
-			set_block_info(49, 14, 3, set_leftside); j++;
+			set_block_info(49, 0, 1, set_leftside, j); j++;
+			set_block_info(49, 1, 3, set_leftside, j); j++;
+			set_block_info(49, 15, 1, set_leftside, j); j++;
+			set_block_info(49, 14, 3, set_leftside, j); j++;
 
 			set_leftside += 17;
 		}break;
@@ -1233,32 +1236,32 @@ void block_standby(void)
 		{
 			for (k = 0; k <= 16; k++) //床の配置
 			{
-				set_block_info(76, k, -1, set_leftside); j++;
+				set_block_info(76, k, -1, set_leftside, j); j++;
 			}
 
-			set_block_info(79, 4, 0, set_leftside); j++;
-			set_block_info(79, 5, 0, set_leftside); j++;
-			set_block_info(79, 4, 2, set_leftside); j++;
-			set_block_info(79, 5, 2, set_leftside); j++;
-			set_block_info(79, 4, 4, set_leftside); j++;
-			set_block_info(79, 5, 4, set_leftside); j++;
-			set_block_info(79, 11, 0, set_leftside); j++;
-			set_block_info(79, 12, 0, set_leftside); j++;
-			set_block_info(79, 11, 2, set_leftside); j++;
-			set_block_info(79, 12, 2, set_leftside); j++;
-			set_block_info(79, 11, 4, set_leftside); j++;
-			set_block_info(79, 12, 4, set_leftside); j++;
+			set_block_info(79, 4, 0, set_leftside, j); j++;
+			set_block_info(79, 5, 0, set_leftside, j); j++;
+			set_block_info(79, 4, 2, set_leftside, j); j++;
+			set_block_info(79, 5, 2, set_leftside, j); j++;
+			set_block_info(79, 4, 4, set_leftside, j); j++;
+			set_block_info(79, 5, 4, set_leftside, j); j++;
+			set_block_info(79, 11, 0, set_leftside, j); j++;
+			set_block_info(79, 12, 0, set_leftside, j); j++;
+			set_block_info(79, 11, 2, set_leftside, j); j++;
+			set_block_info(79, 12, 2, set_leftside, j); j++;
+			set_block_info(79, 11, 4, set_leftside, j); j++;
+			set_block_info(79, 12, 4, set_leftside, j); j++;
 
-			set_block_info(77, 5, 6, set_leftside); j++;
-			set_block_info(77, 11, 6, set_leftside); j++;
+			set_block_info(77, 5, 6, set_leftside, j); j++;
+			set_block_info(77, 11, 6, set_leftside, j); j++;
 
-			set_block_info(49, 1, 3, set_leftside); j++;
-			set_block_info(49, 2, 1, set_leftside); j++;
-			set_block_info(49, 7, 1, set_leftside); j++;
-			set_block_info(49, 8, 3, set_leftside); j++;
-			set_block_info(49, 9, 1, set_leftside); j++;
-			set_block_info(49, 14, 1, set_leftside); j++;
-			set_block_info(49, 15, 3, set_leftside); j++;
+			set_block_info(49, 1, 3, set_leftside, j); j++;
+			set_block_info(49, 2, 1, set_leftside, j); j++;
+			set_block_info(49, 7, 1, set_leftside, j); j++;
+			set_block_info(49, 8, 3, set_leftside, j); j++;
+			set_block_info(49, 9, 1, set_leftside, j); j++;
+			set_block_info(49, 14, 1, set_leftside, j); j++;
+			set_block_info(49, 15, 3, set_leftside, j); j++;
 
 
 			set_leftside += 17;
@@ -1268,14 +1271,14 @@ void block_standby(void)
 		{
 			for (k = 0; k <= 10; k++) //床の配置
 			{
-				set_block_info(76, k, -1, set_leftside); j++;
+				set_block_info(76, k, -1, set_leftside, j); j++;
 			}
 
 			for (k = 0; k <= 10; k++) //床の配置
 			{
 				for (l = 0; l <= 10; l++) //床の配置
 				{
-					set_block_info(49, l, k, set_leftside); j++;
+					set_block_info(49, l, k, set_leftside, j); j++;
 				}
 			}
 
@@ -1284,14 +1287,14 @@ void block_standby(void)
 
 		default:
 		{
-			set_block_info(76, 0, -1, set_leftside); j++;
+			set_block_info(76, 0, -1, set_leftside, j); j++;
 			set_leftside += 1;
 		}break;
 		}
 	}
 
 	object_on_stage = j;
-	std::cout << object_on_stage <<"個のオブジェクトが配置されました" << std::endl;
+	std::cout << "<info 024: " << object_on_stage <<"個のオブジェクトがステージに配置されました" << std::endl;
 }
 
 void game_reset(void) //ステージ構造などゲームを開始する直前にゲームを準備する
@@ -1346,9 +1349,9 @@ void game_reset(void) //ステージ構造などゲームを開始する直前�
 
 void game_shutdown(void) //Escキーを押下されたとき諸々を終了させる
 {
-	fclose(fp);
-	fclose(fp_dic_4); 
-	exit(0);
+	fclose(fp); std::cout << "<info 017: スコアファイルを閉じました>" << std::endl;
+	fclose(fp_dic_4); std::cout << "<info 018: 4文字辞書ファイルを閉じました>" << std::endl;
+	exit(1);
 }
 
 void display(void)
@@ -1373,8 +1376,6 @@ void display(void)
 		UI_title.SetImage(0, -352);
 		UI_gamestart.SetImage(-80, 48);
 		UI_pressstart.SetImage(140, -32);
-
-		glutPostRedisplay();
 
 	}break;
 
@@ -1510,7 +1511,7 @@ void display(void)
 			BG_01.SetImage(i * 1024 + (player->center_x *0.0), -224);
 		}
 
-		if (gun_timer > 0) //銃を発射しているときの
+		if (gun_timer > 0) //銃を発射しているときのプレイヤーの描画
 		{
 			if (player->direction == 1) { player->ChangeImage(4); }
 			else { player->ChangeImage(9); }
@@ -1582,10 +1583,8 @@ void display(void)
 
 			else if (*(obbl + i * 3) == 79) //お題箱描画
 			{
-				//block_hiragana[hiragana_roulette[((hiragana_roulette_timer + (slot_start[i])*60))%(74*60) / 60]].SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2)));
+				//block_hiragana[hiragana_roulette[((hiragana_roulette_timer + (slot_start[i])*60))%(74*60) / 60]].SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2))); //下式が複雑なので一応変形前も載せる
 
-				//block_hiragana[hiragana_roulette[((hiragana_roulette_timer + *(slst+i) * 60)) % (74 * 60) / 60]].SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2)));
-				//block_hiragana[*(hrrl+ ((hiragana_roulette_timer + *(slst + i) * 60)) % (74 * 60) / 60)].SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2)));
 				(*(blhr+ *(hrrl + ((hiragana_roulette_timer + *(slst + i) * 60)) % (74 * 60) / 60))).SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2)));
 
 				if (lamp_timer_block % 20 >= 0 && lamp_timer_block % 20 <= 4) { block_light_2.SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2))); }
@@ -1688,7 +1687,12 @@ void idle(void)
 	int *obbl = &object_block[0][0]; 
 	int *slst = &slot_start[0];
 	int *hrrl = &hiragana_roulette[0];
+	// std::cout <<--------------------フレーム開始--------------------->" << std::endl;
 
+	/*
+	 std::cout << "<info 007: プレイヤーの座標：[ "<< player->center.x << "],[" <<  player->center.y <<"]" << std::endl; //コピー用 随所で使う
+	 std::cout << "<info 007: 見てるブロックの座標：[" << *(obbl + i * 3+1) << "],[" << *(obbl + i * 3+2) <<"]" << std::endl; //コピー用 随所で使う
+	 */
 
 	if (player_jump == true && flag_move_y == true) //ジャンプ
 	{
@@ -1717,17 +1721,16 @@ void idle(void)
 
 		for (i = 0; i < object_on_stage; i++)
 		{
-			//printf("{p:[%d] nakami:[%d]\n",object_block[i][0],*(obbl+i*3));
-
 			if (player->center_y < *(obbl + i * 3 + 2) && *(obbl + i * 3) != 0) //プレイやーがブロックより下側にいる時，かつ比較するオブジェクトブロックが空白でないとき
 			{
 				if (abs(player->center_x - double(*(obbl + i * 3+1))) < 48 && abs(player->center_y - double(*(obbl + i * 3+2))) <= 64) //ブロックとの距離がx<48 y<64であるとき
 				{
+					// std::cout << "<info 002: 下に行こうとしてブロック[ << i <<] に衝突しています>" << std::endl;
 					flag_collision_D = true;
 
-					if (height_c > *(obbl + i * 3+2))
+					if (height_c > *(obbl + i * 3+2)) 
 					{
-						height_c = *(obbl + i * 3 + 2);
+						height_c = *(obbl + i * 3 + 2); //着地点の座標を記録
 					}
 				}
 			}
@@ -1739,6 +1742,7 @@ void idle(void)
 			{
 				if (abs(player->center_x - double(*(obbl + i * 3+1))) < 48 && abs(player->center_y - double(*(obbl + i * 3+2))) <= 64) //ブロックとの距離がx<48 y<64であるとき
 				{
+					// std::cout << "<info 003: 上に行こうとしてブロック[ << i <<] に衝突しています>" << std::endl;
 					flag_collision_U = true;
 				}
 			}
@@ -1748,8 +1752,8 @@ void idle(void)
 		{
 
 			jump_timer = JUMP_HIGHEST;
-			player->center_y -= ((int)(player->center_y)
-				) % 64;
+			player->Move(0,((int)(player->center_y)) % 64); //衝突したらそのブロックの下にブロックまで戻す
+
 		}
 
 		if (flag_collision_D == true) //地面との衝突を感知したフレームでの処理
@@ -1780,11 +1784,14 @@ void idle(void)
 			{
 				if (abs(player->center_x - double(*(obbl + i * 3 + 1))) < 48 && abs(player->center_y - double(*(obbl + i * 3 + 2))) <= 64) //ブロックとの距離がx<48 y<64であるとき
 				{
+					// std::cout << "<info 004: 下に行こうとしてブロック[ << i <<] に衝突しています>" << std::endl;
 					flag_collision_D = true;
+
 
 					if (height_c > *(obbl + i * 3+2))
 					{
-						height_c = *(obbl + i * 3 + 2);
+						height_c = *(obbl + i * 3 + 2); //着地点を取得
+						
 					}
 				}
 			}
@@ -1792,7 +1799,7 @@ void idle(void)
 
 		if (flag_collision_D == false) //地面との衝突を感知したフレームでの処理
 		{
-			height_c = 8000;
+			height_c = 8000; //自分の位置よりも風聞に低い場所に衝突判定に使う数値を戻す
 		}
 
 		if (flag_collision_D == false) { jump_timer = JUMP_HIGHEST; player_jump = true; } //足場がなくなると自由落下（タイマー = JUMP_HIGHEST で鉛直投げ上げ最高点）
@@ -1814,6 +1821,7 @@ void idle(void)
 				if (abs(player->center_x - double(*(obbl + i * 3+1))) < 48 && abs(player->center_y - double(*(obbl + i * 3+2))) < 60
 					) //ブロックとの距離がx<48 y<64であるとき
 				{
+					// std::cout << "<info 005: 左に行こうとしてブロック[ << i <<] に衝突しています>" << std::endl;
 					flag_collision_L = true;
 				}
 			}
@@ -1842,6 +1850,7 @@ void idle(void)
 			{
 				if (abs(player->center_x - double(*(obbl + i * 3+1))) < 48 && abs(player->center_y - double(*(obbl + i * 3+2))) < 60) //ブロックとの距離がx<48 y<64であるとき
 				{
+					// std::cout << "<info 006: 右に行こうとしてブロック[ << i <<] に衝突しています>" << std::endl;
 					flag_collision_R = true;
 				}
 			}
@@ -1864,12 +1873,12 @@ void idle(void)
 		{
 		case 0:
 		{
-			bullet->center_x += 16;
+			bullet->Move(16, 0);
 		}break;
 
 		case 1:
 		{
-			bullet->center_x -= 16;
+			bullet->Move(-16, 0);
 		}break;
 		}
 
@@ -1911,15 +1920,16 @@ void idle(void)
 	{
 		scene = 6;
 
-		fclose(fp);
+		fclose(fp); 
+		// std::cout << "<info 019: スコアファイルを「読み取り用として」閉じました>" << std::endl;
 
 		if ((fopen_s(&fp, "./dat/score.dat", "w")) != 0) //スコアファイルを読み込む
 		{
-			std::cout << "スコアファイルを開けませんでした\n" << std::endl;
-			exit(4);
+			std::cout << "<info 020:スコアファイルを「書き取り用として」開けませんでした>" << std::endl;
+			exit(20);
 		}
 
-		time = TIME_LIMIT;
+		//std::cout << "<info 021:スコアファイルを「書き取り用として」開きました>\n" << std::endl;
 
 		if (high_score[0] < score)
 		{
@@ -1987,12 +1997,10 @@ void idle(void)
 		word_hit = false; //正解or間違いの演出のエフェクト終了後，語彙スロット未完成状態に
 	}
 
-	glutPostRedisplay();
 }
 
 void keyboard(unsigned char key, int x, int y)
 {
-	
 	switch (scene)
 	{
 	case 0:
@@ -2111,15 +2119,17 @@ void resize(int w, int h) {
 		glViewport((w-(double)h/0.5625)/2, 0, (double)h / 0.5625, h);
 	}
 
-	else //規定のあすひより縦長の場合
+	else //規定のアスペクト比より縦長の場合
 	{
 		glViewport(0, (h-(double)w * 0.5625)/2 , w, (double)w * 0.5625);
 	}
 	
+
 	glLoadIdentity();
 	glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
 
 	gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
+	std::cout << "<info 028: 画面のリサイズ>" << std::endl;
 
 }
 
@@ -2131,31 +2141,34 @@ void Init() {
 
 	if ((fopen_s(&fp, "./dat/score.dat", "r")) != 0) //スコアファイルを読み込む
 	{
-		std::cout << "スコアファイルを開けませんでした" << std::endl;
-		exit(1);
+		std::cout << "<info 015: スコアファイルを開けませんでした>" << std::endl;
+		exit(15);
 	}
+
+	i = 0;
+	while (fscanf_s(fp, "%d", &high_score[i]) != EOF)
+	{
+		i++;
+	}
+
+	std::cout << "<info 016: スコアファイルを読み込みました>" << std::endl;
+
 
 	if ((fopen_s(&fp_dic_4, "./dat/4moji_dic.dat", "r")) != 0) //辞書ファイルを読み込む
 	{
-		std::cout << "辞書ファイルを開けませんでした" << std::endl;
-		exit(10);
+		std::cout << "<info 012: 辞書ファイルを開けませんでした" << std::endl;
+		exit(12);
 	}
 
 	i = 0;
 	while (fscanf_s(fp_dic_4, "%d,%d,%d,%d,", dic4+i*4,  dic4+i*4+1, dic4 + i * 4 + 2, dic4 + i * 4 + 3) != EOF)
 	{
-		/*
-		if (dic_4moji[i][0] == 0 || dic_4moji[i][1] == 0 || dic_4moji[i][2] == 0 || dic_4moji[i][3] == 0)
-		{
-			std::cout << i << "番目の単語が読み取れませんでした" << std::endl;
-			exit(3);
-		}
-		*/
 		i++;
 	}
 
 	dic_4_all = i; 
-	std::cout << "4文字辞書" << dic_4_all << "単語を読み込みました" << std::endl;
+
+	std::cout << "<info 013: 4文字辞書 " << dic_4_all << "単語を読み込みました>" << std::endl;
 
 
 	glClearColor(0.0, 0.0, 0.0, 1.0);
@@ -2277,14 +2290,10 @@ void Init() {
 	bullet = new AnimationChara(0.0, 0.0, 64.0, 64.0, L"./pic/bullet.png");
 
 
+	std::cout << "<info 022: 画像を読み込みました>" << std::endl;
+
 	scene = 0;
 
-
-	i = 0;
-	while (fscanf_s(fp, "%d", &high_score[i]) != EOF)
-	{
-		i++;
-	}
 
 	i = 0;
 
@@ -2318,6 +2327,7 @@ void Init() {
 		}
 
 	}
+	std::cout << "<info 023: ひらがなの点数計算が完了しました>" << std::endl;
 
 }
 
@@ -2397,7 +2407,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.0.10");
+	glutCreateWindow("goipachi ver.1.0.11");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

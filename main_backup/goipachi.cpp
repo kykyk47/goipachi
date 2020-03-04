@@ -40,8 +40,7 @@ using namespace Gdiplus;
 GdiplusStartupInput gdiPSI;
 ULONG_PTR gdiPT;
 
-GLuint tex_num_a[10] = {}; //数字フォント（赤）
-GLuint tex_num_b[11] = {}; //数字フォント（頭上のスコアの数字・黄緑） [10]は「＋」
+GLuint tex_num[7][11] = {}; //[0][]：数字フォント（赤） //[1][]：数字フォント（頭上のスコアの数字・黄緑） [10]は「＋」
 
 int ranking; //ランキング表示のため
 
@@ -81,7 +80,7 @@ float hiragana_score_4[80][5] = { {} }; //Kキーを押下した際スロット�
 
 
 int odai; //お題の番号を決める
-int odai_hiragana[75][5] = {
+int odai_hiragana_4[75][5] = {
 {0,6,2,0},{0,0,2,43},{11,0,0,8},{0,46,0,46},{0,2,0,2},{0,3,0,3},{0,2,15,0},{14,2,0,0},{0,0,6,39},
 {66,46,0,0},{0,47,0,3},{0,0,0,48},{6,0,6,0},{16,0,0,46},{0,47,0,2},{0,50,0,50},{0,50,41,0},{26,0,0,8},
 {39,0,0,50},{0,0,50,65}
@@ -140,6 +139,8 @@ double temp_camera_x = 0; //◇シーン移動によりカメラの位置をリ�
 double temp_camera_y = 0;
 //void LoadImagePNG(const wchar_t* filename, GLuint &texture);
 
+int speed = 0; //プレイヤーが進むスピード
+
 bool flag_move_x = true; //次のタイマー関数が呼び出されるまでx方向の移動を与えないための制御
 bool flag_move_y = true; //次のタイマー関数が呼び出されるまでy方向の移動を与えないための制御
 bool flag_collision_L = false; //衝突判定（プレイヤーの左方向）
@@ -147,8 +148,10 @@ bool flag_collision_R = false; //衝突判定（右方向）
 bool flag_collision_U = false; //衝突判定（上方向）
 bool flag_collision_D = false; //衝突判定（下方向）
 
+bool flag_move_bullet = true; //次のタイマー関数が呼び出されるまで弾丸の移動を与えないための制御
 bool flag_jump_slow = false; //ジャンプ→落下時ゆっくり降りるかんじにするトリガー
 bool flag_bullet_exist = false; //弾丸が存在して動いている状態（当たり判定起動）
+
 
 
 int time_1flame; //デバッグ用，1フレームでどれだけ進んだか，どれだけ時間がたっているか（ms）（下３つも同じ）
@@ -685,12 +688,13 @@ void LoadImagePNG(const wchar_t* filename, GLuint &texture)
 	bmp.UnlockBits(&data);
 }
 
-void SetNumImage(double x, double y, int size_x, int size_y, int num) {
+
+
+void SetNumImage(double x, double y, int size_x, int size_y, int num, int font) { //プレイヤーエフェクトとしての数字
 
 	if (num >= 100000) //10万の位
 	{
-
-		glBindTexture(GL_TEXTURE_2D, tex_num_a[num / 100000]);
+		glBindTexture(GL_TEXTURE_2D, tex_num[font][num / 100000]);
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -709,124 +713,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num) {
 
 	if (num >= 10000) //1万の位
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num_a[(num / 10000) % 10]);
-
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glEnable(GL_TEXTURE_2D);
-		glEnable(GL_ALPHA_TEST);
-		glBegin(GL_POLYGON);
-		glTexCoord2f(0.0f, 1.0f); glVertex2d(size_x / 8 * 5 + x + 16, size_y + y);//左下
-		glTexCoord2f(0.0f, 0.0f); glVertex2d(size_x / 8 * 5 + x + 16, y);//左上
-		glTexCoord2f(1.0f, 0.0f); glVertex2d(size_x / 8 * 4 + x + 16, y);//右上
-		glTexCoord2f(1.0f, 1.0f); glVertex2d(size_x / 8 * 4 + x + 16, size_y + y);//右下
-		glEnd();
-		glDisable(GL_ALPHA_TEST);
-		glDisable(GL_TEXTURE_2D);
-		glDisable(GL_BLEND);
-	}
-
-	if (num >= 1000) //1000の位
-	{
-		glBindTexture(GL_TEXTURE_2D, tex_num_a[(num / 1000) % 10]);
-
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glEnable(GL_TEXTURE_2D);
-		glEnable(GL_ALPHA_TEST);
-		glBegin(GL_POLYGON);
-		glTexCoord2f(0.0f, 1.0f); glVertex2d(size_x / 8 * 4 + x + 12, size_y + y);//左下
-		glTexCoord2f(0.0f, 0.0f); glVertex2d(size_x / 8 * 4 + x + 12, y);//左上
-		glTexCoord2f(1.0f, 0.0f); glVertex2d(size_x / 8 * 3 + x + 12, y);//右上
-		glTexCoord2f(1.0f, 1.0f); glVertex2d(size_x / 8 * 3 + x + 12, size_y + y);//右下
-		glEnd();
-		glDisable(GL_ALPHA_TEST);
-		glDisable(GL_TEXTURE_2D);
-		glDisable(GL_BLEND);
-	}
-
-	if (num >= 100) //100の位
-	{
-		glBindTexture(GL_TEXTURE_2D, tex_num_a[(num / 100) % 10]);
-
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glEnable(GL_TEXTURE_2D);
-		glEnable(GL_ALPHA_TEST);
-		glBegin(GL_POLYGON);
-		glTexCoord2f(0.0f, 1.0f); glVertex2d(size_x / 8 * 3 + x + 8, size_y + y);//左下
-		glTexCoord2f(0.0f, 0.0f); glVertex2d(size_x / 8 * 3 + x + 8, y);//左上
-		glTexCoord2f(1.0f, 0.0f); glVertex2d(size_x / 8 * 2 + x + 8, y);//右上
-		glTexCoord2f(1.0f, 1.0f); glVertex2d(size_x / 8 * 2 + x + 8, size_y + y);//右下
-		glEnd();
-		glDisable(GL_ALPHA_TEST);
-		glDisable(GL_TEXTURE_2D);
-		glDisable(GL_BLEND);
-	}
-
-	if (num >= 10) //10の位
-	{
-		glBindTexture(GL_TEXTURE_2D, tex_num_a[(num / 10) % 10]);
-
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glEnable(GL_TEXTURE_2D);
-		glEnable(GL_ALPHA_TEST);
-		glBegin(GL_POLYGON);
-		glTexCoord2f(0.0f, 1.0f); glVertex2d(size_x / 8 * 2 + x + 4, size_y + y);//左下
-		glTexCoord2f(0.0f, 0.0f); glVertex2d(size_x / 8 * 2 + x + 4, y);//左上
-		glTexCoord2f(1.0f, 0.0f); glVertex2d(size_x / 8 * 1 + x + 4, y);//右上
-		glTexCoord2f(1.0f, 1.0f); glVertex2d(size_x / 8 * 1 + x + 4, size_y + y);//右下
-		glEnd();
-		glDisable(GL_ALPHA_TEST);
-		glDisable(GL_TEXTURE_2D);
-		glDisable(GL_BLEND);
-	}
-
-	//1の位
-	glBindTexture(GL_TEXTURE_2D, tex_num_a[num % 10]);
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_TEXTURE_2D);
-	glEnable(GL_ALPHA_TEST);
-	glBegin(GL_POLYGON);
-	glTexCoord2f(0.0f, 1.0f); glVertex2d(size_x / 8 * 1 + x, size_y + y);//左下
-	glTexCoord2f(0.0f, 0.0f); glVertex2d(size_x / 8 * 1 + x, y);//左上
-	glTexCoord2f(1.0f, 0.0f); glVertex2d(size_x / 8 * 0 + x, y);//右上
-	glTexCoord2f(1.0f, 1.0f); glVertex2d(size_x / 8 * 0 + x, size_y + y);//右下
-	glEnd();
-	glDisable(GL_ALPHA_TEST);
-	glDisable(GL_TEXTURE_2D);
-	glDisable(GL_BLEND);
-
-
-}
-
-void SetNumImage_2(double x, double y, int size_x, int size_y, int num) { //プレイヤーエフェクトとしての数字
-
-	if (num >= 100000) //10万の位
-	{
-		glBindTexture(GL_TEXTURE_2D, tex_num_b[num / 100000]);
-
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glEnable(GL_TEXTURE_2D);
-		glEnable(GL_ALPHA_TEST);
-		glBegin(GL_POLYGON);
-		glTexCoord2f(0.0f, 1.0f); glVertex2d(size_x / 8 * 6 + x + 20, size_y + y);//左下
-		glTexCoord2f(0.0f, 0.0f); glVertex2d(size_x / 8 * 6 + x + 20, y);//左上
-		glTexCoord2f(1.0f, 0.0f); glVertex2d(size_x / 8 * 5 + x + 20, y);//右上
-		glTexCoord2f(1.0f, 1.0f); glVertex2d(size_x / 8 * 5 + x + 20, size_y + y);//右下
-		glEnd();
-		glDisable(GL_ALPHA_TEST);
-		glDisable(GL_TEXTURE_2D);
-		glDisable(GL_BLEND);
-	}
-
-	if (num >= 10000) //1万の位
-	{
-		glBindTexture(GL_TEXTURE_2D, tex_num_b[(num / 10000) % 10]);
+		glBindTexture(GL_TEXTURE_2D, tex_num[font][(num / 10000) % 10]);
 		
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -845,7 +732,7 @@ void SetNumImage_2(double x, double y, int size_x, int size_y, int num) { //プ�
 
 	if (num >= 1000) //1000の位
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num_b[(num / 1000) % 10]);
+		glBindTexture(GL_TEXTURE_2D, tex_num[font][(num / 1000) % 10]);
 		
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -864,7 +751,7 @@ void SetNumImage_2(double x, double y, int size_x, int size_y, int num) { //プ�
 
 	if (num >= 100) //100の位
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num_b[(num / 100) % 10]);
+		glBindTexture(GL_TEXTURE_2D, tex_num[font][(num / 100) % 10]);
 		
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -883,7 +770,7 @@ void SetNumImage_2(double x, double y, int size_x, int size_y, int num) { //プ�
 
 	if (num >= 10) //10の位
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num_b[(num / 10) % 10]);
+		glBindTexture(GL_TEXTURE_2D, tex_num[font][(num / 10) % 10]);
 		
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -900,7 +787,7 @@ void SetNumImage_2(double x, double y, int size_x, int size_y, int num) { //プ�
 		glDisable(GL_BLEND);
 	}
 
-	glBindTexture(GL_TEXTURE_2D, tex_num_b[num % 10]);
+	glBindTexture(GL_TEXTURE_2D, tex_num[font][num % 10]);
 	
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -919,7 +806,7 @@ void SetNumImage_2(double x, double y, int size_x, int size_y, int num) { //プ�
 	//ここからプラス記号の描画
 	if (num >= 100000)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num_b[10]);
+		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -937,7 +824,7 @@ void SetNumImage_2(double x, double y, int size_x, int size_y, int num) { //プ�
 
 	else if (num >= 10000 && num <= 99999)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num_b[10]);
+		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -955,7 +842,7 @@ void SetNumImage_2(double x, double y, int size_x, int size_y, int num) { //プ�
 
 	else if (num >= 1000 && num <= 9999)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num_b[10]);
+		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -973,7 +860,7 @@ void SetNumImage_2(double x, double y, int size_x, int size_y, int num) { //プ�
 
 	else if (num >= 100 && num <= 999)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num_b[10]);
+		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -991,7 +878,7 @@ void SetNumImage_2(double x, double y, int size_x, int size_y, int num) { //プ�
 
 	else if (num >= 10 && num <= 99)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num_b[10]);
+		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -1009,7 +896,7 @@ void SetNumImage_2(double x, double y, int size_x, int size_y, int num) { //プ�
 
 	else if (num >= 1 && num <= 9)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num_b[10]);
+		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -1184,7 +1071,48 @@ void block_standby(void)
 	{
 		switch (stage_structure[i])
 		{
-		case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 9: case 10: case 11: case 12: case 13:
+
+		case 1: //サンプル
+		{
+			for (k = 0; k <= 16; k++) //床の配置
+			{
+				set_block_info(76, k, -1, set_leftside, j); j++;
+			}
+
+			set_block_info(10, 3, 0, set_leftside, j); j++;
+			set_block_info(20, 3, 2, set_leftside, j); j++;
+			set_block_info(68, 3, 4, set_leftside, j); j++;
+			set_block_info(7, 4, 0, set_leftside, j); j++;
+			set_block_info(54, 4, 2, set_leftside, j); j++;
+			set_block_info(46, 4, 4, set_leftside, j); j++;
+			set_block_info(6, 6, 0, set_leftside, j); j++;
+			set_block_info(50, 5, 2, set_leftside, j); j++;
+			set_block_info(46, 6, 4, set_leftside, j); j++;
+			set_block_info(13, 7, 0, set_leftside, j); j++;
+			set_block_info(75, 7, 2, set_leftside, j); j++;
+			set_block_info(22, 7, 4, set_leftside, j); j++;
+			set_block_info(18, 8, 0, set_leftside, j); j++;
+			set_block_info(2, 8, 2, set_leftside, j); j++;
+			set_block_info(19, 8, 4, set_leftside, j); j++;
+			set_block_info(17, 10, 0, set_leftside, j); j++;
+			set_block_info(40, 9, 2, set_leftside, j); j++;
+			set_block_info(47, 10, 4, set_leftside, j); j++;
+			set_block_info(45, 11, 0, set_leftside, j); j++;
+			set_block_info(18, 11, 2, set_leftside, j); j++;
+			set_block_info(3, 11, 4, set_leftside, j); j++;
+			set_block_info(19, 12, 0, set_leftside, j); j++;
+			set_block_info(3, 12, 2, set_leftside, j); j++;
+			set_block_info(33, 12, 4, set_leftside, j); j++;
+
+			set_block_info(49, 0, 1, set_leftside, j); j++;
+			set_block_info(49, 1, 3, set_leftside, j); j++;
+			set_block_info(49, 15, 1, set_leftside, j); j++;
+			set_block_info(49, 14, 3, set_leftside, j); j++;
+
+			set_leftside += 17;
+		}break;
+
+		case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 9: case 10: case 11: case 12: case 13:
 		{
 			for (k = 0; k <= 16; k++) //床の配置
 			{
@@ -1336,7 +1264,7 @@ void game_reset(void) //ステージ構造などゲームを開始する直前�
 			*(stst+i) = 254;
 		}
 	}
-
+	*(stst + 1) = 1; //サンプル
 	*(stst+18) = 255; //最後の壁（暫定）なんか無限だとクソヌルゲーになるらしいので
 
 	block_standby(); //ブロックの配置（再構成）
@@ -1362,8 +1290,10 @@ void display(void)
 
 	int *obbl = &object_block[0][0];
 	GameObject *blhr = &block_hiragana[0];
+	GameObject *blUI = &block_hiragana_UI[0];
 	int *hrrl = &hiragana_roulette[0];
 	int *slst = &slot_start[0];
+	int *sl = &slot[0];
 	
 
 	switch (scene)
@@ -1421,7 +1351,7 @@ void display(void)
 		}
 
 		UI_ranking.SetImage(0, -344);
-		SetNumImage(-224, -420, 320, 40, score);
+		SetNumImage(-224, -420, 320, 40, score,0);
 
 		UI_09.SetImage(0, 96);
 		UI_rank01.SetImage(204, -228);
@@ -1429,11 +1359,11 @@ void display(void)
 		UI_rank03.SetImage(204, -132);
 		UI_rank04.SetImage(204, -84);
 		UI_rank05.SetImage(204, -36);
-		SetNumImage(-244, -244, 320, 40, high_score[0]);
-		SetNumImage(-244, -200, 320, 40, high_score[1]);
-		SetNumImage(-244, -152, 320, 40, high_score[2]);
-		SetNumImage(-244, -104, 320, 40, high_score[3]);
-		SetNumImage(-244, -56, 320, 40, high_score[4]);
+		SetNumImage(-244, -244, 320, 40, high_score[0], 0);
+		SetNumImage(-244, -200, 320, 40, high_score[1], 0);
+		SetNumImage(-244, -152, 320, 40, high_score[2], 0);
+		SetNumImage(-244, -104, 320, 40, high_score[3], 0);
+		SetNumImage(-244, -56, 320, 40, high_score[4], 0);
 
 		arrow.SetImage(334, -224 + 48 * ranking);
 
@@ -1451,7 +1381,7 @@ void display(void)
 			UI_newrecord.SetImage(0, -426);
 		}
 
-		SetNumImage(-224, -420, 320, 40, score);
+		SetNumImage(-224, -420, 320, 40, score, 0);
 
 		UI_09.SetImage(0, 96);
 		UI_result01.SetImage(128, -232);
@@ -1460,10 +1390,10 @@ void display(void)
 		UI_result04.SetImage(128, -88);
 
 		block_hiragana[score_most_hiragana].SetImage(-224, -132);
-		SetNumImage(-244, -244, 320, 40, score_get_hiragana);
-		SetNumImage(-244, -200, 320, 40, score_leave_hiragana);
+		SetNumImage(-244, -244, 320, 40, score_get_hiragana, 0);
+		SetNumImage(-244, -200, 320, 40, score_leave_hiragana, 0);
 
-		SetNumImage(-244, -104, 320, 40, score_tango);
+		SetNumImage(-244, -104, 320, 40, score_tango, 0);
 
 	}break;
 
@@ -1476,14 +1406,14 @@ void display(void)
 		UI_11.SetImage(0 + player->center_x, 272);
 		UI_12.SetImage(-440 + player->center_x, 200);
 		UI_slot_base.SetImage(0 + player->center_x, 200); //スロットの基盤
-		SetNumImage(360 + player->center_x, 132, 160, 20, time / 60); //タイマー
-		SetNumImage(360 + player->center_x, 200, 160, 20, score); //スコア
-		SetNumImage(360 + player->center_x, 268, 160, 20, high_score[0]); //ハイスコア
+		SetNumImage(360 + player->center_x, 132, 160, 20, time / 60, 0); //タイマー
+		SetNumImage(360 + player->center_x, 200, 160, 20, score, 0); //スコア
+		SetNumImage(360 + player->center_x, 268, 160, 20, high_score[0], 0); //ハイスコア
 
-		block_hiragana_UI[slot[0]].SetImage(216 + player->center_x, 176); //ひらがなスロット
-		block_hiragana_UI[slot[1]].SetImage(72 + player->center_x, 176);
-		block_hiragana_UI[slot[2]].SetImage(-72 + player->center_x, 176);
-		block_hiragana_UI[slot[3]].SetImage(-216 + player->center_x, 176);
+		(*(blUI + *(sl + 0))).SetImage(216 + player->center_x, 176); //ひらがなスロット
+		(*(blUI + *(sl + 1))).SetImage(72 + player->center_x, 176);
+		(*(blUI + *(sl + 2))).SetImage(-72 + player->center_x, 176);
+		(*(blUI + *(sl + 3))).SetImage(-216 + player->center_x, 176);
 
 
 		if (lamp_timer_01 == 0)
@@ -1491,23 +1421,23 @@ void display(void)
 			UI_slot_highlight.SetImage(216 - slot_select * 144 + player->center_x, 176); //スロットの選択箇所
 		}
 
-		for (int i = -6400; i < 6400; i++) { //ここから５つ背景を描画
+		for (int i = -6400; i < 300; i++) { //ここから５つ背景を描画
 			BG_05.SetImage(i * 1024 + (player->center_x *1.0), -224);
 		}
 
-		for (int i = -6400; i < 6400; i++) {
+		for (int i = -6400; i < 300; i++) {
 			BG_04.SetImage(i * 1024 + (player->center_x *0.75), -224);
 		}
 
-		for (int i = -6400; i < 6400; i++) {
+		for (int i = -6400; i < 300; i++) {
 			BG_03.SetImage(i * 1024 + (player->center_x *0.5), -224);
 		}
 
-		for (int i = -6400; i < 6400; i++) {
+		for (int i = -6400; i < 300; i++) {
 			BG_02.SetImage(i * 1024 + (player->center_x *0.25), -224);
 		}
 
-		for (int i = -6400; i < 6400; i++) {
+		for (int i = -6400; i < 300; i++) {
 			BG_01.SetImage(i * 1024 + (player->center_x *0.0), -224);
 		}
 
@@ -1564,19 +1494,19 @@ void display(void)
 		{
 			if (*(obbl + i * 3) != 0 && *(obbl + i * 3) != 77 && *(obbl + i * 3) != 79)
 			{
-				block_hiragana[*(obbl + i * 3)].SetImage(double(*(obbl + i * 3+1)), double(*(obbl + i * 3+2)));
+				(*(blhr+ *(obbl + i * 3))).SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2)));
 			}
 
 			else if (*(obbl + i * 3) == 77) //お題箱描画
 			{
-				if (slot[0] == 0 && slot[1] == 0 && slot[2] == 0 && slot[3] == 0)
+				if (*(sl + 0) == 0 && *(sl + 1) == 0 && *(sl + 2) == 0 && *(sl + 3) == 0)
 				{
-					block_hiragana[77].SetImage(double(*(obbl + i * 3+1)), double(*(obbl + i * 3+2)));
+					(*(blhr + 77)).SetImage(double(*(obbl + i * 3+1)), double(*(obbl + i * 3+2)));
 				}
 
 				else //スロットが空っぽじゃなかったらお題箱は起動しない
 				{
-					block_hiragana[78].SetImage(double(*(obbl + i * 3+1)), double(*(obbl + i * 3+2)));
+					(*(blhr + 78)).SetImage(double(*(obbl + i * 3+1)), double(*(obbl + i * 3+2)));
 				}
 
 			}
@@ -1623,12 +1553,12 @@ void display(void)
 			case true: //プレイヤーの吹き出しと加点スコアを描画
 			{
 				player_fukidashi01.SetImage(player->center_x, player->center_y - 80);
-				if (score >= 100000) { SetNumImage_2(player->center_x - 12 * 9, player->center_y - 128, 192, 24, score_word); }
-				else if (score >= 10000 && score <= 99999) { SetNumImage_2(player->center_x - 12 * 8, player->center_y - 128, 192, 24, score_word); }
-				else if (score >= 1000 && score <= 9999) { SetNumImage_2(player->center_x - 12 * 7, player->center_y - 128, 192, 24, score_word); }
-				else if (score >= 100 && score <= 999) { SetNumImage_2(player->center_x - 12 * 6, player->center_y - 128, 192, 24, score_word); }
-				else if (score >= 10 && score <= 99) { SetNumImage_2(player->center_x - 12 * 5, player->center_y - 128, 192, 24, score_word); }
-				else if (score >= 0 && score <= 9) { SetNumImage_2(player->center_x - 12 * 4, player->center_y - 128, 192, 24, score_word); }
+				if (score >= 100000) { SetNumImage(player->center_x - 12 * 9, player->center_y - 128, 192, 24, score_word,1); }
+				else if (score >= 10000 && score <= 99999) { SetNumImage(player->center_x - 12 * 8, player->center_y - 128, 192, 24, score_word,1); }
+				else if (score >= 1000 && score <= 9999) { SetNumImage(player->center_x - 12 * 7, player->center_y - 128, 192, 24, score_word, 1); }
+				else if (score >= 100 && score <= 999) { SetNumImage(player->center_x - 12 * 6, player->center_y - 128, 192, 24, score_word, 1); }
+				else if (score >= 10 && score <= 99) { SetNumImage(player->center_x - 12 * 5, player->center_y - 128, 192, 24, score_word, 1); }
+				else if (score >= 0 && score <= 9) { SetNumImage(player->center_x - 12 * 4, player->center_y - 128, 192, 24, score_word, 1); }
 
 			}break;
 
@@ -1681,12 +1611,13 @@ void display(void)
 
 void idle(void)
 {
-	double speed = 8;
 	double player_y_before = 0;
 
 	int *obbl = &object_block[0][0]; 
 	int *slst = &slot_start[0];
 	int *hrrl = &hiragana_roulette[0];
+	int *odhr4 = &odai_hiragana_4[0][0];
+	int *sl = &slot[0];
 	// std::cout <<--------------------フレーム開始--------------------->" << std::endl;
 
 	/*
@@ -1787,7 +1718,6 @@ void idle(void)
 					// std::cout << "<info 004: 下に行こうとしてブロック[ << i <<] に衝突しています>" << std::endl;
 					flag_collision_D = true;
 
-
 					if (height_c > *(obbl + i * 3+2))
 					{
 						height_c = *(obbl + i * 3 + 2); //着地点を取得
@@ -1867,18 +1797,18 @@ void idle(void)
 		flag_collision_R = false;
 	}
 
-	if (flag_bullet_exist == true) //弾丸と語彙ブロックの衝突判定
+	if (flag_bullet_exist == true && flag_move_bullet == true) //弾丸と語彙ブロックの衝突判定
 	{
 		switch (bullet->direction) //弾をそのときプレイヤーが向いていた方向に動かす
 		{
 		case 0:
 		{
-			bullet->Move(16, 0);
+			bullet->Move(32, 0);
 		}break;
 
 		case 1:
 		{
-			bullet->Move(-16, 0);
+			bullet->Move(-32, 0);
 		}break;
 		}
 
@@ -1887,33 +1817,35 @@ void idle(void)
 			if (flag_bullet_exist == true && *(obbl + i * 3) != 0 && abs(bullet->center_x - double(*(obbl + i * 3+1))) < 32 && abs(bullet->center_y - double(*(obbl + i * 3+2))) < 32) //ブロックとの距離がx<32 y<64で32あるとき（ブロックＩＤ＝０すなわち空気の時はスルー）
 			{
 				flag_bullet_exist = false;
-				if (slot[slot_select] == 0 && *(obbl + i * 3) != 49 && *(obbl + i * 3) != 76 && *(obbl + i * 3) != 77 && *(obbl + i * 3) != 78 && *(obbl + i * 3) != 79)//すでにスロットにひらがなが入っている場合は衝突してもブロック消えないしひらがなも保持されない,あと木はスロットには入れられない（当然
+				if (*(sl+slot_select) == 0 && *(obbl + i * 3) != 49 && *(obbl + i * 3) != 76 && *(obbl + i * 3) != 77 && *(obbl + i * 3) != 78 && *(obbl + i * 3) != 79)//すでにスロットにひらがなが入っている場合は衝突してもブロック消えないしひらがなも保持されない,あと木はスロットには入れられない（当然
 				{
-					slot[slot_select] = *(obbl + i * 3); //弾丸が衝突したブロックをスロットに格納
-					*(obbl + i * 3) = 0; //弾丸とブロックが衝突したらお互いの情報を０にする
+					*(sl + slot_select) = *(obbl + i * 3); //弾丸が衝突したブロックをスロットに格納
+					*(obbl + i * 3) = 0; //弾丸とブロックが衝突したらそのブロックの情報を０にする
 					score_get_hiragana++;
 				}
 
 				else if (*(obbl + i * 3) == 77 && slot[0]==0 && slot[1] == 0 && slot[2] == 0 && slot[3] == 0) //お題箱にヒットしたとき（ごいスロットに何かあるときはＯＦＦ状態になる）
 				{
-					odai = choose_odai();
-					slot[0] = odai_hiragana[odai][0];
-					slot[1] = odai_hiragana[odai][1];
-					slot[2] = odai_hiragana[odai][2];
-					slot[3] = odai_hiragana[odai][3];
+					odai = choose_odai(); //おだい
+					*(sl + 0) = *(odhr4 + odai * 5 + 0);
+					*(sl + 1) = *(odhr4 + odai * 5 + 1);
+					*(sl + 2) = *(odhr4 + odai * 5 + 2);
+					*(sl + 3) = *(odhr4 + odai * 5 + 3);
 					*(obbl + i * 3) = 0; //弾丸とブロックが衝突したらお互いの情報を０にする
 				}
 
 				else if (*(obbl + i * 3) == 79 && slot[slot_select] == 0) //ひらがなルーレットにヒットした場合
 				{
-					slot[slot_select] = *(hrrl + ((hiragana_roulette_timer + *(slst + i) * 60)) % (74 * 60) / 60); //弾丸が衝突したブロックをスロットに格納（ランダムで選ばれたスロットの開始位置＋ひらがなの総数の結果ひらがなの総数を超えてしまう場合，ひらがなの総数で割ったあまりを求めることでルーレットの中身がひらがなの総数分から外れることを防いでいる）
+					*(sl + slot_select) = *(hrrl + ((hiragana_roulette_timer + *(slst + i) * 60)) % (74 * 60) / 60); //弾丸が衝突したブロックをスロットに格納（ランダムで選ばれたスロットの開始位置＋ひらがなの総数の結果ひらがなの総数を超えてしまう場合，ひらがなの総数で割ったあまりを求めることでルーレットの中身がひらがなの総数分から外れることを防いでいる）
 					*(obbl + i * 3) = 0; //弾丸とブロックが衝突したらお互いの情報を０にする
-					score_get_hiragana++;
+					score_get_hiragana++; //ひらがなを入手した数+1
 				}
 			}
 
 		}
+		flag_move_bullet = false;
 	}
+
 
 
 	if (time < 0)
@@ -2176,27 +2108,28 @@ void Init() {
 	GdiplusStartup(&gdiPT, &gdiPSI, NULL);
 
 
-	LoadImagePNG(L"./pic/num_a0.png", tex_num_a[0]);
-	LoadImagePNG(L"./pic/num_a1.png", tex_num_a[1]);
-	LoadImagePNG(L"./pic/num_a2.png", tex_num_a[2]);
-	LoadImagePNG(L"./pic/num_a3.png", tex_num_a[3]);
-	LoadImagePNG(L"./pic/num_a4.png", tex_num_a[4]);
-	LoadImagePNG(L"./pic/num_a5.png", tex_num_a[5]);
-	LoadImagePNG(L"./pic/num_a6.png", tex_num_a[6]);
-	LoadImagePNG(L"./pic/num_a7.png", tex_num_a[7]);
-	LoadImagePNG(L"./pic/num_a8.png", tex_num_a[8]);
-	LoadImagePNG(L"./pic/num_a9.png", tex_num_a[9]);
-	LoadImagePNG(L"./pic/num_b0.png", tex_num_b[0]);
-	LoadImagePNG(L"./pic/num_b1.png", tex_num_b[1]);
-	LoadImagePNG(L"./pic/num_b2.png", tex_num_b[2]);
-	LoadImagePNG(L"./pic/num_b3.png", tex_num_b[3]);
-	LoadImagePNG(L"./pic/num_b4.png", tex_num_b[4]);
-	LoadImagePNG(L"./pic/num_b5.png", tex_num_b[5]);
-	LoadImagePNG(L"./pic/num_b6.png", tex_num_b[6]);
-	LoadImagePNG(L"./pic/num_b7.png", tex_num_b[7]);
-	LoadImagePNG(L"./pic/num_b8.png", tex_num_b[8]);
-	LoadImagePNG(L"./pic/num_b9.png", tex_num_b[9]);
-	LoadImagePNG(L"./pic/num_plus.png", tex_num_b[10]);
+	LoadImagePNG(L"./pic/num_a0.png", tex_num[0][0]);
+	LoadImagePNG(L"./pic/num_a1.png", tex_num[0][1]);
+	LoadImagePNG(L"./pic/num_a2.png", tex_num[0][2]);
+	LoadImagePNG(L"./pic/num_a3.png", tex_num[0][3]);
+	LoadImagePNG(L"./pic/num_a4.png", tex_num[0][4]);
+	LoadImagePNG(L"./pic/num_a5.png", tex_num[0][5]);
+	LoadImagePNG(L"./pic/num_a6.png", tex_num[0][6]);
+	LoadImagePNG(L"./pic/num_a7.png", tex_num[0][7]);
+	LoadImagePNG(L"./pic/num_a8.png", tex_num[0][8]);
+	LoadImagePNG(L"./pic/num_a9.png", tex_num[0][9]);
+	LoadImagePNG(L"./pic/block_null.png", tex_num[0][10]);
+	LoadImagePNG(L"./pic/num_b0.png", tex_num[1][0]);
+	LoadImagePNG(L"./pic/num_b1.png", tex_num[1][1]);
+	LoadImagePNG(L"./pic/num_b2.png", tex_num[1][2]);
+	LoadImagePNG(L"./pic/num_b3.png", tex_num[1][3]);
+	LoadImagePNG(L"./pic/num_b4.png", tex_num[1][4]);
+	LoadImagePNG(L"./pic/num_b5.png", tex_num[1][5]);
+	LoadImagePNG(L"./pic/num_b6.png", tex_num[1][6]);
+	LoadImagePNG(L"./pic/num_b7.png", tex_num[1][7]);
+	LoadImagePNG(L"./pic/num_b8.png", tex_num[1][8]);
+	LoadImagePNG(L"./pic/num_b9.png", tex_num[1][9]);
+	LoadImagePNG(L"./pic/num_plus.png", tex_num[1][10]);
 	player1.LoadImagePNG2(player1.file, player1.tex);
 	player2.LoadImagePNG2(player2.file, player2.tex);
 	player3.LoadImagePNG2(player3.file, player3.tex);
@@ -2337,8 +2270,9 @@ void timer(int value) {
 	glutPostRedisplay();
 	glutTimerFunc(16, timer, 0); //だいたい60fpsを目指す
 
-	flag_move_x = true;
+	flag_move_x = true; //タイマー関数が呼び出されたのでプレイヤーや弾丸の移動を許可する
 	flag_move_y = true;
+	flag_move_bullet = true;
 
 	if (scene == 5) //ゲーム中，タイマー起動
 	{
@@ -2396,7 +2330,14 @@ void timer(int value) {
 	if (onMoveKeyPress_L == true || onMoveKeyPress_R == true) //歩きアニメーションのため （画像１→２→３→２というふうに歩き中には４枚の画像を連続で表示する）
 	{
 		walk_timer++;
+
+		if (speed <= 8) //キャラクターのスピードを加速する
+		{
+			speed += 1;
+		}
 	}
+
+	else { speed = 0; walk_timer = 0; } //歩行が止まるとスピードとアニメーションをリセットする
 }
 
 

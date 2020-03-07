@@ -32,7 +32,7 @@ using namespace Gdiplus;
 #define WIDTH 1280 //デフォルトの画面のサイズ
 #define HEIGHT 720
 
-#define TIME_LIMIT 300 //タイマー．ほぼ1秒に１すすむ
+#define TIME_LIMIT 30 //タイマー．ほぼ1秒に１すすむ
 #define dic_4_LIMIT 44000 //4文字辞書の単語数の余地（今後追加できるよう少し多めに設定）
 #define OBJECT_LIMIT 10000 //ブロックの制限
 #define PATTERN_LIMIT 45 //横に並べるブロック配置パターンの上限
@@ -80,6 +80,7 @@ int scene = 0; //◇シーンの追加．0:タイトル 1:スタンバイ画面 
 int next_scene = 0; //ゲームをやめる→ほんとうによろしいですか？→の分岐などに使う
 int mode = 0; //0:スコアアタック 1:ステージモード スコアの計算にも影響する
 int mode_mojisu = 4; //3or4or5 3文字，5文字はおいおい辞書を用意して実装したい．とりあえず4文字モードだけ
+int stage_medal[3] = {}; //全ステージ中の獲得したメダルの総数を記録
 
 int made_tango[MADE_LIMIT+1][5] = { {} }; //ステージクリアモードのとき，重複した単語は作れない
 int stage_select = 1; //ステージクリアモードで選んでいるステージの番号
@@ -90,6 +91,7 @@ int stage_time_limit[STAGE_LIMIT + 1] = {}; //例：ステージ1は200秒以内
 int stage_time_limit_gold[STAGE_LIMIT + 1] = {}; //例：ステージ1のメダル獲得タイム50秒以内→[1]=50
 int stage_slot_constraint[STAGE_LIMIT + 1][5] = { {} }; //語彙スロット固定（例：ステージ1で[][][い][ろ]のときは [1][0]～[1][3]：＿＿いろになる
 int stage_block_info[OBJECT_LIMIT][3] = { {} }; //ステージモードの時に配置されるブロックの情報
+int score_miss = 0; //スコア（ミス数）（ステージモードのみ
 
 
 int dic_4moji[dic_4_LIMIT][4] = { {} }; //辞書の情報を格納
@@ -480,6 +482,7 @@ GameObject BG_05 = GameObject(0, 0, 1024, 512, L"./pic/bg05.png");
 GameObject UI_10 = GameObject(0, 0, 384, 192, L"./pic/menu_UI_10.png");
 GameObject UI_11 = GameObject(0, 0, 256, 64, L"./pic/menu_UI_11.png");
 GameObject UI_12 = GameObject(0, 0, 384, 192, L"./pic/menu_UI_12.png");
+GameObject UI_15 = GameObject(0, 0, 1024, 64, L"./pic/menu_UI_15.png");
 GameObject UI_slot_base = GameObject(0, 0, 768, 192, L"./pic/slot_base.png");
 GameObject UI_slot_highlight = GameObject(0, 0, 192, 192, L"./pic/slot_highlight.png");
 GameObject UI_slot_decision = GameObject(0, 0, 192, 192, L"./pic/slot_decision.png");
@@ -528,6 +531,16 @@ GameObject UI_coming_soon64 = GameObject(0, 0, 64, 64, L"./pic/coming_soon.png")
 GameObject UI_coming_soon192 = GameObject(0, 0, 192, 192, L"./pic/coming_soon.png");
 GameObject UI_slot_constraint_description = GameObject(0, 0, 1024, 64, L"./pic/slot_constraint_description.png");
 GameObject UI_mission_description_1 =  GameObject(0, 0, 1024, 64, L"./pic/mission_description_1.png");
+GameObject UI_num_aslash = GameObject(0, 0, 20, 20, L"./pic/num_aslash.png");
+GameObject UI_num_aslash_big = GameObject(0, 0, 40, 40, L"./pic/num_aslash.png");
+GameObject UI_result_stage = GameObject(0, 0, 768, 384, L"./pic/result_stage.png");
+GameObject UI_result_stage_title = GameObject(0, 0, 384, 96, L"./pic/result_stage_title.png");
+GameObject UI_result_stage_medal_1 = GameObject(0, 0, 768, 384, L"./pic/result_stage_medal_1.png");
+GameObject UI_result_stage_medal_2 = GameObject(0, 0, 768, 384, L"./pic/result_stage_medal_2.png");
+GameObject UI_result_stage_medal_3 = GameObject(0, 0, 768, 384, L"./pic/result_stage_medal_3.png");
+GameObject UI_result_stage_medal_1_lux = GameObject(0, 0, 768, 384, L"./pic/result_stage_medal_1_lux.png");
+GameObject UI_result_stage_medal_2_lux = GameObject(0, 0, 768, 384, L"./pic/result_stage_medal_2_lux.png");
+GameObject UI_result_stage_medal_3_lux = GameObject(0, 0, 768, 384, L"./pic/result_stage_medal_3_lux.png");
 
 GameObject block_hiragana_UI[80] = {
 GameObject(0, 0, 96, 96, L"./pic/block_blank.png"), //空白 ID:0
@@ -829,23 +842,38 @@ void check_goi(int* moji)
 		{
 			if (moji[0] == *(dic4 + i * 4) && moji[1] == *(dic4 + i * 4 + 1) && moji[2] == *(dic4 + i * 4 + 2) && moji[3] == *(dic4 + i * 4 + 3))
 			{
-				word_hit = true;
+				for (k = 0; k <= score; k++)
+				{
+					if (made_tango[k][0] == moji[0] && made_tango[k][1] == moji[1] && made_tango[k][2] == moji[2] && made_tango[k][3] == moji[3])
+					{
+						word_hit = false;
+						break;
+				
+					}
 
-				made_tango[score][0] = moji[0];
-				made_tango[score][1] = moji[1];
-				made_tango[score][2] = moji[2];
-				made_tango[score][3] = moji[3];
-
-				score_word = 1;
-				score += score_word;
-			
-				break;
+					word_hit = true;
+					break;
+				}
+				
 			}
 
 		}
+
+		if (word_hit == true)
+		{
+			made_tango[score][0] = moji[0];
+			made_tango[score][1] = moji[1];
+			made_tango[score][2] = moji[2];
+			made_tango[score][3] = moji[3];
+
+			score_word = 1;
+			score += score_word;
+		}
+
 		if (word_hit == false) //ペナルティ
 		{
 			time -= 30 * 60;
+			score_miss++;
 		}
 	}
 }
@@ -1127,8 +1155,6 @@ void set_block_info(int type, int x_grid, int y_grid, int leftside, int blocknum
 {
 	int *obbl = &object_block[blocknum][0];
 	*(obbl) = type; *(obbl+1) = (-64)*(leftside + x_grid); *(obbl+2) = (-64)*(y_grid);
-	//
-	printf("object_block = %d, input =%d\n", *(obbl), type);
 }
 
 void block_standby(void) //スコアアタックモード
@@ -1408,8 +1434,10 @@ void standby_stage(int stage_num) //ステージモード
 
 	player->center_x = 0;
 	player->center_y = -8;
-
 	score = 0;
+	score_miss = 0;
+	lamp_timer_01 = 0;
+	lamp_timer_02 = 0;
 
 	for (i = 0; i <= 100; i++) //作った単語のやつをリセットする
 	{
@@ -1419,7 +1447,7 @@ void standby_stage(int stage_num) //ステージモード
 		made_tango[i][3] = 0;
 	}
 
-	for (i = 0; i <= OBJECT_LIMIT; i++) //作った単語のやつをリセットする
+	for (i = 0; i <= OBJECT_LIMIT; i++) //ゲーム内ブロックをリセットする
 	{
 		object_block[i][0] = 0;
 		object_block[i][1] = 0;
@@ -1428,10 +1456,10 @@ void standby_stage(int stage_num) //ステージモード
 
 	object_on_stage = 0;
 
-	if ((fopen_s(&fp_stage_info, "./dat/stage_001.dat", "r")) != 0) //辞書ファイルを読み込む
+	//ステージファイルを読み込む．★★余裕があったら stage_ + stage_num +.datみたいなのができるようにする
+	switch (stage_num)
 	{
-		std::cout << "<info 034: ステージファイルを開けませんでした" << std::endl;
-		exit(34);
+	case 1: {if ((fopen_s(&fp_stage_info, "./dat/stage_001.dat", "r")) != 0) { std::cout << "<info 034: ステージファイルを開けませんでした" << std::endl;	exit(34); }}
 	}
 
 	i = 0;
@@ -1467,6 +1495,8 @@ void game_reset(void) //ステージ構造などゲームを開始する直前�
 {
 	player->center_x = 0;
 	player->center_y = -8;
+	lamp_timer_01 = 0;
+	lamp_timer_02 = 0;
 
 	score = 0;
 	score_get_hiragana = 0;
@@ -1647,8 +1677,20 @@ void display(void)
 		UI_12.SetImage(-440 + player->center_x, 200);
 		UI_slot_base.SetImage(0 + player->center_x, 200); //スロットの基盤
 		SetNumImage(360 + player->center_x, 132, 160, 20, time / 60, 0, 4); //タイマー
-		SetNumImage(360 + player->center_x, 200, 160, 20, score, 0, 4); //スコア
 		SetNumImage(360 + player->center_x, 268, 160, 20, high_score[0], 0, 4); //ハイスコア
+
+		if (mode == 0)
+		{
+			SetNumImage(360 + player->center_x, 200, 160, 20, score, 0, 4); //スコア
+		}
+
+		else if (mode == 1)
+		{
+			SetNumImage(444 + player->center_x, 200, 160, 20, score, 0, 4); //スコア（何分の何
+			UI_num_aslash.SetImage(430 + player->center_x,210);
+			SetNumImage(360 + player->center_x, 200, 160, 20, stage_nolma[stage_select], 0, 4);
+		}
+
 
 		(*(blUI + *(sl + 0))).SetImage(216 + player->center_x, 176); //ひらがなスロット
 		(*(blUI + *(sl + 1))).SetImage(72 + player->center_x, 176);
@@ -1844,10 +1886,10 @@ void display(void)
 		{
 			for (i = 0; i <= 100; i++) 
 			{
-				if (made_tango[i][0] != 0) { (*(blmn + made_tango[i][0])).SetImage(600+player->center_x, -420 + i*35); }
-				if (made_tango[i][1] != 0) { (*(blmn + made_tango[i][1])).SetImage(568 + player->center_x, -420+i*35); }
-				if (made_tango[i][2] != 0) {(*(blmn + made_tango[i][2])).SetImage(536 + player->center_x, -420 + i * 35);}
-				if (made_tango[i][3] != 0) {(*(blmn + made_tango[i][3])).SetImage(504 + player->center_x, -420 + i * 35);}
+				if (made_tango[i][0] != 0) { (*(blmn + made_tango[i][0])).SetImage(600+player->center_x, -400 + i*35); }
+				if (made_tango[i][1] != 0) { (*(blmn + made_tango[i][1])).SetImage(568 + player->center_x, -400+i*35); }
+				if (made_tango[i][2] != 0) {(*(blmn + made_tango[i][2])).SetImage(536 + player->center_x, -400 + i * 35);}
+				if (made_tango[i][3] != 0) {(*(blmn + made_tango[i][3])).SetImage(504 + player->center_x, -400 + i * 35);}
 			}
 		}
 
@@ -1872,11 +1914,29 @@ void display(void)
 		if(mode==0)
 		{
 			UI_mode_description_1.SetImage(-315, -256);
+			UI_mode_highscore_1.SetImage(-315,-20);
+			UI_mode_waku.SetImage(-315, -20);
+			SetNumImage(-520, 80, 400, 50, 0, 0, 4);
+			SetNumImage(-520, 0, 400, 50, high_score[0], 0, 4);
+			SetNumImage(-520, -80, 400, 50, 0, 0, 4);
 		}
 
 		else if (mode == 1)
 		{
 			UI_mode_description_2.SetImage(-315, -256);
+			UI_mode_highscore_2.SetImage(-315, -20);
+			UI_mode_waku.SetImage(-315, -20);
+			SetNumImage(-350, 80, 300, 50, stage_medal[0], 0, 4);
+			SetNumImage(-350, 0, 300, 50, stage_medal[1], 0, 4);
+			SetNumImage(-350, -80, 300, 50, stage_medal[2], 0, 4);
+			UI_num_aslash_big.SetImage(-375, 25);
+			UI_num_aslash_big.SetImage(-375, 105);
+			UI_num_aslash_big.SetImage(-375, -55);
+			SetNumImage(-520, 80, 300, 50, STAGE_LIMIT, 0, 4);
+			SetNumImage(-520, 0, 300, 50, STAGE_LIMIT, 0, 4);
+			SetNumImage(-520, -80, 300, 50, STAGE_LIMIT, 0, 4);
+			
+
 		}
 
 		UI_mode_score_attack.SetImage(224, -364);
@@ -1987,7 +2047,41 @@ void display(void)
 		glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
 		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 
+		UI_result_stage.SetImage(0,-160);
+		UI_result_stage_title.SetImage(80,-416);
+		SetNumImage(-300,-464,768,96,stage_select,2,-16);
+		SetNumImage(-260, -100, 512, 64, stage_time_limit[stage_select] - time/60, 0, 4);
+		SetNumImage(-260, -192, 512, 64, score_miss, 0, 4);
+		UI_15.SetImage(0,64);
 
+		if (lamp_timer_clear % 12 >= 6) //リザルト画面でのメダルのきらびやかアニメーション
+		{
+			UI_result_stage_medal_1.SetImage(0,-160);
+
+			if (stage_time_limit[stage_select] - time / 60 <= stage_time_limit_gold[stage_select])
+			{
+				UI_result_stage_medal_2.SetImage(0, -160);
+			}
+
+			if (score_miss == 0)
+			{
+				UI_result_stage_medal_3.SetImage(0, -160);
+			}
+		}
+		else
+		{
+			UI_result_stage_medal_1_lux.SetImage(0,-160);
+
+			if (stage_time_limit[stage_select] - time / 60 <= stage_time_limit_gold[stage_select])
+			{
+				UI_result_stage_medal_2_lux.SetImage(0, -160);
+			}
+
+			if (score_miss == 0)
+			{
+				UI_result_stage_medal_3_lux.SetImage(0, -160);
+			}
+		}
 
 	}break;
 
@@ -2232,81 +2326,169 @@ void idle(void)
 		flag_move_bullet = false;
 	}
 
-
-
-	if (time < 0)
+	if (scene == 5 && mode == 1 && stage_nolma[stage_select] == score) //ステージクリアモードでノルマを達成した
 	{
-		scene = 6;
+		scene = 11;
+		camera_x = 640; camera_y = -544; player->center_x = 0; player->center_y = 0;
 
-		fclose(fp); 
-		// std::cout << "<info 019: スコアファイルを「読み取り用として」閉じました>" << std::endl;
+		fclose(fp_stageclear);
+		std::cout << "<info 041: ステージクリア進捗状況ファイルを「読み取り用として」閉じました>" << std::endl;
 
-		if ((fopen_s(&fp, "./dat/score.dat", "w")) != 0) //スコアファイルを読み込む
+		if ((fopen_s(&fp_stageclear, "./dat/stage_clear.dat", "w")) != 0) //スコアファイルを読み込む
 		{
-			std::cout << "<info 020:スコアファイルを「書き取り用として」開けませんでした>" << std::endl;
-			exit(20);
+			std::cout << "<info 042:ステージクリア進捗状況ファイルを「書き取り用として」開けませんでした>" << std::endl;
+			exit(42);
 		}
 
-		//std::cout << "<info 021:スコアファイルを「書き取り用として」開きました>\n" << std::endl;
+		std::cout << "<info 043:スステージクリア進捗状況ファイルを「書き取り用として」開きました>\n" << std::endl;
 
-		if (high_score[0] < score)
+		if (stage_clear[stage_select][4] > score_miss) //ミス回数のハイスコア更新
 		{
-			ranking = 0;
-			high_score[4] = high_score[3];
-			high_score[3] = high_score[2];
-			high_score[2] = high_score[1];
-			high_score[1] = high_score[0];
-			high_score[0] = score;
+			stage_clear[stage_select][4] = score_miss;
 		}
 
-		else if (high_score[1] < score)
+		if (stage_clear[stage_select][3] > stage_time_limit[stage_select] - time/60) //タイム更新
 		{
-			ranking = 1;
-			high_score[4] = high_score[3];
-			high_score[3] = high_score[2];
-			high_score[2] = high_score[1];
-			high_score[1] = score;
-		}
-		else if (high_score[2] < score)
-		{
-			ranking = 2;
-			high_score[4] = high_score[3];
-			high_score[3] = high_score[2];
-			high_score[2] = score;
+			stage_clear[stage_select][3] = stage_time_limit[stage_select] - time / 60;
+
 		}
 
-		else if (high_score[3] < score)
+		stage_clear[stage_select][0] = 1; //ノルマクリアで無条件でメダル一枚目獲得
+
+		if (score_miss == 0)
 		{
-			ranking = 3;
-			high_score[4] = high_score[3];
-			high_score[3] = score;
+			stage_clear[stage_select][1] = 1; //ミス０回でメダル二枚目獲得
 		}
 
-		else if (high_score[4] < score)
+		if (stage_time_limit[stage_select]-stage_time_limit_gold[stage_select]/60 >= stage_time_limit[stage_select]-time/60)
 		{
-			ranking = 4;
-			high_score[4] = score;
+			stage_clear[stage_select][2] = 1; //ゴールドタイマーでメダル3枚目獲得
+
 		}
 
-		else
+		stage_medal[0] = 0;
+		stage_medal[1] = 0;
+		stage_medal[2] = 0;
+
+		for (i = 0; i <= STAGE_LIMIT; i++)
 		{
-			ranking = 5; //ランク外
+			fprintf(fp_stageclear, "%d,%d,%d,%d,%d\n", stage_clear[i][0], stage_clear[i][1], stage_clear[i][2], stage_clear[i][3], stage_clear[i][4]); //ステージクリア進捗状況ファイルを更新
+			if (stage_clear[i][0] == 1) { stage_medal[0]++; }
+			if (stage_clear[i][1] == 1) { stage_medal[1]++; }
+			if (stage_clear[i][2] == 1) { stage_medal[2]++; } //メダルを取った数を記録
 		}
 
-		for (i = 0; i <= 4; i++)
+
+		fclose(fp_stageclear); //書き取り用として閉じて，もっかい読み取り用として開く
+
+		std::cout << "<info 047: ステージクリア進捗状況ファイルを「書き取り用として」閉じました>" << std::endl;
+
+		if ((fopen_s(&fp_stageclear, "./dat/stage_clear.dat", "r")) != 0) //スコアファイルを読み込む
 		{
-			fprintf(fp, "%d\n", high_score[i]); //スコアファイルを更新
+			std::cout << "<info 048:ステージクリア進捗状況ファイルを「読み取り用として」開けませんでした>" << std::endl;
+			exit(48);
 		}
 
-		for (i = 0; i <= 79; i++)
+		std::cout << "<info 049:ステージクリア進捗状況ファイルを「読み取り用として」開きました>\n" << std::endl;
+
+	}
+
+	if (time < 0 && scene == 5) //タイムアップ時
+	{
+		time = 0;
+		camera_x = 640; camera_y = -544; player->center_x = 0; player->center_y = 0;
+
+		if (mode == 0) //スコアアタックモードのとき，ランキングを更新する
 		{
-			if (list_most_hiragana[i] > max_most_hiragana)
+			scene = 6;
+
+			fclose(fp);
+			 std::cout << "<info 019: スコアファイルを「読み取り用として」閉じました>" << std::endl;
+
+			if ((fopen_s(&fp, "./dat/score.dat", "w")) != 0) //スコアファイルを読み込む
 			{
-				max_most_hiragana = list_most_hiragana[i];
-				score_most_hiragana = i;
+				std::cout << "<info 020:スコアファイルを「書き取り用として」開けませんでした>" << std::endl;
+				exit(20);
 			}
+
+			std::cout << "<info 021:スコアファイルを「書き取り用として」開きました>\n" << std::endl;
+
+			if (high_score[0] < score)
+			{
+				ranking = 0;
+				high_score[4] = high_score[3];
+				high_score[3] = high_score[2];
+				high_score[2] = high_score[1];
+				high_score[1] = high_score[0];
+				high_score[0] = score;
+			}
+
+			else if (high_score[1] < score)
+			{
+				ranking = 1;
+				high_score[4] = high_score[3];
+				high_score[3] = high_score[2];
+				high_score[2] = high_score[1];
+				high_score[1] = score;
+			}
+			else if (high_score[2] < score)
+			{
+				ranking = 2;
+				high_score[4] = high_score[3];
+				high_score[3] = high_score[2];
+				high_score[2] = score;
+			}
+
+			else if (high_score[3] < score)
+			{
+				ranking = 3;
+				high_score[4] = high_score[3];
+				high_score[3] = score;
+			}
+
+			else if (high_score[4] < score)
+			{
+				ranking = 4;
+				high_score[4] = score;
+			}
+
+			else
+			{
+				ranking = 5; //ランク外
+			}
+
+			for (i = 0; i <= 4; i++)
+			{
+				fprintf(fp, "%d\n", high_score[i]); //スコアファイルを更新
+			}
+
+			for (i = 0; i <= 79; i++)
+			{
+				if (list_most_hiragana[i] > max_most_hiragana)
+				{
+					max_most_hiragana = list_most_hiragana[i];
+					score_most_hiragana = i;
+				}
+			}
+
+			fclose(fp); //書き取り用として閉じて，もっかい読み取り用として開く
+
+			 std::cout << "<info 044: スコアファイルを「書き取り用として」閉じました>" << std::endl;
+
+			if ((fopen_s(&fp, "./dat/score.dat", "r")) != 0) //スコアファイルを読み込む
+			{
+				std::cout << "<info 045:スコアファイルを「読み取り用として」開けませんでした>" << std::endl;
+				exit(45);
+			}
+
+			std::cout << "<info 046:スコアファイルを「読み取り用として」開きました>\n" << std::endl;
+
 		}
 
+		else if (mode == 1) //ステージモードのとき（タイムオーバー）
+		{
+			scene = 6;
+		}
 
 	}
 
@@ -2438,7 +2620,20 @@ void keyboard(unsigned char key, int x, int y)
 	case 6: //ゲームオーバー画面
 	{
 		switch (key) {
-		case 'l': {scene = 3; lamp_timer_01 = 0; lamp_timer_02 = 0; }  break; //リザルト画面へ
+		case 'l': 
+		{
+			if (mode == 0)
+			{
+				scene = 3; lamp_timer_01 = 0; lamp_timer_02 = 0;
+			}
+
+			else if (mode == 1)
+			{
+				scene = 9; //ステージ画面に戻る
+			}
+
+		}  break; //リザルト画面へ
+
 		case '\033': game_shutdown(); break;
 		}
 	}break;
@@ -2500,8 +2695,8 @@ void keyboard(unsigned char key, int x, int y)
 	case 11:
 	{
 		switch (key) {
-		case 'o': {camera_x = 640; camera_y = -544; player->center_x = 0; player->center_y = 0; scene = 5; game_reset(); } break;//リトライ
-		case 'p': {camera_x = 640; camera_y = -544; player->center_x = 0; player->center_y = 0; scene = 9; game_reset(); }break;//ステージ選択画面に戻る
+		case 'o': {camera_x = 640; camera_y = -544; player->center_x = 0; player->center_y = 0; scene = 1; } break;//リトライ
+		case 'p': {camera_x = 640; camera_y = -544; player->center_x = 0; player->center_y = 0; scene = 9;  }break;//ステージ選択画面に戻る
 		case '\033':game_shutdown(); break;
 		}
 	}break;
@@ -2595,6 +2790,14 @@ void Init() {
 	}
 
 	std::cout << "<info 033: ステージクリア進捗状況(" << i << ")をステージ分を読み込みました>" << std::endl;
+
+	for (i = 0; i <= STAGE_LIMIT; i++)
+	{
+		fprintf(fp_stageclear, "%d,%d,%d,%d,%d\n", stage_clear[i][0], stage_clear[i][1], stage_clear[i][2], stage_clear[i][3], stage_clear[i][4]); //ステージクリア進捗状況ファイルを更新
+		if (stage_clear[i][0] == 1) { stage_medal[0]++; }
+		if (stage_clear[i][1] == 1) { stage_medal[1]++; }
+		if (stage_clear[i][2] == 1) { stage_medal[2]++; } //メダルを取った数を記録
+	}
 	
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glOrtho(0, WIDTH, HEIGHT, 0, -1, 1);
@@ -2658,6 +2861,7 @@ void Init() {
 	UI_07.LoadImagePNG2(UI_07.file, UI_07.tex);
 	UI_08.LoadImagePNG2(UI_08.file, UI_08.tex);
 	UI_09.LoadImagePNG2(UI_09.file, UI_09.tex);
+	UI_15.LoadImagePNG2(UI_15.file, UI_15.tex);
 	UI_result01.LoadImagePNG2(UI_result01.file, UI_result01.tex);
 	UI_result02.LoadImagePNG2(UI_result02.file, UI_result02.tex);
 	UI_result03.LoadImagePNG2(UI_result03.file, UI_result03.tex);
@@ -2730,6 +2934,17 @@ void Init() {
 	UI_coming_soon64.LoadImagePNG2(UI_coming_soon64.file, UI_coming_soon64.tex);
 	UI_slot_constraint_description.LoadImagePNG2(UI_slot_constraint_description.file, UI_slot_constraint_description.tex);
 	UI_mission_description_1.LoadImagePNG2(UI_mission_description_1.file, UI_mission_description_1.tex);
+	UI_num_aslash.LoadImagePNG2(UI_num_aslash.file, UI_num_aslash.tex);
+	UI_num_aslash_big.LoadImagePNG2(UI_num_aslash_big.file, UI_num_aslash_big.tex);
+	UI_result_stage.LoadImagePNG2(UI_result_stage.file, UI_result_stage.tex);
+	UI_result_stage_title.LoadImagePNG2(UI_result_stage_title.file, UI_result_stage_title.tex);
+	UI_result_stage_title.LoadImagePNG2(UI_result_stage_title.file, UI_result_stage_title.tex);
+	UI_result_stage_medal_1.LoadImagePNG2(UI_result_stage_medal_1.file, UI_result_stage_medal_1.tex);
+	UI_result_stage_medal_2.LoadImagePNG2(UI_result_stage_medal_2.file, UI_result_stage_medal_2.tex);
+	UI_result_stage_medal_3.LoadImagePNG2(UI_result_stage_medal_3.file, UI_result_stage_medal_3.tex);
+	UI_result_stage_medal_1_lux.LoadImagePNG2(UI_result_stage_medal_1_lux.file, UI_result_stage_medal_1_lux.tex);
+	UI_result_stage_medal_2_lux.LoadImagePNG2(UI_result_stage_medal_2_lux.file, UI_result_stage_medal_2_lux.tex);
+	UI_result_stage_medal_3_lux.LoadImagePNG2(UI_result_stage_medal_3_lux.file, UI_result_stage_medal_3_lux.tex);
 
 	for (i = 0; i <= 79; i++)
 	{
@@ -2800,12 +3015,7 @@ void Init() {
 	std::cout << "<info 023: ひらがなの点数計算が完了しました>" << std::endl;
 
 	stage_info[1] = 1; //サンプルステージ
-	stage_clear[1][0] = 1;
-	stage_clear[1][1] = 1;
-	stage_clear[1][2] = 1;
-	stage_clear[1][3] = 58;
-	stage_clear[1][4] = 0;
-	stage_nolma[1] = 10;
+	stage_nolma[1] = 5;
 	stage_time_limit[1] = 400;
 	stage_time_limit_gold[1] = 150;
 	stage_slot_constraint[1][2] = 2;
@@ -2875,7 +3085,7 @@ void timer(int value) {
 		temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544;
 	}
 
-	if (scene == 9) //クリアメダル全点灯のゴージャスな演出
+	if (scene == 9 || scene == 11) //クリアメダル全点灯のゴージャスな演出
 	{
 		lamp_timer_clear++;
 		if (lamp_timer_clear > 200) //ルーレットブロックのランプの点灯エフェクト
@@ -2905,7 +3115,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.1-beta.2");
+	glutCreateWindow("goipachi ver.1.1-beta.3");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

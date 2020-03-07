@@ -44,6 +44,18 @@ ULONG_PTR gdiPT;
 
 GLuint tex_num[7][11] = { {} }; //[0][]：数字フォント（赤） //[1][]：数字フォント（頭上のスコアの数字・黄緑） [10]は「＋」
 
+void check_goi(int* moji);
+void LoadImagePNG(const wchar_t* filename, GLuint &texture);
+void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, int d);
+int choose_hiragana(void);
+int choose_pattern(void);
+int choose_odai(void);
+void set_block_info(int type, int x_grid, int y_grid, int leftside, int blocknum);
+void block_standby(void);
+void standby_stage(int stage_num);
+void game_reset(void);
+void game_shutdown(void);
+
 int ranking; //ランキング表示のため
 
 bool onMoveKeyPress_L = false;
@@ -58,6 +70,7 @@ int walk_timer = 0; //キャラクターのアニメーション
 int lamp_timer_01 = 0; //Ｋキー（決定ボタン）を押した後の赤ライトの点灯
 int lamp_timer_02 = 0; //プレイヤーのリアクションのエフェクト
 int lamp_timer_block = 0; //ルーレットブロックのエフェクトのアニメーション
+int lamp_timer_clear = 0; //クリアランプ全点灯でゴージャスになる
 int hiragana_roulette_timer = 0; //ルーレットブロックの中身のタイマー
 int hiragana_roulette[74] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75 }; //ルーレットの中身
 int gun_timer = 0; //銃を構えているイラストの表示
@@ -67,9 +80,17 @@ int scene = 0; //◇シーンの追加．0:タイトル 1:スタンバイ画面 
 int next_scene = 0; //ゲームをやめる→ほんとうによろしいですか？→の分岐などに使う
 int mode = 0; //0:スコアアタック 1:ステージモード スコアの計算にも影響する
 int mode_mojisu = 4; //3or4or5 3文字，5文字はおいおい辞書を用意して実装したい．とりあえず4文字モードだけ
-int made_tango[MADE_LIMIT][5] = { {} }; //ステージクリアモードのとき，重複した単語は作れない
+
+int made_tango[MADE_LIMIT+1][5] = { {} }; //ステージクリアモードのとき，重複した単語は作れない
 int stage_select = 1; //ステージクリアモードで選んでいるステージの番号
-int stage_clear[STAGE_LIMIT][4] = { {} }; //ステージクリアモードの進捗状況
+int stage_clear[STAGE_LIMIT + 1][5] = { {} }; //ステージクリアモードの進捗状況  0~2 メダル 3:クリア時間ハイスコア 4:ミス回数ハイスコア
+int stage_info[STAGE_LIMIT + 1] = {}; //0:未定義（カミングスーン) 1:何単語作るかミッション それ以外：面白そうなのがあったら追加
+int stage_nolma[STAGE_LIMIT + 1] = {}; //例：ステージ１で10単語作れミッション→ [1]=10
+int stage_time_limit[STAGE_LIMIT + 1] = {}; //例：ステージ1は200秒以内 [1]=200
+int stage_time_limit_gold[STAGE_LIMIT + 1] = {}; //例：ステージ1のメダル獲得タイム50秒以内→[1]=50
+int stage_slot_constraint[STAGE_LIMIT + 1][5] = { {} }; //語彙スロット固定（例：ステージ1で[][][い][ろ]のときは [1][0]～[1][3]：＿＿いろになる
+int stage_block_info[OBJECT_LIMIT][3] = { {} }; //ステージモードの時に配置されるブロックの情報
+
 
 int dic_4moji[dic_4_LIMIT][4] = { {} }; //辞書の情報を格納
 
@@ -135,6 +156,7 @@ int height_c = 0; //衝突判定に使う，ジャンプした後着地できる
 FILE *fp; //スコアファイル
 FILE *fp_dic_4; //辞書ファイル
 FILE *fp_stageclear; //ステージクリア進捗
+FILE *fp_stage_info; //ステージの情報
 
 int dic_4_all = 0;
 bool word_hit = false; //Ｋキー押下後，辞書に存在していたかどうか(trueなら得点＋エフェクト，falseなら時間減少＋エフェクト）
@@ -166,6 +188,7 @@ int time_1flame; //デバッグ用，1フレームでどれだけ進んだか，
 double speed_1flame;
 int time_temp;
 double speed_temp;
+
 
 std::random_device rnd;
 std::mt19937 mt(rnd()); //なんか乱数のタネを決定するやつ
@@ -493,12 +516,18 @@ GameObject UI_mode_highscore_2 = GameObject(0, 0, 512, 512, L"./pic/mode_highsco
 GameObject UI_slot_locked = GameObject(0, 0, 192, 192, L"./pic/slot_locked.png");
 GameObject UI_block_stage_num = GameObject(0, 0, 96, 96, L"./pic/block_stage_num.png");
 GameObject UI_block_stage_num_select = GameObject(0, 0, 192, 192, L"./pic/block_stage_num_selected.png");
-GameObject UI_clear_lamp_on_1 = GameObject(0, 0, 80, 20, L"./clear_lamp_on_1.png");
-GameObject UI_clear_lamp_on_2 = GameObject(0, 0, 80, 20, L"./clear_lamp_on_2.png");
-GameObject UI_clear_lamp_on_3 = GameObject(0, 0, 80, 20, L"./clear_lamp_on_3.png");
-GameObject UI_clear_lamp_off = GameObject(0, 0, 80, 20, L"./clear_lamp_off.png");
-GameObject UI_time_limit_desctiption= GameObject(0, 0, 80, 1280, L"./time_limit_desctiption.png");
-
+GameObject UI_clear_lamp_on_1 = GameObject(0, 0, 160, 40, L"./pic/clear_lamp_on_1.png");
+GameObject UI_clear_lamp_on_2 = GameObject(0, 0, 160, 40, L"./pic/clear_lamp_on_2.png");
+GameObject UI_clear_lamp_on_3 = GameObject(0, 0, 160, 40, L"./pic/clear_lamp_on_3.png");
+GameObject UI_clear_lamp_on_1_lux = GameObject(0, 0, 160, 40, L"./pic/clear_lamp_on_1_lux.png");
+GameObject UI_clear_lamp_on_2_lux = GameObject(0, 0, 160, 40, L"./pic/clear_lamp_on_2_lux.png");
+GameObject UI_clear_lamp_on_3_lux = GameObject(0, 0, 160, 40, L"./pic/clear_lamp_on_3_lux.png");
+GameObject UI_clear_lamp_off = GameObject(0, 0, 160, 40, L"./pic/clear_lamp_off.png");
+GameObject UI_time_limit_description= GameObject(0, 0, 1024, 64, L"./pic/time_limit_description.png");
+GameObject UI_coming_soon64 = GameObject(0, 0, 64, 64, L"./pic/coming_soon.png");
+GameObject UI_coming_soon192 = GameObject(0, 0, 192, 192, L"./pic/coming_soon.png");
+GameObject UI_slot_constraint_description = GameObject(0, 0, 1024, 64, L"./pic/slot_constraint_description.png");
+GameObject UI_mission_description_1 =  GameObject(0, 0, 1024, 64, L"./pic/mission_description_1.png");
 
 GameObject block_hiragana_UI[80] = {
 GameObject(0, 0, 96, 96, L"./pic/block_blank.png"), //空白 ID:0
@@ -666,6 +695,89 @@ GameObject(0, 0, 64, 64, L"./pic/block_odai_off.png"), //お題箱オフ
 GameObject(0, 0, 64, 64, L"./pic/block_undifined.png") //未使用（お題箱とかに使う？
 };
 
+GameObject block_hiragana_mini[80] = {
+GameObject(0, 0, 32, 32, L"./pic/block_blank.png"), //空白 ID:0
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_01.png"), //あ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_02.png"), //い
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_03.png"), //う
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_04.png"), //え
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_05.png"), //お
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_06.png"), //か
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_07.png"), //き
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_08.png"), //く
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_09.png"), //け
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_10.png"), //こ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_11.png"), //さ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_12.png"), //し
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_13.png"), //す
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_14.png"), //せ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_15.png"), //そ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_16.png"), //た
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_17.png"), //ち
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_18.png"), //つ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_19.png"), //て
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_20.png"), //と
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_21.png"), //な
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_22.png"), //に
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_23.png"), //ぬ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_24.png"), //ね
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_25.png"), //の
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_26.png"), //は
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_27.png"), //ひ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_28.png"), //ふ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_29.png"), //へ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_30.png"), //ほ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_31.png"), //ま
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_32.png"), //み
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_33.png"), //む
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_34.png"), //め
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_35.png"), //も
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_36.png"), //や
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_37.png"), //ゆ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_38.png"), //よ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_39.png"), //ら
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_40.png"), //り
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_41.png"), //る
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_42.png"), //れ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_43.png"), //ろ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_44.png"), //わ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_45.png"), //を ID:45
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_46.png"), //ん ID:46
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_73.png"), //っ ID:47
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_74.png"), //ヴ
+GameObject(0, 0, 32, 32, L"./pic/block_wood.png"), //木材（足場ブロック）ID:49
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_47.png"), //ー ID:50
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_48.png"), //が
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_49.png"), //ぎ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_50.png"), //ぐ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_51.png"), //げ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_52.png"), //ご
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_53.png"), //ざ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_54.png"), //じ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_55.png"), //ず
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_56.png"), //ｚｗ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_57.png"), //ぞ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_58.png"), //だ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_59.png"), //ぢ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_60.png"), //づ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_61.png"), //で
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_62.png"), //ど
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_63.png"), //ば
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_64.png"), //び
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_65.png"), //ぶ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_66.png"), //べ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_67.png"), //ぼ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_68.png"), //ぱ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_69.png"), //ぴ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_70.png"), //ぷ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_71.png"), //ぺ
+GameObject(0, 0, 32, 32, L"./pic/block_hiragana_72.png"),//ぽ
+GameObject(0, 0, 32, 32, L"./pic/ground.png"), //地面 ID:76
+GameObject(0, 0, 32, 32, L"./pic/block_odai.png"), //おだいばこ
+GameObject(0, 0, 32, 32, L"./pic/block_odai_off.png"), //お題箱オフ
+GameObject(0, 0, 32, 32, L"./pic/block_undifined.png") //未使用（お題箱とかに使う？
+};
+
 GameObject block_light_1 = GameObject(0, 0, 64, 64, L"./pic/block_highlight_1.png"); //ルーレットブロックのライトエフェクト（明
 GameObject block_light_2 = GameObject(0, 0, 64, 64, L"./pic/block_highlight_2.png"); //ルーレットブロックのライトエフェクト（暗
 
@@ -684,28 +796,57 @@ void check_goi(int* moji)
 	int *dic4 = &dic_4moji[0][0];
 	int *lmhr = &list_most_hiragana[0];
 
-	for (i = 0; i < dic_4_all; i++)
+	if (mode == 0)//スコアモード
 	{
-		if (moji[0] == *(dic4+i*4) && moji[1] == *(dic4 + i * 4+1) && moji[2] == *(dic4 + i * 4+2) && moji[3] == *(dic4 + i * 4+3))
-		{	
-			word_hit = true;
-			
-			score_word = (int)(*(hs4+4*moji[0]) + *(hs4 + 4 * moji[1]+1) + *(hs4 + 4 * moji[2]+2) + *(hs4 + 4 * moji[3]+3));
+		for (i = 0; i < dic_4_all; i++)
+		{
+			if (moji[0] == *(dic4 + i * 4) && moji[1] == *(dic4 + i * 4 + 1) && moji[2] == *(dic4 + i * 4 + 2) && moji[3] == *(dic4 + i * 4 + 3))
+			{
+				word_hit = true;
 
-			score += score_word;
-			score_tango++;
-			(*(lmhr + moji[0]))++;
-			(*(lmhr + moji[1]))++;
-			(*(lmhr + moji[2]))++;
-			(*(lmhr + moji[3]))++;
+				score_word = (int)(*(hs4 + 4 * moji[0]) + *(hs4 + 4 * moji[1] + 1) + *(hs4 + 4 * moji[2] + 2) + *(hs4 + 4 * moji[3] + 3));
 
-			break;
+				score += score_word;
+				score_tango++;
+				(*(lmhr + moji[0]))++;
+				(*(lmhr + moji[1]))++;
+				(*(lmhr + moji[2]))++;
+				(*(lmhr + moji[3]))++;
+
+				break;
+			}
+
 		}
-
+		if (word_hit == false) //ペナルティ
+		{
+			time -= 30 * 60;
+		}
 	}
-	if (word_hit == false) //ペナルティ
+
+	if (mode == 1)//ステージモード
 	{
-		time -= 30*60;
+		for (i = 0; i < dic_4_all; i++)
+		{
+			if (moji[0] == *(dic4 + i * 4) && moji[1] == *(dic4 + i * 4 + 1) && moji[2] == *(dic4 + i * 4 + 2) && moji[3] == *(dic4 + i * 4 + 3))
+			{
+				word_hit = true;
+
+				made_tango[score][0] = moji[0];
+				made_tango[score][1] = moji[1];
+				made_tango[score][2] = moji[2];
+				made_tango[score][3] = moji[3];
+
+				score_word = 1;
+				score += score_word;
+			
+				break;
+			}
+
+		}
+		if (word_hit == false) //ペナルティ
+		{
+			time -= 30 * 60;
+		}
 	}
 }
 
@@ -986,16 +1127,16 @@ void set_block_info(int type, int x_grid, int y_grid, int leftside, int blocknum
 {
 	int *obbl = &object_block[blocknum][0];
 	*(obbl) = type; *(obbl+1) = (-64)*(leftside + x_grid); *(obbl+2) = (-64)*(y_grid);
+	//
+	printf("object_block = %d, input =%d\n", *(obbl), type);
 }
 
-void block_standby(void)
+void block_standby(void) //スコアアタックモード
 {
-
 	j = 0; //オブジェクトブロックを配置するための添え字，1個設置したら1増える．
 	object_on_stage = 0;
 
 	int Q[12] = {}; //地形パターンを生成する際，同じ辞書の単語に含まれるひらがなを所定の位置に配置するため，その単語の番号を乱数で取得する
-
 
 
 	//ここから100行程度，導入部分のブロックを配置
@@ -1261,6 +1402,67 @@ void block_standby(void)
 	std::cout << "<info 024: " << object_on_stage <<"個のオブジェクトがステージに配置されました" << std::endl;
 }
 
+void standby_stage(int stage_num) //ステージモード
+{
+	time = stage_time_limit[stage_num]*60;
+
+	player->center_x = 0;
+	player->center_y = -8;
+
+	score = 0;
+
+	for (i = 0; i <= 100; i++) //作った単語のやつをリセットする
+	{
+		made_tango[i][0] = 0;
+		made_tango[i][1] = 0;
+		made_tango[i][2] = 0;
+		made_tango[i][3] = 0;
+	}
+
+	for (i = 0; i <= OBJECT_LIMIT; i++) //作った単語のやつをリセットする
+	{
+		object_block[i][0] = 0;
+		object_block[i][1] = 0;
+		object_block[i][2] = 0;
+	}
+
+	object_on_stage = 0;
+
+	if ((fopen_s(&fp_stage_info, "./dat/stage_001.dat", "r")) != 0) //辞書ファイルを読み込む
+	{
+		std::cout << "<info 034: ステージファイルを開けませんでした" << std::endl;
+		exit(34);
+	}
+
+	i = 0;
+
+	while (fscanf_s(fp_stage_info, "%d,%d,%d", &stage_block_info[i][0], &stage_block_info[i][1], &stage_block_info[i][2]) != EOF)
+	{
+		i++;
+	}
+
+	object_on_stage = i;
+
+	std::cout << "<info 035: ステージファイルを読み込みました>" << std::endl;
+
+
+	for (i = 0; i <= object_on_stage; i++) //ファイルの情報をobject_blockに書き出していく
+	{
+		object_block[i][0] = stage_block_info[i][0];
+		object_block[i][1] = stage_block_info[i][1]*(-64);
+		object_block[i][2] = stage_block_info[i][2]*(-64);
+	}
+
+	slot[0] = stage_slot_constraint[stage_num][0];
+	slot[1] = stage_slot_constraint[stage_num][1];
+	slot[2] = stage_slot_constraint[stage_num][2];
+	slot[3] = stage_slot_constraint[stage_num][3];
+
+
+	fclose(fp_stage_info);
+	std::cout << "<info 036: ステージファイルを閉じました>" << std::endl;
+}
+
 void game_reset(void) //ステージ構造などゲームを開始する直前にゲームを準備する
 {
 	player->center_x = 0;
@@ -1328,6 +1530,7 @@ void display(void)
 	int *obbl = &object_block[0][0];
 	GameObject *blhr = &block_hiragana[0];
 	GameObject *blUI = &block_hiragana_UI[0];
+	GameObject *blmn = &block_hiragana_mini[0];
 	int *hrrl = &hiragana_roulette[0];
 	int *slst = &slot_start[0];
 	int *sl = &slot[0];
@@ -1452,6 +1655,13 @@ void display(void)
 		(*(blUI + *(sl + 2))).SetImage(-72 + player->center_x, 176);
 		(*(blUI + *(sl + 3))).SetImage(-216 + player->center_x, 176);
 
+		for (i = 0; i <= 3; i++)
+		{
+			if (stage_slot_constraint[stage_select][i] !=0)
+			{
+				UI_slot_locked.SetImage(216 - 144*i + player->center_x, 176); //ステージモードでスロットの文字固定の場合
+			} 
+		}
 
 		if (lamp_timer_01 == 0)
 		{
@@ -1630,6 +1840,18 @@ void display(void)
 		}
 
 
+		if (mode == 1) //ステージモードのとき，今まで作った単語を左上に表示
+		{
+			for (i = 0; i <= 100; i++) 
+			{
+				if (made_tango[i][0] != 0) { (*(blmn + made_tango[i][0])).SetImage(600+player->center_x, -420 + i*35); }
+				if (made_tango[i][1] != 0) { (*(blmn + made_tango[i][1])).SetImage(568 + player->center_x, -420+i*35); }
+				if (made_tango[i][2] != 0) {(*(blmn + made_tango[i][2])).SetImage(536 + player->center_x, -420 + i * 35);}
+				if (made_tango[i][3] != 0) {(*(blmn + made_tango[i][3])).SetImage(504 + player->center_x, -420 + i * 35);}
+			}
+		}
+
+
 	}break;
 
 	case 6: //ゲームオーバー画面
@@ -1676,6 +1898,8 @@ void display(void)
 		UI_mode_mojisu.SetImage(0, -416);
 		UI_mode_mojisu_highlight.SetImage(224-(mode_mojisu-3)*224, -76);
 		UI_mode_select_mojisu_UI.SetImage(0, 112);
+		UI_coming_soon192.SetImage(224, -216);
+		UI_coming_soon192.SetImage(-224, -216);
 
 	}break;
 
@@ -1688,9 +1912,26 @@ void display(void)
 
 		for (i = -3; i <= 3; i++)
 		{
-			if (stage_select + i >= 1 && stage_select + i <= STAGE_LIMIT) //ステージ選択の番号の描画
+			if (stage_select + i >= 1 && stage_select + i <= STAGE_LIMIT) //ステージ選択のブロックの描画
 			{
-				UI_block_stage_num.SetImage(- i * 128, -348);
+				UI_clear_lamp_off.SetImage(-i * 128, -280);
+				UI_block_stage_num.SetImage(-i * 128, -348);
+				if (stage_info[stage_select + i] == 0)
+				{
+					UI_coming_soon64.SetImage(-i * 128, -236);
+				}
+				if (stage_clear[stage_select + i][0] == 1) { UI_clear_lamp_on_1.SetImage(-i*128,-280); } //クリアランプの点灯
+				if (stage_clear[stage_select + i][1] == 1) { UI_clear_lamp_on_2.SetImage(-i * 128, -280); }
+				if (stage_clear[stage_select + i][2] == 1) { UI_clear_lamp_on_3.SetImage(-i * 128, -280); }
+
+				if (stage_clear[stage_select + i][0] == 1 && stage_clear[stage_select + i][1] == 1 && stage_clear[stage_select + i][2] == 1) //全点灯アニメーション
+				{
+					if(lamp_timer_clear%12 <=5){
+						UI_clear_lamp_on_1_lux.SetImage(-i * 128, -280);
+						UI_clear_lamp_on_2_lux.SetImage(-i * 128, -280);
+						UI_clear_lamp_on_3_lux.SetImage(-i * 128, -280);
+					}
+				}
 			}
 		}
 
@@ -1698,11 +1939,35 @@ void display(void)
 		{
 			if (stage_select + i >= 1 && stage_select + i <= STAGE_LIMIT) //ステージ選択の番号の描画
 			{
-				if (stage_select+i >= 100) { SetNumImage(-38 - i * 128, -372, 288, 48, stage_select + i, 2, -16); }
-				else if (stage_select + i >= 10 && stage_select+i <= 99) { SetNumImage(-40 - i * 128, -372, 384, 48, stage_select + i, 2, -16); }
+				if (stage_select + i >= 100) { SetNumImage(-38 - i * 128, -372, 288, 48, stage_select + i, 2, -16); }
+				else if (stage_select + i >= 10 && stage_select + i <= 99) { SetNumImage(-40 - i * 128, -372, 384, 48, stage_select + i, 2, -16); }
 				else if (stage_select + i <= 9) { SetNumImage(-24 - i * 128, -372, 384, 48, stage_select + i, 2, -16); }
 			}
 		}
+
+		if (stage_info[stage_select] != 0) //ステージが定義されている場合ステージの概要情報を描画
+		{
+			UI_time_limit_description.SetImage(0, 68);
+			UI_slot_constraint_description.SetImage(0, -160);
+
+			SetNumImage(112, 52, 320, 40, stage_time_limit[stage_select], 0, 4);
+			SetNumImage(-324, 52, 320, 40, stage_time_limit_gold[stage_select], 0, 4);
+
+			block_hiragana[stage_slot_constraint[stage_select][0]].SetImage(-64, -160); //固定スロットの情報を描画
+			block_hiragana[stage_slot_constraint[stage_select][1]].SetImage(-128, -160);
+			block_hiragana[stage_slot_constraint[stage_select][2]].SetImage(-192, -160);
+			block_hiragana[stage_slot_constraint[stage_select][3]].SetImage(-256, -160);
+
+			if (stage_info[stage_select] == 1) 
+			{ 
+				UI_mission_description_1.SetImage(0, -96);
+				SetNumImage(-48, -115, 320, 40, stage_nolma[stage_select], 0, 4);
+			}
+		}
+
+
+		
+
 
 	}break;
 
@@ -2073,8 +2338,8 @@ void keyboard(unsigned char key, int x, int y)
 		case '\033': game_shutdown(); break;
 
 		case 'l': {
-			if (mode == 0) { scene = 5; game_reset(); } //スコアアタックモード
-			else if (mode == 1) { scene = 5; game_reset(); } //ステージクリアモード
+			if (mode == 0) {  game_reset(); scene = 5;} //スコアアタックモード
+			else if (mode == 1) { standby_stage(stage_select);  scene = 5;  } //ステージクリアモード
 		} break;
 
 		default:
@@ -2123,12 +2388,34 @@ void keyboard(unsigned char key, int x, int y)
 
 		case 'j': {if (slot_select > 0 && lamp_timer_02 == 0) { slot_select--; }} break; //スロット移動
 		case 'l': {if (slot_select < 3 && lamp_timer_02 == 0) { slot_select++; }} break;
-		case 'i': {if (lamp_timer_02 == 0) { if (slot[slot_select] != 0) { score_leave_hiragana++; } slot[slot_select] = 0; } } break; //選択中のスロットの場所をからっぽにする
-
-		case 'k': {if (lamp_timer_02 == 0 && slot[0] != 0 && slot[1] != 0 && slot[2] != 0 && slot[3] != 0)
+			
+		case 'i':
 		{
-			check_goi(slot); lamp_timer_02 = 100;  lamp_timer_01 = 50; slot[0] = 0; slot[1] = 0; slot[2] = 0; slot[3] = 0;
-		}}  break;//単語チェック
+			if (lamp_timer_02 == 0)
+			{
+				if (slot[slot_select] != 0 && stage_slot_constraint[stage_select][slot_select]==0)
+				{
+					score_leave_hiragana++;
+					slot[slot_select] = 0;
+				}
+				
+			}
+		} break; //選択中のスロットの場所をからっぽにする
+
+		case 'k':
+		{
+			if (lamp_timer_02 == 0 && slot[0] != 0 && slot[1] != 0 && slot[2] != 0 && slot[3] != 0)
+			{
+				check_goi(slot);
+				lamp_timer_02 = 100;
+				lamp_timer_01 = 50;
+				if (stage_slot_constraint[stage_select][0] == 0) { slot[0] = 0; }
+				if (stage_slot_constraint[stage_select][1] == 0) { slot[1] = 0; }
+				if (stage_slot_constraint[stage_select][2] == 0) { slot[2] = 0; }
+				if (stage_slot_constraint[stage_select][3] == 0) { slot[3] = 0; }
+
+			}
+		}  break;//単語チェック
 		case 'v': {if (flag_bullet_exist == false)
 		{
 			bullet->direction = player->direction; bullet_timer = 0; gun_timer = 60; flag_bullet_exist = true;
@@ -2159,7 +2446,7 @@ void keyboard(unsigned char key, int x, int y)
 	case 7: //モード選択画面
 	{
 		switch (key) {
-		case 'l': {	if (mode == 0) { scene = 8; } if (mode == 1) { scene = 9; }} break;
+		case 'l': {	if (mode == 0) { stage_select = 0;  scene = 8;  } if (mode == 1) { stage_select = 1;  scene = 9; }} break; //スコアアタックモードはステージ０として扱う
 		case 'w': {	mode = 0; } break;
 		case 's': {	mode =1; } break;
 		case '\033': game_shutdown(); break;
@@ -2170,8 +2457,8 @@ void keyboard(unsigned char key, int x, int y)
 	{
 		switch (key) {
 		case 'l': {	scene = 1; } break;
-		case 'a': { if (mode_mojisu >=4) { mode_mojisu--; }} break;
-		case 'd': {	if (mode_mojisu <= 4) { mode_mojisu++; }} break;
+		//case 'a': { if (mode_mojisu >=4) { mode_mojisu--; }} break;
+		//case 'd': {	if (mode_mojisu <= 4) { mode_mojisu++; }} break;
 		case '\033': game_shutdown(); break;
 		}
 	}break;
@@ -2179,7 +2466,7 @@ void keyboard(unsigned char key, int x, int y)
 	case 9: //ステージモード選択時の次の画面　（ステージ選択画面
 	{
 		switch (key) {
-		case 'l': {scene = 1; } break;
+		case 'l': {if (stage_info[stage_select] !=0) { scene = 1; } } break; //ステージが定義されていれば次のシーンへ
 		case 'a': { if (stage_select >= 2) { stage_select--; }} break;
 		case 'd': {	if (stage_select <= STAGE_LIMIT-1) { stage_select++; }} break;
 		case '\033': game_shutdown(); break;
@@ -2191,7 +2478,15 @@ void keyboard(unsigned char key, int x, int y)
 		switch (key) {
 		case 'y': {
 			move_lock = false;
-			scene = next_scene; 
+			camera_x = 640; camera_y = -544; player->center_x = 0; player->center_y = 0;
+
+			if (next_scene == 1) //ゲームをはじめからやりなおすとき，モードに応じてステージを再構築する
+			{
+				if (mode == 0) { scene = 5; game_reset(); stage_select = 0; }
+				else if (mode == 1) { scene = 5; standby_stage(stage_select); }
+			}
+			scene = next_scene;
+
 		}break;
 
 		case 'n': {
@@ -2294,7 +2589,7 @@ void Init() {
 	}
 
 	i = 0;
-	while (fscanf_s(fp_stageclear, "%d,%d,%d,%d", sc + i * 4, sc + i * 4 + 1, sc + i * 4 + 2, sc + i * 4 + 3) != EOF)
+	while (fscanf_s(fp_stageclear, "%d,%d,%d,%d,%d", sc + i * 5, sc + i * 5 + 1, sc + i * 5 + 2, sc + i * 5 + 3, sc + i * 5 + 4) != EOF)
 	{
 		i++;
 	}
@@ -2426,14 +2721,21 @@ void Init() {
 	UI_clear_lamp_on_1.LoadImagePNG2(UI_clear_lamp_on_1.file, UI_clear_lamp_on_1.tex);
 	UI_clear_lamp_on_2.LoadImagePNG2(UI_clear_lamp_on_2.file, UI_clear_lamp_on_2.tex);
 	UI_clear_lamp_on_3.LoadImagePNG2(UI_clear_lamp_on_3.file, UI_clear_lamp_on_3.tex);
+	UI_clear_lamp_on_1_lux.LoadImagePNG2(UI_clear_lamp_on_1_lux.file, UI_clear_lamp_on_1_lux.tex);
+	UI_clear_lamp_on_2_lux.LoadImagePNG2(UI_clear_lamp_on_2_lux.file, UI_clear_lamp_on_2_lux.tex);
+	UI_clear_lamp_on_3_lux.LoadImagePNG2(UI_clear_lamp_on_3_lux.file, UI_clear_lamp_on_3_lux.tex);
 	UI_clear_lamp_off.LoadImagePNG2(UI_clear_lamp_off.file, UI_clear_lamp_off.tex);
-	UI_time_limit_desctiption.LoadImagePNG2(UI_time_limit_desctiption.file, UI_time_limit_desctiption.tex);
-
+	UI_time_limit_description.LoadImagePNG2(UI_time_limit_description.file, UI_time_limit_description.tex);
+	UI_coming_soon192.LoadImagePNG2(UI_coming_soon192.file, UI_coming_soon192.tex);
+	UI_coming_soon64.LoadImagePNG2(UI_coming_soon64.file, UI_coming_soon64.tex);
+	UI_slot_constraint_description.LoadImagePNG2(UI_slot_constraint_description.file, UI_slot_constraint_description.tex);
+	UI_mission_description_1.LoadImagePNG2(UI_mission_description_1.file, UI_mission_description_1.tex);
 
 	for (i = 0; i <= 79; i++)
 	{
 		block_hiragana_UI[i].LoadImagePNG2(block_hiragana_UI[i].file, block_hiragana_UI[i].tex);
 		block_hiragana[i].LoadImagePNG2(block_hiragana[i].file, block_hiragana[i].tex);
+		block_hiragana_mini[i].LoadImagePNG2(block_hiragana_mini[i].file, block_hiragana_mini[i].tex);
 	}
 	for (i = 1; i <= 79; i++)
 	{
@@ -2496,6 +2798,18 @@ void Init() {
 
 	}
 	std::cout << "<info 023: ひらがなの点数計算が完了しました>" << std::endl;
+
+	stage_info[1] = 1; //サンプルステージ
+	stage_clear[1][0] = 1;
+	stage_clear[1][1] = 1;
+	stage_clear[1][2] = 1;
+	stage_clear[1][3] = 58;
+	stage_clear[1][4] = 0;
+	stage_nolma[1] = 10;
+	stage_time_limit[1] = 400;
+	stage_time_limit_gold[1] = 150;
+	stage_slot_constraint[1][2] = 2;
+	stage_slot_constraint[1][3] = 43;
 
 }
 
@@ -2561,6 +2875,14 @@ void timer(int value) {
 		temp_camera_x = camera_x; temp_camera_y = camera_y; camera_x = 640; camera_y = -544;
 	}
 
+	if (scene == 9) //クリアメダル全点灯のゴージャスな演出
+	{
+		lamp_timer_clear++;
+		if (lamp_timer_clear > 200) //ルーレットブロックのランプの点灯エフェクト
+		{
+			lamp_timer_clear = 0;
+		}
+	}
 
 	if (onMoveKeyPress_L == true || onMoveKeyPress_R == true) //歩きアニメーションのため （画像１→２→３→２というふうに歩き中には４枚の画像を連続で表示する）
 	{
@@ -2583,7 +2905,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.1-beta.1");
+	glutCreateWindow("goipachi ver.1.1-beta.2");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

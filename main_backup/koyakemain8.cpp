@@ -441,6 +441,7 @@ GameObject player1 = GameObject(0, 0, 64, 64, L"./pic/player_walk1.png");
 GameObject player2 = GameObject(0, 0, 64, 64, L"./pic/player_walk2.png");
 GameObject player3 = GameObject(0, 0, 64, 64, L"./pic/player_walk3.png");
 GameObject UI_title = GameObject(0, 0, 768, 256, L"./pic/title_a.png");
+GameObject UI_quit = GameObject(0, 0, 256, 32, L"./pic/title_quit.png");
 
 GameObject UI_gamestart = GameObject(0, 0, 512, 64, L"./pic/game_start.png");
 GameObject UI_pressstart = GameObject(0, 0, 128, 64, L"./pic/press.png");
@@ -483,6 +484,8 @@ GameObject UI_10 = GameObject(0, 0, 384, 192, L"./pic/menu_UI_10.png");
 GameObject UI_11 = GameObject(0, 0, 256, 64, L"./pic/menu_UI_11.png");
 GameObject UI_12 = GameObject(0, 0, 384, 192, L"./pic/menu_UI_12.png");
 GameObject UI_15 = GameObject(0, 0, 1024, 64, L"./pic/menu_UI_15.png");
+GameObject UI_16 = GameObject(0, 0, 768, 96, L"./pic/menu_UI_16.png");
+GameObject UI_17 = GameObject(0, 0, 768, 96, L"./pic/menu_UI_17.png");
 GameObject UI_slot_base = GameObject(0, 0, 768, 192, L"./pic/slot_base.png");
 GameObject UI_slot_highlight = GameObject(0, 0, 192, 192, L"./pic/slot_highlight.png");
 GameObject UI_slot_decision = GameObject(0, 0, 192, 192, L"./pic/slot_decision.png");
@@ -504,9 +507,10 @@ GameObject UI_mode_stage_clear = GameObject(0, 0, 512, 256, L"./pic/mode_stage_c
 GameObject UI_mode_highlight = GameObject(0, 0, 512, 256, L"./pic/mode_highlight.png");
 GameObject UI_mode_description_1 = GameObject(0, 0, 512, 512, L"./pic/mode_description_1.png");
 GameObject UI_mode_description_2 = GameObject(0, 0, 512, 512, L"./pic/mode_description_2.png");
-GameObject UI_mode_select_UI = GameObject(0, 0, 384, 96, L"./pic/mode_select_UI.png");
+GameObject UI_mode_select_UI = GameObject(0, 0, 768, 96, L"./pic/mode_select_UI.png");
 
 GameObject UI_mode_mojisu = GameObject(0, 0, 1024, 128, L"./pic/select_mojisu.png");
+GameObject UI_mode_stage = GameObject(0, 0, 1024, 128, L"./pic/select_stage.png");
 GameObject UI_mode_3 = GameObject(0, 0, 192, 192, L"./pic/3.png");
 GameObject UI_mode_4 = GameObject(0, 0, 192, 192, L"./pic/4.png");
 GameObject UI_mode_5 = GameObject(0, 0, 192, 192, L"./pic/5.png");
@@ -541,6 +545,9 @@ GameObject UI_result_stage_medal_3 = GameObject(0, 0, 768, 384, L"./pic/result_s
 GameObject UI_result_stage_medal_1_lux = GameObject(0, 0, 768, 384, L"./pic/result_stage_medal_1_lux.png");
 GameObject UI_result_stage_medal_2_lux = GameObject(0, 0, 768, 384, L"./pic/result_stage_medal_2_lux.png");
 GameObject UI_result_stage_medal_3_lux = GameObject(0, 0, 768, 384, L"./pic/result_stage_medal_3_lux.png");
+GameObject UI_arrow_2L = GameObject(0, 0, 64, 64, L"./pic/arrow_2L.png");
+GameObject UI_arrow_2R = GameObject(0, 0, 64, 64, L"./pic/arrow_2R.png");
+GameObject UI_arrow_2D = GameObject(0, 0, 64, 64, L"./pic/arrow_2D.png");
 
 GameObject block_hiragana_UI[80] = {
 GameObject(0, 0, 96, 96, L"./pic/block_blank.png"), //空白 ID:0
@@ -1574,6 +1581,7 @@ void display(void)
 		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 
 		UI_title.SetImage(0, -352);
+		UI_quit.SetImage(0, 100);
 		UI_gamestart.SetImage(-80, 48);
 		UI_pressstart.SetImage(140, -32);
 
@@ -1961,6 +1969,7 @@ void display(void)
 		UI_coming_soon192.SetImage(224, -216);
 		UI_coming_soon192.SetImage(-224, -216);
 
+
 	}break;
 
 	case 9: //ステージ選択画面
@@ -1968,7 +1977,18 @@ void display(void)
 		glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
 		gluLookAt(camera_x, camera_y, 0, camera_x, camera_y, 1, 0, 1, 0);
 
+		UI_mode_stage.SetImage(0, -460);
 		UI_block_stage_num_select.SetImage(0, -348);
+
+		if (stage_select >= 2) //ステージ選択の左の矢印
+		{
+			UI_arrow_2L.SetImage(488, -348);
+		}
+
+		if (stage_select <= STAGE_LIMIT - 1) //ステージ選択の右の矢印
+		{
+			UI_arrow_2R.SetImage(-488, -348);
+		}
 
 		for (i = -3; i <= 3; i++)
 		{
@@ -2005,13 +2025,14 @@ void display(void)
 			}
 		}
 
-		if (stage_info[stage_select] != 0) //ステージが定義されている場合ステージの概要情報を描画
+		if (stage_info[stage_select] != 0) //ステージが定義されている場合ステージの概要情報と決定ボタンを描画
 		{
-			UI_time_limit_description.SetImage(0, 68);
+			UI_time_limit_description.SetImage(0, 0);
 			UI_slot_constraint_description.SetImage(0, -160);
+			UI_16.SetImage(0, 64); //決定ボタン
 
-			SetNumImage(112, 52, 320, 40, stage_time_limit[stage_select], 0, 4);
-			SetNumImage(-324, 52, 320, 40, stage_time_limit_gold[stage_select], 0, 4);
+			SetNumImage(112, -16, 320, 40, stage_time_limit[stage_select], 0, 4);
+			SetNumImage(-324, -16, 320, 40, stage_time_limit_gold[stage_select], 0, 4);
 
 			block_hiragana[stage_slot_constraint[stage_select][0]].SetImage(-64, -160); //固定スロットの情報を描画
 			block_hiragana[stage_slot_constraint[stage_select][1]].SetImage(-128, -160);
@@ -2025,9 +2046,7 @@ void display(void)
 			}
 		}
 
-
-		
-
+		UI_17.SetImage(0, 64);
 
 	}break;
 
@@ -2506,7 +2525,8 @@ void keyboard(unsigned char key, int x, int y)
 	case 0:
 	{
 		switch (key) {
-		case '\033': game_shutdown(); break;
+			
+		case 'q': case '\033': game_shutdown(); break;
 		case 'g': scene = 7; break; //PRESS GAME START 次の画面へ
 
 		default:
@@ -2517,6 +2537,7 @@ void keyboard(unsigned char key, int x, int y)
 	case 1:
 	{
 		switch (key) {
+
 		case '\033': game_shutdown(); break;
 
 		case 'l': {
@@ -2641,6 +2662,7 @@ void keyboard(unsigned char key, int x, int y)
 	case 7: //モード選択画面
 	{
 		switch (key) {
+		case 'i': {	scene = 0; } break; //タイトル画面に戻る
 		case 'l': {	if (mode == 0) { stage_select = 0;  scene = 8;  } if (mode == 1) { stage_select = 1;  scene = 9; }} break; //スコアアタックモードはステージ０として扱う
 		case 'w': {	mode = 0; } break;
 		case 's': {	mode =1; } break;
@@ -2651,6 +2673,7 @@ void keyboard(unsigned char key, int x, int y)
 	case 8: //スコアアタックモード選択時の次の画面（文字数選択）
 	{
 		switch (key) {
+		case 'i': {	scene = 7; } break; //モード選択画面に戻る
 		case 'l': {	scene = 1; } break;
 		//case 'a': { if (mode_mojisu >=4) { mode_mojisu--; }} break;
 		//case 'd': {	if (mode_mojisu <= 4) { mode_mojisu++; }} break;
@@ -2661,6 +2684,7 @@ void keyboard(unsigned char key, int x, int y)
 	case 9: //ステージモード選択時の次の画面　（ステージ選択画面
 	{
 		switch (key) {
+		case 'i': {	scene = 7; } break; //モード選択画面に戻る
 		case 'l': {if (stage_info[stage_select] !=0) { scene = 1; } } break; //ステージが定義されていれば次のシーンへ
 		case 'a': { if (stage_select >= 2) { stage_select--; }} break;
 		case 'd': {	if (stage_select <= STAGE_LIMIT-1) { stage_select++; }} break;
@@ -2845,6 +2869,7 @@ void Init() {
 
 
 	UI_title.LoadImagePNG2(UI_title.file, UI_title.tex);
+	UI_quit.LoadImagePNG2(UI_quit.file, UI_quit.tex);
 	UI_gamestart.LoadImagePNG2(UI_gamestart.file, UI_gamestart.tex);
 	UI_pressstart.LoadImagePNG2(UI_pressstart.file, UI_pressstart.tex);
 	
@@ -2861,7 +2886,6 @@ void Init() {
 	UI_07.LoadImagePNG2(UI_07.file, UI_07.tex);
 	UI_08.LoadImagePNG2(UI_08.file, UI_08.tex);
 	UI_09.LoadImagePNG2(UI_09.file, UI_09.tex);
-	UI_15.LoadImagePNG2(UI_15.file, UI_15.tex);
 	UI_result01.LoadImagePNG2(UI_result01.file, UI_result01.tex);
 	UI_result02.LoadImagePNG2(UI_result02.file, UI_result02.tex);
 	UI_result03.LoadImagePNG2(UI_result03.file, UI_result03.tex);
@@ -2889,6 +2913,10 @@ void Init() {
 	UI_12.LoadImagePNG2(UI_12.file, UI_12.tex);
 	UI_13.LoadImagePNG2(UI_13.file, UI_13.tex);
 	UI_14.LoadImagePNG2(UI_14.file, UI_14.tex);
+	UI_15.LoadImagePNG2(UI_15.file, UI_15.tex);
+	UI_16.LoadImagePNG2(UI_16.file, UI_16.tex);
+	UI_17.LoadImagePNG2(UI_17.file, UI_17.tex);
+
 	UI_slot_base.LoadImagePNG2(UI_slot_base.file, UI_slot_base.tex);
 	UI_slot_highlight.LoadImagePNG2(UI_slot_highlight.file, UI_slot_highlight.tex);
 	UI_slot_decision.LoadImagePNG2(UI_slot_decision.file, UI_slot_decision.tex);
@@ -2910,11 +2938,13 @@ void Init() {
 	UI_mode_description_2.LoadImagePNG2(UI_mode_description_2.file, UI_mode_description_2.tex);
 	UI_mode_select_UI.LoadImagePNG2(UI_mode_select_UI.file, UI_mode_select_UI.tex);
 	UI_mode_mojisu.LoadImagePNG2(UI_mode_mojisu.file, UI_mode_mojisu.tex);
+	UI_mode_stage.LoadImagePNG2(UI_mode_stage.file, UI_mode_stage.tex);
 	UI_mode_3.LoadImagePNG2(UI_mode_3.file, UI_mode_3.tex);
 	UI_mode_4.LoadImagePNG2(UI_mode_4.file, UI_mode_4.tex);
 	UI_mode_5.LoadImagePNG2(UI_mode_5.file, UI_mode_5.tex);
 	UI_mode_highlight.LoadImagePNG2(UI_mode_mojisu_highlight.file, UI_mode_mojisu_highlight.tex);
 	UI_mode_select_mojisu_UI.LoadImagePNG2(UI_mode_select_mojisu_UI.file, UI_mode_select_mojisu_UI.tex);
+
 
 	UI_mode_waku.LoadImagePNG2(UI_mode_waku.file, UI_mode_waku.tex);
 	UI_mode_highscore_1.LoadImagePNG2(UI_mode_highscore_1.file, UI_mode_highscore_1.tex);
@@ -2945,6 +2975,9 @@ void Init() {
 	UI_result_stage_medal_1_lux.LoadImagePNG2(UI_result_stage_medal_1_lux.file, UI_result_stage_medal_1_lux.tex);
 	UI_result_stage_medal_2_lux.LoadImagePNG2(UI_result_stage_medal_2_lux.file, UI_result_stage_medal_2_lux.tex);
 	UI_result_stage_medal_3_lux.LoadImagePNG2(UI_result_stage_medal_3_lux.file, UI_result_stage_medal_3_lux.tex);
+	UI_arrow_2L.LoadImagePNG2(UI_arrow_2L.file, UI_arrow_2L.tex);
+	UI_arrow_2R.LoadImagePNG2(UI_arrow_2R.file, UI_arrow_2R.tex);
+	UI_arrow_2D.LoadImagePNG2(UI_arrow_2D.file, UI_arrow_2D.tex);
 
 	for (i = 0; i <= 79; i++)
 	{
@@ -3115,7 +3148,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.1-beta.3");
+	glutCreateWindow("goipachi ver.1.1.0");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

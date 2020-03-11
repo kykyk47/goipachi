@@ -2093,6 +2093,7 @@ void display(void)
 			}
 		}
 
+
 		for (int i = -6400; i < 300; i++) { //ここから５つ背景を描画
 			BG_05.SetImage(i * 1024 + (player->center_x *1.0), -224);
 		}
@@ -2245,7 +2246,7 @@ void display(void)
 		}
 
 
-		if (mode %10==3) //ステージモードかつ3文字モードのとき，今まで作った単語を左上に表示
+		if (stage_info[stage_select] % 10 == 3) //ステージモードかつ3文字モードのとき，今まで作った単語を左上に表示
 		{
 			for (i = 0; i <= 100; i++) 
 			{
@@ -2255,7 +2256,7 @@ void display(void)
 			}
 		}
 
-		else if (mode % 10 == 4) //ステージモードかつ4文字モードのとき，今まで作った単語を左上に表示
+		else if (stage_info[stage_select] % 10 == 4) //ステージモードかつ4文字モードのとき，今まで作った単語を左上に表示
 		{
 			for (i = 0; i <= 100; i++)
 			{
@@ -2266,7 +2267,7 @@ void display(void)
 			}
 		}
 
-		else if (mode % 10 == 5) //ステージモードかつ5文字モードのとき，今まで作った単語を左上に表示
+		else if (stage_info[stage_select] % 10 == 5) //ステージモードかつ5文字モードのとき，今まで作った単語を左上に表示
 		{
 			for (i = 0; i <= 100; i++)
 			{
@@ -3226,8 +3227,8 @@ void keyboard(unsigned char key, int x, int y)
 		switch (key) {
 
 		case '\033': game_shutdown(); break;
-		case 'a': {onMoveKeyPress_L = true; /*MoveLock_R = true;*/ player->direction = 0; } break;
-		case 'd': {onMoveKeyPress_R = true; /*MoveLock_L = true;*/ player->direction = 1; } break;
+		case 'a': {onMoveKeyPress_L = true; gun_timer = 0;/*MoveLock_R = true;*/ player->direction = 0; } break;
+		case 'd': {onMoveKeyPress_R = true; gun_timer = 0; /*MoveLock_L = true;*/ player->direction = 1; } break;
 
 		case 'j': 
 		{ 
@@ -3355,8 +3356,8 @@ void keyboard(unsigned char key, int x, int y)
 		switch (key) {
 		case 'i': {	Mix_PlayChannel(-1, SE_back, 0);  scene = 7; } break; //モード選択画面に戻る
 		case 'l': { Mix_PlayChannel(-1, SE_enter, 0);	scene = 1; } break;
-		case 'a': { if (mode_mojisu >=4) { mode_mojisu--; }} break;
-		case 'd': {	if (mode_mojisu <= 4) { mode_mojisu++; }} break;
+		// 'a': { if (mode_mojisu >=4) { mode_mojisu--; }} break; //ステージ生成アルゴリズムが考え付いたら開放します．
+		//case 'd': {	if (mode_mojisu <= 4) { mode_mojisu++; }} break;
 		case '\033': game_shutdown(); break;
 		}
 	}break;
@@ -3887,14 +3888,14 @@ void Init() {
 		{
 			if (*(hw3+3*k+j) >= 2000) { *(hs3+3*k+j) = 2.5; }
 			else if (*(hw3+3*k+j) >= 1600) {  *(hs3+3*k+j) = 3; }
-			else if (*(hw3+3*k+j) >= 1300) {  *(hs3+3*k+j) = 5; }
-			else if (*(hw3+3*k+j) >= 1000) {  *(hs3+3*k+j) = 7.5; }
-			else if (*(hw3+3*k+j) >= 750) {  *(hs3+3*k+j) = 10; }
-			else if (*(hw3+3*k+j) >= 500) {  *(hs3+3*k+j) = 15; }
-			else if (*(hw3+3*k+j) >= 300) {  *(hs3+3*k+j) = 20; }
-			else if (*(hw3+3*k+j) >= 150) {  *(hs3+3*k+j) = 30; }
-			else if (*(hw3+3*k+j) >= 75) {  *(hs3+3*k+j) = 50; }
-			else if (*(hw3+3*k+j) >= 0) {  *(hs3+3*k+j) = 75; }
+			else if (*(hw3+3*k+j) >= 1300) {  *(hs3+3*k+j) = 4.5; }
+			else if (*(hw3+3*k+j) >= 1000) {  *(hs3+3*k+j) = 5; }
+			else if (*(hw3+3*k+j) >= 750) {  *(hs3+3*k+j) = 7.5; }
+			else if (*(hw3+3*k+j) >= 500) {  *(hs3+3*k+j) = 10; }
+			else if (*(hw3+3*k+j) >= 300) {  *(hs3+3*k+j) = 12; }
+			else if (*(hw3+3*k+j) >= 150) {  *(hs3+3*k+j) = 18; }
+			else if (*(hw3+3*k+j) >= 75) {  *(hs3+3*k+j) = 30; }
+			else if (*(hw3+3*k+j) >= 0) {  *(hs3+3*k+j) = 45; }
 		}
 
 		for (j = 0; j <= 3; j++)
@@ -3914,19 +3915,19 @@ void Init() {
 		for (j = 0; j <= 4; j++)
 		{
 			if (*(hw5 + 5 * k + j) >= 2000) { *(hs5 + 5 * k + j) = 2.5; }
-			else if (*(hw5 + 5 * k + j) >= 1600) { *(hs5 + 5 * k + j) = 3; }
-			else if (*(hw5 + 5 * k + j) >= 1300) { *(hs5 + 5 * k + j) = 5; }
-			else if (*(hw5 + 5 * k + j) >= 1000) { *(hs5 + 5 * k + j) = 7.5; }
-			else if (*(hw5 + 5 * k + j) >= 750) { *(hs5 + 5 * k + j) = 10; }
-			else if (*(hw5 + 5 * k + j) >= 500) { *(hs5 + 5 * k + j) = 15; }
-			else if (*(hw5 + 5 * k + j) >= 300) { *(hs5 + 5 * k + j) = 20; }
-			else if (*(hw5 + 5 * k + j) >= 150) { *(hs5 + 5 * k + j) = 30; }
-			else if (*(hw5 + 5 * k + j) >= 75) { *(hs5 + 5 * k + j) = 50; }
-			else if (*(hw5 + 5 * k + j) >= 0) { *(hs5 + 5 * k + j) = 75; }
+			else if (*(hw5 + 5 * k + j) >= 1600) { *(hs5 + 5 * k + j) = 4; }
+			else if (*(hw5 + 5 * k + j) >= 1300) { *(hs5 + 5 * k + j) = 6; }
+			else if (*(hw5 + 5 * k + j) >= 1000) { *(hs5 + 5 * k + j) = 10; }
+			else if (*(hw5 + 5 * k + j) >= 750) { *(hs5 + 5 * k + j) = 12.5; }
+			else if (*(hw5 + 5 * k + j) >= 500) { *(hs5 + 5 * k + j) = 20; }
+			else if (*(hw5 + 5 * k + j) >= 300) { *(hs5 + 5 * k + j) = 30; }
+			else if (*(hw5 + 5 * k + j) >= 150) { *(hs5 + 5 * k + j) = 50; }
+			else if (*(hw5 + 5 * k + j) >= 75) { *(hs5 + 5 * k + j) = 75; }
+			else if (*(hw5 + 5 * k + j) >= 0) { *(hs5 + 5 * k + j) = 100; }
 		}
 
 	}
-	std::cout << "<info 023: ひらがなの点数計算が完了しました>" << std::endl;
+	std::cout << "<info 023: ひらがなの配点計算が完了しました>" << std::endl;
 
 }
 
@@ -4026,7 +4027,7 @@ int main(int argc, char *argv[])
 
 	if (Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 512) == -1) //SDL_mixerのセットアップ
 	{
-		std::cout << "<info 055: SDL_mixerのセットアップに失敗しました>" << std::endl;
+		std::cout << "<info 055: SDL_mixerのセットアップに失敗しました．スピーカーの設定が施されていない場合があります．>" << std::endl;
 		exit(55);
 	}
 
@@ -4035,7 +4036,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.3.0");
+	glutCreateWindow("goipachi ver.1.3.1");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

@@ -575,6 +575,7 @@ GameObject UI_time_limit_description= GameObject(0, 0, 1024, 64, L"./pic/time_li
 GameObject UI_coming_soon64 = GameObject(0, 0, 64, 64, L"./pic/coming_soon.png");
 GameObject UI_coming_soon192 = GameObject(0, 0, 192, 192, L"./pic/coming_soon.png");
 GameObject UI_slot_constraint_description = GameObject(0, 0, 1024, 64, L"./pic/slot_constraint_description.png");
+GameObject UI_mission_description_0 = GameObject(0, 0, 1024, 64, L"./pic/mission_description_0.png");
 GameObject UI_mission_description_1 =  GameObject(0, 0, 1024, 64, L"./pic/mission_description_1.png");
 GameObject UI_mission_description_2 = GameObject(0, 0, 1024, 64, L"./pic/mission_description_2.png");
 GameObject UI_num_aslash = GameObject(0, 0, 20, 20, L"./pic/num_aslash.png");
@@ -2452,35 +2453,66 @@ void display(void)
 			{
 			case 3:
 			{
-				UI_slot_constraint_description.SetImage(0, -160);
-				UI_mission_description_1.SetImage(0, -96);
-				SetNumImage(-48, -115, 320, 40, stage_nolma[stage_select], 0, 4);
-				block_hiragana[stage_slot_constraint[stage_select][0]].SetImage(-64, -160); //固定スロットの情報を描画
-				block_hiragana[stage_slot_constraint[stage_select][1]].SetImage(-128, -160);
-				block_hiragana[stage_slot_constraint[stage_select][2]].SetImage(-192, -160);
+				if (stage_slot_constraint[stage_select][0] == 0 && stage_slot_constraint[stage_select][1] == 0 && stage_slot_constraint[stage_select][2] == 0 && stage_slot_constraint[stage_select][3] == 0)
+				{
+					UI_mission_description_0.SetImage(0, -96); //スロット固定がない場合「ただのｎ単語作成ミッション」になる
+					SetNumImage(80, -166, 320, 40, stage_nolma[stage_select], 0, 4);
+				}
+				else
+				{
+					UI_slot_constraint_description.SetImage(0, -160);
+					UI_mission_description_1.SetImage(0, -96); //スロット固定がある場合のn単語作成ミッション
+					SetNumImage(-48, -115, 320, 40, stage_nolma[stage_select], 0, 4);
+					block_hiragana[stage_slot_constraint[stage_select][0]].SetImage(-64, -160); //固定スロットの情報を描画
+					block_hiragana[stage_slot_constraint[stage_select][1]].SetImage(-128, -160);
+					block_hiragana[stage_slot_constraint[stage_select][2]].SetImage(-192, -160);
+				}
+
+
 			}break;
 
 			case 4:
 			{
-				UI_slot_constraint_description.SetImage(0, -160);
-				UI_mission_description_1.SetImage(0, -96);
-				SetNumImage(-48, -115, 320, 40, stage_nolma[stage_select], 0, 4);
-				block_hiragana[stage_slot_constraint[stage_select][0]].SetImage(-64, -160); //固定スロットの情報を描画
-				block_hiragana[stage_slot_constraint[stage_select][1]].SetImage(-128, -160);
-				block_hiragana[stage_slot_constraint[stage_select][2]].SetImage(-192, -160);
-				block_hiragana[stage_slot_constraint[stage_select][3]].SetImage(-256, -160);
+				if (stage_slot_constraint[stage_select][0] == 0 && stage_slot_constraint[stage_select][1] == 0 && stage_slot_constraint[stage_select][2] == 0 && stage_slot_constraint[stage_select][3] == 0)
+				{
+					UI_mission_description_0.SetImage(0, -145);//スロット固定がない場合「ただのｎ単語作成ミッション」になる
+					SetNumImage(80, -166, 320, 40, stage_nolma[stage_select], 0, 4);
+				}
+				else
+				{
+					UI_slot_constraint_description.SetImage(0, -160);
+					UI_mission_description_1.SetImage(0, -96);//スロット固定がある場合のn単語作成ミッション
+
+					SetNumImage(-48, -115, 320, 40, stage_nolma[stage_select], 0, 4);
+					block_hiragana[stage_slot_constraint[stage_select][0]].SetImage(-64, -160); //固定スロットの情報を描画
+					block_hiragana[stage_slot_constraint[stage_select][1]].SetImage(-128, -160);
+					block_hiragana[stage_slot_constraint[stage_select][2]].SetImage(-192, -160);
+					block_hiragana[stage_slot_constraint[stage_select][3]].SetImage(-256, -160);
+				}
+
 			}break;
 
 			case 5:
 			{
-				UI_slot_constraint_description.SetImage(0, -160);
-				UI_mission_description_1.SetImage(0, -96);
-				SetNumImage(-48, -115, 320, 40, stage_nolma[stage_select], 0, 4);
-				block_hiragana[stage_slot_constraint[stage_select][0]].SetImage(-64, -160); //固定スロットの情報を描画
-				block_hiragana[stage_slot_constraint[stage_select][1]].SetImage(-128, -160);
-				block_hiragana[stage_slot_constraint[stage_select][2]].SetImage(-192, -160);
-				block_hiragana[stage_slot_constraint[stage_select][3]].SetImage(-256, -160);
-				block_hiragana[stage_slot_constraint[stage_select][4]].SetImage(-320, -160);
+				
+
+				if (stage_slot_constraint[stage_select][0] == 0 && stage_slot_constraint[stage_select][1] == 0 && stage_slot_constraint[stage_select][2] == 0 && stage_slot_constraint[stage_select][3] == 0 && stage_slot_constraint[stage_select][4] == 0)
+				{
+					UI_mission_description_0.SetImage(0, -96);//スロット固定がない場合「ただのｎ単語作成ミッション」になる
+					SetNumImage(80, -166, 320, 40, stage_nolma[stage_select], 0, 4);
+				}
+				else
+				{
+					UI_slot_constraint_description.SetImage(0, -160);
+					UI_mission_description_1.SetImage(0, -96);//スロット固定がある場合のn単語作成ミッショ
+					SetNumImage(-48, -115, 320, 40, stage_nolma[stage_select], 0, 4);
+					block_hiragana[stage_slot_constraint[stage_select][0]].SetImage(-64, -160); //固定スロットの情報を描画
+					block_hiragana[stage_slot_constraint[stage_select][1]].SetImage(-128, -160);
+					block_hiragana[stage_slot_constraint[stage_select][2]].SetImage(-192, -160);
+					block_hiragana[stage_slot_constraint[stage_select][3]].SetImage(-256, -160);
+					block_hiragana[stage_slot_constraint[stage_select][4]].SetImage(-320, -160);
+				}
+
 			}break;
 
 			case 13: case 14: case 15: //しりとりミッション
@@ -3849,6 +3881,7 @@ void Init() {
 	UI_coming_soon192.LoadImagePNG2(UI_coming_soon192.file, UI_coming_soon192.tex);
 	UI_coming_soon64.LoadImagePNG2(UI_coming_soon64.file, UI_coming_soon64.tex);
 	UI_slot_constraint_description.LoadImagePNG2(UI_slot_constraint_description.file, UI_slot_constraint_description.tex);
+	UI_mission_description_0.LoadImagePNG2(UI_mission_description_0.file, UI_mission_description_0.tex);
 	UI_mission_description_1.LoadImagePNG2(UI_mission_description_1.file, UI_mission_description_1.tex);
 	UI_mission_description_2.LoadImagePNG2(UI_mission_description_2.file, UI_mission_description_2.tex);
 	UI_num_aslash.LoadImagePNG2(UI_num_aslash.file, UI_num_aslash.tex);
@@ -4097,7 +4130,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.3.2");
+	glutCreateWindow("goipachi ver.1.3.3");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

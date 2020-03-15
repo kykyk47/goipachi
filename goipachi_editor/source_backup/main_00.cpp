@@ -337,15 +337,22 @@ GameObject(0, 0, 32, 32, L"./pic/block_odai_off.png"), //お題箱オフ
 GameObject(0, 0, 32, 32, L"./pic/block_undifined.png") //未使用（お題箱とかに使う？
 };
 
-GameObject UI_01 = GameObject(0, 0, 384, 192, L"./pic/UI_STAGE_INFO.png");
-GameObject UI_02 = GameObject(0, 0, 384, 192, L"./pic/UI_file_io.png");
-GameObject UI_confirm01 = GameObject(0, 0, 768, 384, L"./pic/import_confirm.png");
-GameObject UI_confirm02 = GameObject(0, 0, 768, 384, L"./pic/export_confirm.png");
-GameObject UI_confirm03 = GameObject(0, 0, 768, 384, L"./pic/renew_confirm.png");
+GameObject UI_01 = GameObject(0, 0, 384, 192, L"./pic/UI_STAGE_INFO.png"); //下画面左端のメニュー群
+GameObject UI_02 = GameObject(0, 0, 384, 192, L"./pic/UI_file_io.png"); //下画面右端のファイル操作群
+GameObject UI_confirm01 = GameObject(0, 0, 768, 384, L"./pic/import_confirm.png"); //ステージＸをインポートします
+GameObject UI_confirm02 = GameObject(0, 0, 768, 384, L"./pic/export_confirm.png"); //ステージＸにエクスポートする
+GameObject UI_confirm03 = GameObject(0, 0, 768, 384, L"./pic/renew_confirm.png"); //新規ステージを作成します
+GameObject UI_confirm04 = GameObject(0, 0, 768, 384, L"./pic/import_done.png"); //ステージＸをインポートしました
+GameObject UI_confirm05 = GameObject(0, 0, 768, 384, L"./pic/export_done.png"); //ステージｘをエクスポートしました
 GameObject UI_start= GameObject(0, 0, 64, 64, L"./pic/player_walk2.png");
 GameObject UI_cursor_A = GameObject(0, 0, 64, 64, L"./pic/block_select.png"); //エディタ上画面でのブロック選択
 GameObject UI_cursor_Bm = GameObject(0, 0, 200, 50, L"./pic/select_koumooku.png"); //エディタ下画面でのメニュー選択
 GameObject UI_cursor_Bb = GameObject(0, 0, 34, 34, L"./pic/block_select.png"); //エディタ下画面でのブロック選択
+GameObject UI_kirikae = GameObject(0, 0, 128, 64, L"./pic/UI_kirikae.png"); //エディタ画面の上下きりかえ
+GameObject UI_sousa_00= GameObject(0, 0, 256, 128, L"./pic/UI_sousa_00.png"); //エディタ画面での操作ＵＩ
+GameObject UI_sousa_02 = GameObject(0, 0, 256, 128, L"./pic/UI_sousa_02.png"); //エディタ画面での操作ＵＩ
+GameObject UI_sousa_03 = GameObject(0, 0, 256, 128, L"./pic/UI_sousa_03.png"); //エディタ画面での操作ＵＩ
+GameObject UI_sousa_04 = GameObject(0, 0, 256, 128, L"./pic/UI_sousa_04.png"); //エディタ画面での操作ＵＩ
 
 CURSOR cursorA; //上半分（ステージ部分のカーソル
 CURSOR cursorB; //下半分（メニュー部分のカーソル
@@ -615,7 +622,6 @@ void new_stage() //新規ステージ作成
 	stage_slot_constraint_edit[3] = 0;
 	stage_slot_constraint_edit[4] = 0;
 
-	displayGUI = 0;
 	stage_select_edit = 0;
 }
 
@@ -686,7 +692,6 @@ void import_stage(int stage_num) //ステージファイルを読み込む
 	fclose(fp_stage_structure_info);
 	std::cout << "<info 090: ステージファイルを閉じました>" << std::endl;
 
-	displayGUI = 0;
 	stage_select_edit = stage_num;
 }
 
@@ -746,8 +751,8 @@ void export_stage(int stage_num) //ステージファイルを書き出す
 		exit(97);
 	}
 
-	displayGUI = 0;
 	stage_select_edit = stage_num;
+
 }
 void shutdown(void)
 {
@@ -865,7 +870,7 @@ void display(void)
 
 	if (stage_select_edit != 0)
 	{
-		SetNumImage(-320 + camera_x, 110, 192, 24, stage_select_edit, 0, 4); //ステージ番号
+		SetNumImage(-320 + camera_x, 100, 192, 24, stage_select_edit, 0, 4); //ステージ番号
 	}
 
 	SetNumImage(-320 + camera_x, 136, 192, 24, stage_info_edit, 0, 4); //みしょん情報の番号
@@ -908,6 +913,8 @@ void display(void)
 	block_hiragana_mini[49].SetImage(-960 + 34 * 10 + camera_x, 120 + 34 * 3); //木箱
 	block_hiragana_mini[76].SetImage(-960 + 34 * 10 + camera_x, 120 + 34 * 4); //地面
 
+	UI_kirikae.SetImage(-1200 + camera_x,25);
+
 
 	for (k = 10; k <= 14; k++) //濁点
 	{
@@ -922,6 +929,11 @@ void display(void)
 		UI_cursor_A.SetImage(cursorA.x * (-64), cursorA.y * (-64)); //ステージ編集（上画面）でのカーソル描画(点滅）
 	}
 
+	if (mode_edit == 0)
+	{
+		UI_sousa_00.SetImage(-180 + camera_x, 0); //ステージ編集（上画面）UI
+	}
+
 	if (mode_edit == 1)
 	{
 		UI_cursor_A.SetImage(cursorA.x * (-64), cursorA.y * (-64)); //ステージ編集（上画面）でのカーソル描画
@@ -932,14 +944,29 @@ void display(void)
 		UI_cursor_Bb.SetImage(-960 + cursorB.x * (34) + camera_x, 120+cursorB.y * (34));
 	}
 
+	if (mode_edit == 1 && cursorB.x >= 0 && cursorB.x <= 15 && cursorB.y >= 0 && cursorB.y <= 4) //下画面の設置したいひらがな UI
+	{
+		UI_sousa_02.SetImage(-180 + camera_x, 0);
+	}
+
 	if (timer_cursor_lux % 10 >= 2 && mode_edit == 1 && cursorB.x >=16 && cursorB.y >=0 && cursorB.y <= 3) //下画面でのステージ情報編集のカーソル描画（固定スロット情報以外）点滅）
 	{
 		UI_cursor_Bm.SetImage(-280 + camera_x, 148+cursorB.y * 30);
 	}
 
+	if (mode_edit == 1 && cursorB.x >= 16 && cursorB.y >= 0 && cursorB.y <= 3) //下画面でのステージ情報編集（固定スロット情報以外）UI
+	{
+		UI_sousa_04.SetImage(-180 + camera_x, 0);
+	}
+
 	if (timer_cursor_lux % 10 >= 2 && mode_edit == 1 && cursorB.x >=17 || timer_cursor_lux % 10 >= 2 && mode_edit == 1 && cursorB.x == 16 && cursorB.y == 4) //下画面でのステージ情報編集のカーソル描画（固定スロット情報）点滅）
 	{
 		UI_cursor_Bb.SetImage(-930 + camera_x + 34 * cursorB.x, 266);
+	}
+
+	if ( mode_edit == 1 && cursorB.x >= 17 || mode_edit == 1 && cursorB.x == 16 && cursorB.y == 4) //下画面でのステージ情報編集 （固定スロット） UI
+	{
+		UI_sousa_03.SetImage(-180 + camera_x, 0);
 	}
 
 	if (mode_edit == 0 && cursorB.x >= 0 && cursorB.x <= 15 && cursorB.y >= 0 && cursorB.y <= 4) //下画面の設置したいひらがなのカーソル描画
@@ -950,8 +977,8 @@ void display(void)
 	if ( mode_edit == 0 && cursorB.x >= 16 && cursorB.y >= 0 && cursorB.y <= 3) //下画面でのステージ情報編集のカーソル描画（固定スロット情報以外）
 	{
 		UI_cursor_Bm.SetImage(-280 + camera_x, 148 + cursorB.y * 30);
-
 	}
+	
 
 	if (mode_edit == 0 && cursorB.x <= 20 && cursorB.x >= 17 || mode_edit == 0 && cursorB.x == 16 && cursorB.y == 4) //下画面でのステージ情報編集のカーソル描画（固定スロット情報）
 	{
@@ -975,13 +1002,23 @@ void display(void)
 		UI_confirm03.SetImage(camera_x - 640, -72);
 	}
 
+	if (displayGUI == 4) //ステージをインポートしました
+	{
+		UI_confirm04.SetImage(camera_x - 640, -72);
+	}
+
+	if (displayGUI == 5) //ステージをエクスポートしました
+	{
+		UI_confirm05.SetImage(camera_x - 640, -72);
+	}
+
 
 	glutSwapBuffers();
 }
 
 void idle(void)
 {
-
+	
 }
 
 void keyboard(unsigned char key, int x, int y)
@@ -991,7 +1028,9 @@ void keyboard(unsigned char key, int x, int y)
 	case 'q': case '\033': shutdown(); break;
 	}
 
-	if (displayGUI == 0)
+	switch (displayGUI)
+	{
+	case 0:
 	{
 		if (mode_edit == 0)
 		{
@@ -1014,7 +1053,7 @@ void keyboard(unsigned char key, int x, int y)
 
 			case 's':
 			{
-				if (cursorA.y >= 0) { cursorA.y--;  }
+				if (cursorA.y >= 0) { cursorA.y--; }
 			}break;
 
 			case 'k': //下画面で選択したブロックを配置
@@ -1022,8 +1061,8 @@ void keyboard(unsigned char key, int x, int y)
 				std::cout << "<info 100: ブロックID:<<" << object_on_stage << " として追加しました" << std::endl;
 				if (select_hiragana != 0)
 				{
-					object_block[object_on_stage][0] = select_hiragana ;
-					object_block[object_on_stage][1] = cursorA.x * (-64) +640;
+					object_block[object_on_stage][0] = select_hiragana;
+					object_block[object_on_stage][1] = cursorA.x * (-64) + 640;
 					object_block[object_on_stage][2] = cursorA.y * (-64);
 					object_on_stage++;
 				}
@@ -1031,9 +1070,9 @@ void keyboard(unsigned char key, int x, int y)
 
 			case 'i': //選択中のブロックを削除
 			{
-				for (i = 0; i<object_on_stage; i++)
+				for (i = 0; i < object_on_stage; i++)
 				{
-					if (object_block[i][1] == cursorA.x * (-64)+640 && object_block[i][2] == cursorA.y*(-64) && object_block[i][0] != 0)
+					if (object_block[i][1] == cursorA.x * (-64) + 640 && object_block[i][2] == cursorA.y*(-64) && object_block[i][0] != 0)
 					{
 						object_block[i][0] = 0;
 						object_block[i][1] = 0;
@@ -1057,10 +1096,10 @@ void keyboard(unsigned char key, int x, int y)
 					object_block[object_on_stage - 1][2] = 0;
 
 					object_on_stage--;
-					
+
 					flag_delete = false;
 				}
-				
+
 			}break;
 
 			case 't': //操作画面切り替え
@@ -1101,7 +1140,8 @@ void keyboard(unsigned char key, int x, int y)
 
 			case 'd':
 			{
-				if (cursorB.x >= 1) { cursorB.x--; select_hiragana = def_hiragana(cursorB.x, cursorB.y); printf("%d\n", select_hiragana);
+				if (cursorB.x >= 1) {
+					cursorB.x--; select_hiragana = def_hiragana(cursorB.x, cursorB.y); printf("%d\n", select_hiragana);
 				} //下半分で変更するブロックを選択 or B.xが16のときはステージ情報を選択
 			}break;
 
@@ -1115,7 +1155,8 @@ void keyboard(unsigned char key, int x, int y)
 
 			case 's':
 			{
-				if (cursorB.y <= 3) { cursorB.y++; select_hiragana = def_hiragana(cursorB.x, cursorB.y); printf("%d\n", select_hiragana);
+				if (cursorB.y <= 3) {
+					cursorB.y++; select_hiragana = def_hiragana(cursorB.x, cursorB.y); printf("%d\n", select_hiragana);
 				}
 			}break;
 
@@ -1125,7 +1166,7 @@ void keyboard(unsigned char key, int x, int y)
 			{
 				if (cursorB.x == 16 && cursorB.y == 0) //ステージ情報
 				{
-					if (stage_info_edit % 10 == 3 && stage_info_edit >=13) { stage_info_edit -= 8; }
+					if (stage_info_edit % 10 == 3 && stage_info_edit >= 13) { stage_info_edit -= 8; }
 					else if (stage_info_edit >= 4) { stage_info_edit--; }
 				}
 
@@ -1136,12 +1177,12 @@ void keyboard(unsigned char key, int x, int y)
 
 				if (cursorB.x == 16 && cursorB.y == 2) //タイマー情報
 				{
-					if (stage_time_limit_edit >= 10) { stage_time_limit_edit-=5; }
+					if (stage_time_limit_edit >= 10) { stage_time_limit_edit -= 5; }
 				}
 
 				if (cursorB.x == 16 && cursorB.y == 3) //タイマー情報
 				{
-					if (stage_time_limit_gold_edit >= 6) { stage_time_limit_gold_edit --; }
+					if (stage_time_limit_gold_edit >= 6) { stage_time_limit_gold_edit--; }
 				}
 			}break;
 
@@ -1149,7 +1190,7 @@ void keyboard(unsigned char key, int x, int y)
 			{
 				if (cursorB.x == 16 && cursorB.y == 0) //ステージ情報
 				{
-					if (stage_info_edit % 10 == 5 && stage_info_edit <=5) { stage_info_edit += 8; }
+					if (stage_info_edit % 10 == 5 && stage_info_edit <= 5) { stage_info_edit += 8; }
 					else if (stage_info_edit <= 14) { stage_info_edit++; }
 				}
 
@@ -1194,7 +1235,7 @@ void keyboard(unsigned char key, int x, int y)
 				{
 					if (stage_slot_constraint_edit[4] >= 1) { stage_slot_constraint_edit[4]--; }
 				}
-				
+
 			}break;
 
 			case 'k':
@@ -1216,7 +1257,7 @@ void keyboard(unsigned char key, int x, int y)
 
 				if (cursorB.x == 17 && cursorB.y == 4) //スロット3
 				{
-					if (stage_slot_constraint_edit[3]  <= 74) { stage_slot_constraint_edit[3]++; }
+					if (stage_slot_constraint_edit[3] <= 74) { stage_slot_constraint_edit[3]++; }
 				}
 
 				if (cursorB.x == 16 && cursorB.y == 4) //スロット4
@@ -1252,9 +1293,9 @@ void keyboard(unsigned char key, int x, int y)
 
 			}
 		}
-	}
+	}break;
 
-	if (displayGUI == 1)
+	case 1:
 	{
 		switch (key) {
 
@@ -1265,13 +1306,13 @@ void keyboard(unsigned char key, int x, int y)
 
 		case 'd':
 		{
-			if (stage_select_confirm <= STAGE_LIMIT-1) { stage_select_confirm++; }
+			if (stage_select_confirm <= STAGE_LIMIT - 1) { stage_select_confirm++; }
 		}break;
 
 		case 'j':
 		{
-			if (stage_select_confirm >= 12) { stage_select_confirm -=10; }
-			else if (stage_select_confirm >= 2) { stage_select_confirm =1; }
+			if (stage_select_confirm >= 12) { stage_select_confirm -= 10; }
+			else if (stage_select_confirm >= 2) { stage_select_confirm = 1; }
 		}break;
 
 		case 'i':
@@ -1281,22 +1322,22 @@ void keyboard(unsigned char key, int x, int y)
 
 		case 'l':
 		{
-			if (stage_select_confirm <= STAGE_LIMIT - 1) { stage_select_confirm +=10; }
+			if (stage_select_confirm <= STAGE_LIMIT - 1) { stage_select_confirm += 10; }
 			else if (stage_select_confirm <= STAGE_LIMIT - 11) { stage_select_confirm = STAGE_LIMIT; }
 		}break;
 
 		case 'k':
 		{
-			import_stage(stage_select_confirm);
+			import_stage(stage_select_confirm); displayGUI = 4;
 		}break;
 
 		default:
 			break;
 
 		}
-	}
+	}break;
 
-	if (displayGUI == 2)
+	case 2:
 	{
 		switch (key) {
 
@@ -1329,16 +1370,16 @@ void keyboard(unsigned char key, int x, int y)
 
 		case 'k':
 		{
-			export_stage(stage_select_confirm);
+			export_stage(stage_select_confirm); displayGUI = 5;
 		}break;
 
 		default:
 			break;
 
 		}
-	}
+	}break;
 
-	if (displayGUI == 3)
+	case 3:
 	{
 		switch (key) {
 
@@ -1349,14 +1390,48 @@ void keyboard(unsigned char key, int x, int y)
 
 		case 'k':
 		{
-			new_stage();
+			new_stage(); displayGUI = 0;
 		}break;
 
 		default:
 			break;
 
 		}
+	}break;
+
+	case 4: //インポートできましたの画面
+	{
+		switch (key) {
+
+
+		case 'k':
+		{
+			displayGUI = 0;
+		}break;
+
+		default:
+			break;
+
+		}
+	}break;
+
+	case 5: //エクスポートできましたの画面
+	{
+		switch (key) {
+
+
+		case 'k':
+		{
+			displayGUI = 0;
+		}break;
+
+		default:
+			break;
+
+		}
+	}break;
 	}
+
 }
 
 
@@ -1416,10 +1491,18 @@ void Init() {
 	UI_confirm01.LoadImagePNG2(UI_confirm01.file, UI_confirm01.tex);
 	UI_confirm02.LoadImagePNG2(UI_confirm02.file, UI_confirm02.tex);
 	UI_confirm03.LoadImagePNG2(UI_confirm03.file, UI_confirm03.tex);
+	UI_confirm04.LoadImagePNG2(UI_confirm04.file, UI_confirm04.tex);
+	UI_confirm05.LoadImagePNG2(UI_confirm05.file, UI_confirm05.tex);
 	UI_start.LoadImagePNG2(UI_start.file, UI_start.tex);
 	UI_cursor_A.LoadImagePNG2(UI_cursor_A.file, UI_cursor_A.tex);
 	UI_cursor_Bm.LoadImagePNG2(UI_cursor_Bm.file, UI_cursor_Bm.tex);
 	UI_cursor_Bb.LoadImagePNG2(UI_cursor_Bb.file, UI_cursor_Bb.tex);
+	UI_sousa_00.LoadImagePNG2(UI_sousa_00.file, UI_sousa_00.tex);
+	UI_sousa_02.LoadImagePNG2(UI_sousa_02.file, UI_sousa_02.tex);
+	UI_sousa_03.LoadImagePNG2(UI_sousa_03.file, UI_sousa_03.tex);
+	UI_sousa_04.LoadImagePNG2(UI_sousa_04.file, UI_sousa_04.tex);
+	UI_kirikae.LoadImagePNG2(UI_kirikae.file, UI_kirikae.tex);
+
 
 	LoadImagePNG(L"./pic/num_a0.png", tex_num[0][0]);
 	LoadImagePNG(L"./pic/num_a1.png", tex_num[0][1]);
@@ -1490,7 +1573,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi editor ver.1.0.0");
+	glutCreateWindow("goipachi editor ver.1.0.1");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

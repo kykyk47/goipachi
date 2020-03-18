@@ -491,6 +491,22 @@ GameObject UI_slot_highlight = GameObject(0, 0, 192, 192, L"./pic/slot_highlight
 GameObject UI_slot_decision = GameObject(0, 0, 192, 192, L"./pic/slot_decision.png");
 GameObject UI_slot_decision_green = GameObject(0, 0, 192, 192, L"./pic/slot_decision_green.png");
 
+
+GameObject UI_slot_same[3] = {
+GameObject(0, 0, 192, 192, L"./pic/block_blank.png"), //空白 ID:0
+GameObject(0, 0, 192, 192, L"./pic/slot_A.png"),
+GameObject(0, 0, 192, 192, L"./pic/slot_B.png") };
+
+GameObject slot_same_block[3] = {
+GameObject(0, 0, 92, 92, L"./pic/block_blank.png"), //空白 ID:0
+GameObject(0, 0, 92, 92, L"./pic/slot_A.png"),
+GameObject(0, 0, 92, 92, L"./pic/slot_B.png") };
+
+GameObject slot_same_block_mini[3] = {
+GameObject(0, 0, 48, 48, L"./pic/block_blank.png"), //空白 ID:0
+GameObject(0, 0, 48, 48, L"./pic/slot_A.png"),
+GameObject(0, 0, 48, 48, L"./pic/slot_B.png") };
+
 GameObject arrow = GameObject(0, 0, 128, 128, L"./pic/arrow.png");
 GameObject select_highlight = GameObject(0, 0, 136, 136, L"./pic/Y.png");
 
@@ -507,6 +523,9 @@ GameObject UI_mode_stage_clear = GameObject(0, 0, 512, 256, L"./pic/mode_stage_c
 GameObject UI_mode_highlight = GameObject(0, 0, 512, 256, L"./pic/mode_highlight.png");
 GameObject UI_mode_description_1 = GameObject(0, 0, 512, 512, L"./pic/mode_description_1.png");
 GameObject UI_mode_description_2 = GameObject(0, 0, 512, 512, L"./pic/mode_description_2.png");
+GameObject UI_slot_AB_description = GameObject(0, 0, 512, 32, L"./pic/slot_constraint_description2.png");
+
+
 GameObject UI_mode_select_UI = GameObject(0, 0, 768, 96, L"./pic/mode_select_UI.png");
 
 GameObject UI_mode_mojisu = GameObject(0, 0, 1024, 128, L"./pic/select_mojisu.png");
@@ -1965,6 +1984,12 @@ void standby_stage(int stage_num) //ステージモード
 	lamp_timer_01 = 0;
 	lamp_timer_02 = 0;
 	slot_select = 0;
+	slot[0] = 0;
+	slot[1] = 0;
+	slot[2] = 0;
+	slot[3] = 0;
+	slot[4] = 0;
+
 
 
 	char file_path[32]; //ステージファイルを読み込むときのステージ名
@@ -2022,13 +2047,14 @@ void standby_stage(int stage_num) //ステージモード
 		*(slst + i) = choose_hiragana(); //ヒントブロックの表示ひらがなをばらけさせるためにそれぞれのオブジェクトに割り振る（ルーレットブロックが登場するステージもあるので）
 	}
 
-
-	slot[0] = stage_slot_constraint[stage_num][0];
-	slot[1] = stage_slot_constraint[stage_num][1];
-	slot[2] = stage_slot_constraint[stage_num][2];
-	slot[3] = stage_slot_constraint[stage_num][3];
-	slot[4] = stage_slot_constraint[stage_num][4];
-
+	if (stage_info[stage_select] >= 3 && stage_info[stage_select] <= 5) //語彙スロット固定の場合は固定平名を設定．
+	{
+		slot[0] = stage_slot_constraint[stage_num][0];
+		slot[1] = stage_slot_constraint[stage_num][1];
+		slot[2] = stage_slot_constraint[stage_num][2];
+		slot[3] = stage_slot_constraint[stage_num][3];
+		slot[4] = stage_slot_constraint[stage_num][4];
+	}
 
 	fclose(fp_stage_structure_info);
 	std::cout << "<info 036: ステージファイルを閉じました>" << std::endl;
@@ -2301,6 +2327,32 @@ void display(void)
 		}
 
 
+
+		if (mode == 1 && stage_info[stage_select] == 23)
+		{
+			for (i = 0; i <= 2; i++)
+			{
+				UI_slot_same[stage_slot_constraint[stage_select][i]].SetImage(174 - 174 * i + player->center_x, 176); //ステージモードでスロットの文字固定の場合
+			}
+		}
+
+		else if (mode == 1 && stage_info[stage_select] == 24)
+		{
+			for (i = 0; i <= 3; i++)
+			{
+				UI_slot_same[stage_slot_constraint[stage_select][i]].SetImage(216 - 144 * i + player->center_x, 176); //ステージモードでスロットの文字固定の場合
+			}
+		}
+
+		else if (mode == 1 && stage_info[stage_select] == 25)
+		{
+			for (i = 0; i <= 4; i++)
+			{
+				UI_slot_same[stage_slot_constraint[stage_select][i]].SetImage(264 - 132 * i + player->center_x, 176); //ステージモードでスロットの文字固定の場合
+			}
+		}
+
+
 		if (mode == 0 && mode_mojisu == 3 || mode == 1 && stage_info[stage_select] % 10 == 3) //3文字モードの時のひらがなスロット
 		{
 			(*(blUI + *(sl + 0))).SetImage(174 + player->center_x, 176); //ひらがなスロット
@@ -2327,35 +2379,46 @@ void display(void)
 
 
 
-		if (mode == 0 && mode_mojisu == 3 || mode == 1 && stage_info[stage_select] % 10 == 3) //3文字モードの時の語彙スロット固定がある場合
+
+
+		if (mode == 0 && mode_mojisu == 3 || mode == 1 && stage_info[stage_select] % 10 == 3) //3文字モードの時の語彙スロット固定orスロット制限がある場合
 		{
 			for (i = 0; i <= 2; i++)
 			{
 				if (stage_slot_constraint[stage_select][i] != 0)
 				{
-					UI_slot_locked.SetImage(174 - 174 * i + player->center_x, 176); //ステージモードでスロットの文字固定の場合
+					if (stage_info[stage_select] == 3)
+					{
+						UI_slot_locked.SetImage(174 - 174 * i + player->center_x, 176); //ステージモードでスロットの文字固定の場合
+					}
 				}
 			}
 		}
 
-		else if (mode == 0 && mode_mojisu == 4 || mode == 1 && stage_info[stage_select] % 10 == 4) //4文字モードの時の語彙スロット固定がある場合
+		else if (mode == 0 && mode_mojisu == 4 || mode == 1 && stage_info[stage_select] % 10 == 4) //4文字モードの時の語彙スロット固定orスロット制限がある場合
 		{
 			for (i = 0; i <= 3; i++)
 			{
 				if (stage_slot_constraint[stage_select][i] != 0)
 				{
-					UI_slot_locked.SetImage(216 - 144 * i + player->center_x, 176); //ステージモードでスロットの文字固定の場合
+					if (stage_info[stage_select] == 4)
+					{
+						UI_slot_locked.SetImage(216 - 144 * i + player->center_x, 176); //ステージモードでスロットの文字固定の場合
+					}
 				}
 			}
 		}
 
-		else if (mode == 0 && mode_mojisu == 5 || mode == 1 && stage_info[stage_select] % 10 == 5) //5文字モードの時の語彙スロット固定がある場合
+		else if (mode == 0 && mode_mojisu == 5 || mode == 1 && stage_info[stage_select] % 10 == 5) //5文字モードの時の語彙スロット固定orスロット制限がある場合
 		{
 			for (i = 0; i <= 4; i++)
 			{
 				if (stage_slot_constraint[stage_select][i] != 0)
 				{
-					UI_slot_locked.SetImage(264 - 132 * i + player->center_x, 176); //ステージモードでスロットの文字固定の場合
+					if (stage_info[stage_select] == 5)
+					{
+						UI_slot_locked.SetImage(264 - 132 * i + player->center_x, 176); //ステージモードでスロットの文字固定の場合
+					}
 				}
 			}
 		}
@@ -2788,11 +2851,11 @@ void display(void)
 
 			switch (stage_info[stage_select])//stage_infno情報は1の位でなんもじもーどか決まる
 			{
-			case 3:
+			case 3: 
 			{
-				if (stage_slot_constraint[stage_select][0] == 0 && stage_slot_constraint[stage_select][1] == 0 && stage_slot_constraint[stage_select][2] == 0 && stage_slot_constraint[stage_select][3] == 0)
+				if (stage_slot_constraint[stage_select][0] == 0 && stage_slot_constraint[stage_select][1] == 0 && stage_slot_constraint[stage_select][2] == 0)
 				{
-					UI_mission_description_0.SetImage(0, -96); //スロット固定がない場合「ただのｎ単語作成ミッション」になる
+					UI_mission_description_0.SetImage(0, -145); //スロット固定がない場合「ただのｎ単語作成ミッション」になる
 					SetNumImage(80, -166, 320, 40, stage_nolma[stage_select], 0, 4);
 				}
 				else
@@ -2831,11 +2894,9 @@ void display(void)
 
 			case 5:
 			{
-
-
 				if (stage_slot_constraint[stage_select][0] == 0 && stage_slot_constraint[stage_select][1] == 0 && stage_slot_constraint[stage_select][2] == 0 && stage_slot_constraint[stage_select][3] == 0 && stage_slot_constraint[stage_select][4] == 0)
 				{
-					UI_mission_description_0.SetImage(0, -96);//スロット固定がない場合「ただのｎ単語作成ミッション」になる
+					UI_mission_description_0.SetImage(0, -145);//スロット固定がない場合「ただのｎ単語作成ミッション」になる
 					SetNumImage(80, -166, 320, 40, stage_nolma[stage_select], 0, 4);
 				}
 				else
@@ -2856,6 +2917,21 @@ void display(void)
 			{
 				UI_mission_description_2.SetImage(0, -145);
 				SetNumImage(10, -166, 320, 40, stage_nolma[stage_select], 0, 4);
+
+			}break;
+
+			case 23: case 24: case 25: //A〇A〇 Aにはおなじひらがなが入りますミッション
+			{
+				UI_slot_AB_description.SetImage(-150, -50);
+
+				UI_slot_constraint_description.SetImage(0, -160);
+				UI_mission_description_1.SetImage(0, -96);//スロット固定がある場合のn単語作成ミッショ
+				SetNumImage(-48, -115, 320, 40, stage_nolma[stage_select], 0, 4);
+				slot_same_block[stage_slot_constraint[stage_select][0]].SetImage(-64, -160); //スロット制限の情報を描画
+				slot_same_block[stage_slot_constraint[stage_select][1]].SetImage(-128, -160);
+				slot_same_block[stage_slot_constraint[stage_select][2]].SetImage(-192, -160);
+				if (stage_info[stage_select] >= 24) { slot_same_block[stage_slot_constraint[stage_select][3]].SetImage(-256, -160); }
+				if (stage_info[stage_select] >= 25) { slot_same_block[stage_slot_constraint[stage_select][4]].SetImage(-320, -160); }
 
 			}break;
 			}
@@ -3138,11 +3214,31 @@ void idle(void)
 				if (*(sl + slot_select) == 0 && *(obbl + i * 3) != 49 && *(obbl + i * 3) != 76 && *(obbl + i * 3) != 77 && *(obbl + i * 3) != 78 && *(obbl + i * 3) != 79)//すでにスロットにひらがなが入っている場合は衝突してもブロック消えないしひらがなも保持されない,あと木はスロットには入れられない（当然
 				{
 					*(sl + slot_select) = *(obbl + i * 3); //弾丸が衝突したブロックをスロットに格納
-					*(obbl + i * 3) = 0; //弾丸とブロックが衝突したらそのブロックの情報を０にする
 					Mix_PlayChannel(-1, SE_hit, 0);
 					score_get_hiragana++;
-				}
+		
+					if (mode == 1 && stage_info[stage_select] >= 23 && stage_info[stage_select] <= 25) //A〇A〇のとき
+					{
+						
+						if (stage_slot_constraint[stage_select][slot_select] != 0) //選択しているスロットがＡとかになってるとき
+						{
+							
+							for (k = 0; k <= 4; k++)
+							{
+								
+								if (stage_slot_constraint[stage_select][slot_select] == stage_slot_constraint[stage_select][k])
+								{
+									*(sl + k) = *(obbl + i * 3);
+								}
+							}
+						}
+					}
 
+					*(obbl + i * 3) = 0; //弾丸とブロックが衝突したらそのブロックの情報を０にする
+
+				}
+				
+				
 				else if (*(obbl + i * 3) == 77) //お題箱にヒットしたとき（ごいスロットに何かあるときはＯＦＦ状態になる）
 				{
 					if (mode_mojisu == 3 && slot[0] == 0 && slot[1] == 0 && slot[2] == 0)//3文字モードの時
@@ -3182,6 +3278,27 @@ void idle(void)
 				else if (*(obbl + i * 3) == 79 && slot[slot_select] == 0) //ひらがなルーレットにヒットした場合
 				{
 					*(sl + slot_select) = *(hrrl + ((hiragana_roulette_timer + *(slst + i) * 60)) % (74 * 60) / 60); //弾丸が衝突したブロックをスロットに格納（ランダムで選ばれたスロットの開始位置＋ひらがなの総数の結果ひらがなの総数を超えてしまう場合，ひらがなの総数で割ったあまりを求めることでルーレットの中身がひらがなの総数分から外れることを防いでいる）
+					
+
+					if (mode == 1 && stage_info[stage_select] >= 23 && stage_info[stage_select] <= 25) //A〇A〇のとき
+					{
+
+						if (stage_slot_constraint[stage_select][slot_select] != 0) //選択しているスロットがＡとかになってるとき
+						{
+
+							for (k = 0; k <= 4; k++)
+							{
+
+								if (stage_slot_constraint[stage_select][slot_select] == stage_slot_constraint[stage_select][k])
+								{
+									*(sl + k) = *(hrrl + ((hiragana_roulette_timer + *(slst + i) * 60)) % (74 * 60) / 60); //ルーレットにあたっても処理は普通の平仮名の時と同じ
+								}
+							}
+						}
+					}
+					
+					
+					
 					*(obbl + i * 3) = 0; //弾丸とブロックが衝突したらお互いの情報を０にする
 					Mix_PlayChannel(-1, SE_hit, 0);
 					score_get_hiragana++; //ひらがなを入手した数+1
@@ -3630,19 +3747,36 @@ void keyboard(unsigned char key, int x, int y)
 			}
 		} break;
 
-		case 'i':
+		case 'i': //選択中のスロットの場所をからっぽにする
 		{
 			if (lamp_timer_02 == 0)
 			{
-				if (slot[slot_select] != 0 && stage_slot_constraint[stage_select][slot_select] == 0)
+				if (slot[slot_select] != 0 && stage_slot_constraint[stage_select][slot_select] == 0 || (stage_info[stage_select] >= 23 && stage_info[stage_select] <= 25))
 				{
+	
 					Mix_PlayChannel(-1, SE_throw, 0);
 					score_leave_hiragana++;
 					slot[slot_select] = 0;
+
+					if (mode == 1 && stage_info[stage_select] >= 23 && stage_info[stage_select] <= 25) //A〇A〇のとき
+					{
+						if (stage_slot_constraint[stage_select][slot_select] != 0) //選択しているスロットがＡとかになってるとき
+						{
+							for (k = 0; k <= 4; k++)
+							{
+								if (stage_slot_constraint[stage_select][slot_select] == stage_slot_constraint[stage_select][k])
+								{
+									slot[k] = 0; //スロットを消すときも入れる時と一緒
+								}
+							}
+						}
+					}
+
+					
 				}
 
 			}
-		} break; //選択中のスロットの場所をからっぽにする
+		} break;
 
 		case 'k':
 		{
@@ -3664,6 +3798,15 @@ void keyboard(unsigned char key, int x, int y)
 						slot[2] = 0;
 					}
 
+					else if (stage_info[stage_select] == 23) //A〇A〇モード
+					{
+						slot[0] = 0;
+						slot[1] = 0;
+						slot[2] = 0;
+						slot[3] = 0;
+						slot[4] = 0;
+					}
+
 					else
 					{
 
@@ -3672,6 +3815,8 @@ void keyboard(unsigned char key, int x, int y)
 						if (stage_slot_constraint[stage_select][2] == 0) { slot[2] = 0; }
 
 					}
+
+					slot_select = 0; //スロットの選択位置を左にもどす
 				}
 
 				if ((mode == 0 && mode_mojisu == 4 || mode == 1 && stage_info[stage_select] % 10 == 4) && slot[0] != 0 && slot[1] != 0 && slot[2] != 0 && slot[3] != 0) //4文字モードの時のチェック語彙
@@ -3690,6 +3835,15 @@ void keyboard(unsigned char key, int x, int y)
 						slot[3] = 0;
 					}
 
+					else if (stage_info[stage_select] == 24) //A〇A〇モード
+					{
+						slot[0] = 0;
+						slot[1] = 0;
+						slot[2] = 0;
+						slot[3] = 0;
+						slot[4] = 0;
+					}
+
 					else
 					{
 
@@ -3699,6 +3853,8 @@ void keyboard(unsigned char key, int x, int y)
 						if (stage_slot_constraint[stage_select][3] == 0) { slot[3] = 0; }
 
 					}
+
+					slot_select = 0; //スロットの選択位置を左にもどす
 				}
 
 				if ((mode == 0 && mode_mojisu == 5 || mode == 1 && stage_info[stage_select] % 10 == 5) && slot[0] != 0 && slot[1] != 0 && slot[2] != 0 && slot[3] != 0 && slot[4] != 0) //5文字モードの時のチェック語彙
@@ -3718,6 +3874,15 @@ void keyboard(unsigned char key, int x, int y)
 						slot[4] = 0;
 					}
 
+					else if (stage_info[stage_select] == 25) //A〇A〇モード
+					{
+						slot[0] = 0;
+						slot[1] = 0;
+						slot[2] = 0;
+						slot[3] = 0;
+						slot[4] = 0;
+					}
+
 					else
 					{
 
@@ -3728,8 +3893,10 @@ void keyboard(unsigned char key, int x, int y)
 						if (stage_slot_constraint[stage_select][4] == 0) { slot[4] = 0; }
 
 					}
+
+					slot_select = 0; //スロットの選択位置を左にもどす
 				}
-				slot_select = 0; //スロットの選択位置を左↑
+				
 			}
 		}  break;//単語チェック
 
@@ -4173,6 +4340,15 @@ void Init() {
 	UI_slot_base_3.LoadImagePNG2(UI_slot_base_3.file, UI_slot_base_3.tex);
 	UI_slot_base_4.LoadImagePNG2(UI_slot_base_4.file, UI_slot_base_4.tex);
 	UI_slot_base_5.LoadImagePNG2(UI_slot_base_5.file, UI_slot_base_5.tex);
+	UI_slot_same[0].LoadImagePNG2(UI_slot_same[0].file, UI_slot_same[0].tex);
+	UI_slot_same[1].LoadImagePNG2(UI_slot_same[1].file, UI_slot_same[1].tex);
+	UI_slot_same[2].LoadImagePNG2(UI_slot_same[2].file, UI_slot_same[2].tex);
+	slot_same_block[0].LoadImagePNG2(slot_same_block[0].file, slot_same_block[0].tex);
+	slot_same_block[1].LoadImagePNG2(slot_same_block[1].file, slot_same_block[1].tex);
+	slot_same_block[2].LoadImagePNG2(slot_same_block[2].file, slot_same_block[2].tex);
+	slot_same_block_mini[0].LoadImagePNG2(slot_same_block_mini[0].file, slot_same_block_mini[0].tex);
+	slot_same_block_mini[1].LoadImagePNG2(slot_same_block_mini[1].file, slot_same_block_mini[1].tex);
+	slot_same_block_mini[2].LoadImagePNG2(slot_same_block_mini[2].file, slot_same_block_mini[2].tex);
 	UI_slot_highlight.LoadImagePNG2(UI_slot_highlight.file, UI_slot_highlight.tex);
 	UI_slot_decision.LoadImagePNG2(UI_slot_decision.file, UI_slot_decision.tex);
 	UI_slot_decision_green.LoadImagePNG2(UI_slot_decision_green.file, UI_slot_decision_green.tex);
@@ -4190,6 +4366,7 @@ void Init() {
 	UI_mode_highlight.LoadImagePNG2(UI_mode_highlight.file, UI_mode_highlight.tex);
 	UI_mode_description_1.LoadImagePNG2(UI_mode_description_1.file, UI_mode_description_1.tex);
 	UI_mode_description_2.LoadImagePNG2(UI_mode_description_2.file, UI_mode_description_2.tex);
+	UI_slot_AB_description.LoadImagePNG2(UI_slot_AB_description.file, UI_slot_AB_description.tex);
 	UI_mode_select_UI.LoadImagePNG2(UI_mode_select_UI.file, UI_mode_select_UI.tex);
 	UI_mode_mojisu.LoadImagePNG2(UI_mode_mojisu.file, UI_mode_mojisu.tex);
 	UI_mode_stage.LoadImagePNG2(UI_mode_stage.file, UI_mode_stage.tex);
@@ -4468,7 +4645,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.4.0");
+	glutCreateWindow("goipachi ver.1.4.1");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

@@ -20,6 +20,8 @@ using namespace Gdiplus;
 #define STAGE_LIMIT 518 //ステージモードの上限
 
 bool flag_delete = false; //選択中のブロックが消された場合，その後のブロックの情報の移動をさせるトリガー
+bool flag_set = true;//今あるカーソルに何もなければその場所に新しいブロックをセット
+
 int timer_cursor_lux = 0; //選択中のカーソルの点滅
 
 int stage_select_edit = 0; //編集中ステージの番号
@@ -1110,13 +1112,30 @@ void keyboard(unsigned char key, int x, int y)
 
 			case 'k': //下画面で選択したブロックを配置
 			{
-				std::cout << "<info 100: ブロックID:<<" << object_on_stage << " として追加しました" << std::endl;
+				//std::cout << "<info 100: ブロックID:<<" << object_on_stage << " として追加しました" << std::endl;
+
 				if (select_hiragana != 0)
 				{
-					object_block[object_on_stage][0] = select_hiragana;
-					object_block[object_on_stage][1] = cursorA.x * (-64) + 640;
-					object_block[object_on_stage][2] = cursorA.y * (-64);
-					object_on_stage++;
+
+					for (i = 0; i < object_on_stage; i++)
+					{
+						if (object_block[i][1] == cursorA.x * (-64) + 640 && object_block[i][2] == cursorA.y*(-64) && object_block[i][0] != 0)
+						{
+							std::cout << "<info 104: この場所には既にブロックがあるので新しくブロックを置けません" << std::endl;
+							flag_set = false;
+							break;
+						}
+					}
+
+					if (flag_set == true) //選んでいるカーソルの場所に何もなければ設置できる
+					{
+						object_block[object_on_stage][0] = select_hiragana;
+						object_block[object_on_stage][1] = cursorA.x * (-64) + 640;
+						object_block[object_on_stage][2] = cursorA.y * (-64);
+						object_on_stage++;
+					}
+
+					flag_set = true;
 				}
 			}break;
 
@@ -1633,7 +1652,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi editor ver.1.0.3");
+	glutCreateWindow("goipachi editor ver.1.0.4");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

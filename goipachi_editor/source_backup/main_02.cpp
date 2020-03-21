@@ -1092,12 +1092,12 @@ void keyboard(unsigned char key, int x, int y)
 
 			case 'a':
 			{
-				if (cursorA.x >= -13) { cursorA.x--; camera_x += 64; } //上半分で変更するブロックを選択
+				if (cursorA.x >= -1500) { cursorA.x--; camera_x += 64; } //上半分で変更するブロックを選択
 			}break;
 
 			case 'd':
 			{
-				if (cursorA.x <= 3000) { cursorA.x++; camera_x -= 64; }
+				if (cursorA.x <= 1500) { cursorA.x++; camera_x -= 64; }
 			}break;
 
 			case 'w':
@@ -1652,7 +1652,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi editor ver.1.0.5");
+	glutCreateWindow("goipachi editor ver.1.0.6");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

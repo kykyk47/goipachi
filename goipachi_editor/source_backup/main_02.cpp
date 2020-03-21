@@ -685,7 +685,7 @@ void import_stage(int stage_num) //ステージファイルを読み込む
 	for (i = 0; i <= object_on_stage; i++) //ファイルの情報をobject_blockに書き出していく
 	{
 		object_block[i][0] = stage_block_info[i][0];
-		object_block[i][1] = stage_block_info[i][1] * (-64);
+		object_block[i][1] = stage_block_info[i][1] * (-64) - 1280;
 		object_block[i][2] = stage_block_info[i][2] * (-64);
 	}
 
@@ -731,7 +731,7 @@ void export_stage(int stage_num) //ステージファイルを書き出す
 
 	for (i = 0; i < object_on_stage; i++)
 	{
-		fprintf(fp_stage_structure_info, "%d,%d,%d\n", object_block[i][0], (object_block[i][1])/(-64), object_block[i][2]/(-64));
+		fprintf(fp_stage_structure_info, "%d,%d,%d\n", object_block[i][0], (object_block[i][1])/(-64)-20, object_block[i][2]/(-64)); //★
 	}
 
 	fclose(fp_stage_structure_info);
@@ -874,10 +874,10 @@ void display(void)
 	{
 		if (*(obbl + i * 3) != 0)
 		{
-			(*(blhr + *(obbl + i * 3))).SetImage(double(*(obbl + i * 3 + 1) - 640), double(*(obbl + i * 3 + 2)));
+			(*(blhr + *(obbl + i * 3))).SetImage(double(*(obbl + i * 3 + 1)+640), double(*(obbl + i * 3 + 2)));
 		}
 	}
-	UI_start.SetImage(0, 0);
+	UI_start.SetImage(-640, 0);
 
 	if (stage_select_edit != 0)
 	{
@@ -980,7 +980,7 @@ void display(void)
 
 	if (timer_cursor_lux % 10 >=2 && mode_edit == 0)
 	{
-		UI_cursor_A.SetImage(cursorA.x * (-64), cursorA.y * (-64)); //ステージ編集（上画面）でのカーソル描画(点滅）
+		UI_cursor_A.SetImage(cursorA.x * (-64)-640, cursorA.y * (-64)); //ステージ編集（上画面）でのカーソル描画(点滅）
 	}
 
 	if (mode_edit == 0)
@@ -990,7 +990,7 @@ void display(void)
 
 	if (mode_edit == 1)
 	{
-		UI_cursor_A.SetImage(cursorA.x * (-64), cursorA.y * (-64)); //ステージ編集（上画面）でのカーソル描画
+		UI_cursor_A.SetImage(cursorA.x * (-64)-640, cursorA.y * (-64)); //ステージ編集（上画面）でのカーソル描画
 	}
 
 	if (timer_cursor_lux % 10 >= 2 && mode_edit == 1 && cursorB.x >= 0 && cursorB.x <= 15 && cursorB.y >= 0 && cursorB.y <= 4) //下画面の設置したいひらがなのカーソル描画（点滅）
@@ -1119,7 +1119,7 @@ void keyboard(unsigned char key, int x, int y)
 
 					for (i = 0; i < object_on_stage; i++)
 					{
-						if (object_block[i][1] == cursorA.x * (-64) + 640 && object_block[i][2] == cursorA.y*(-64) && object_block[i][0] != 0)
+						if (object_block[i][1] == cursorA.x * (-64) -1280 && object_block[i][2] == cursorA.y*(-64) && object_block[i][0] != 0)
 						{
 							std::cout << "<info 104: この場所には既にブロックがあるので新しくブロックを置けません" << std::endl;
 							flag_set = false;
@@ -1130,7 +1130,7 @@ void keyboard(unsigned char key, int x, int y)
 					if (flag_set == true) //選んでいるカーソルの場所に何もなければ設置できる
 					{
 						object_block[object_on_stage][0] = select_hiragana;
-						object_block[object_on_stage][1] = cursorA.x * (-64) + 640;
+						object_block[object_on_stage][1] = cursorA.x * (-64) - 1280;
 						object_block[object_on_stage][2] = cursorA.y * (-64);
 						object_on_stage++;
 					}
@@ -1143,7 +1143,7 @@ void keyboard(unsigned char key, int x, int y)
 			{
 				for (i = 0; i < object_on_stage; i++)
 				{
-					if (object_block[i][1] == cursorA.x * (-64) + 640 && object_block[i][2] == cursorA.y*(-64) && object_block[i][0] != 0)
+					if (object_block[i][1] == cursorA.x * (-64) -1280 && object_block[i][2] == cursorA.y*(-64) && object_block[i][0] != 0)
 					{
 						object_block[i][0] = 0;
 						object_block[i][1] = 0;
@@ -1508,7 +1508,7 @@ void keyboard(unsigned char key, int x, int y)
 
 void resize(int w, int h) {
 
-	camera_x = 640;
+	camera_x = 0;
 	camera_y = -544;
 
 	if ((double)h / (double)w <= (double)HEIGHT / (double)WIDTH) //規定のアスペクト比より横長の場合
@@ -1652,7 +1652,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi editor ver.1.0.4");
+	glutCreateWindow("goipachi editor ver.1.0.5");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

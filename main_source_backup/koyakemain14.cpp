@@ -2303,9 +2303,6 @@ void display(void)
 			UI_slot_base_5.SetImage(0 + player->center_x, 200);
 		}
 
-	
-
-		SetNumImage(360 + player->center_x, 132, 160, 20, time / 60, 0, 4); //タイマー
 		
 		UI_11.SetImage(0 + player->center_x, 272); //スロット操作説明
 		UI_12.SetImage(-440 + player->center_x, 200); //ポーズ・操作説明
@@ -2314,6 +2311,7 @@ void display(void)
 		if (mode == 0)
 		{
 			UI_10.SetImage(440 + player->center_x, 200); //スコア・ハイスコア・タイマーの文字
+			SetNumImage(360 + player->center_x, 132, 160, 20, time / 60, 0, 4); //タイマー
 			SetNumImage(360 + player->center_x, 200, 160, 20, score, 0, 4); //スコア
 			switch (mode_mojisu)
 			{
@@ -2326,10 +2324,12 @@ void display(void)
 		else if (mode == 1)
 		{
 			UI_10_2.SetImage(440 + player->center_x, 200); //スコア・ハイスコア（ベストタイム）・タイマーの文字
-			SetNumImage(444 + player->center_x, 200, 160, 20, score, 0, 4); //スコア（何分の何
-			UI_num_aslash.SetImage(430 + player->center_x, 210);
-			SetNumImage(360 + player->center_x, 200, 160, 20, stage_nolma[stage_select], 0, 4);
-			SetNumImage(360 + player->center_x, 268, 160, 20, score_miss, 0, 4); //ミスの回数
+			SetNumImage(360 + player->center_x, 128, 160, 20, stage_select , 0, 4); //ステージ番号
+			SetNumImage(360 + player->center_x, 176, 160, 20, time / 60, 0, 4); //タイマー
+			SetNumImage(444 + player->center_x, 224, 160, 20, score, 0, 4); //スコア（分子）
+			UI_num_aslash.SetImage(430 + player->center_x, 236); //分数のスラッシュ（名前忘れた）
+			SetNumImage(360 + player->center_x, 224, 160, 20, stage_nolma[stage_select], 0, 4); //ノルマ（分母）
+			SetNumImage(360 + player->center_x, 272, 160, 20, score_miss, 0, 4); //ミスの回数
 		}
 
 
@@ -4703,7 +4703,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.4.4");
+	glutCreateWindow("goipachi ver.1.4.5");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

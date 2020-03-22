@@ -2329,7 +2329,7 @@ void display(void)
 			SetNumImage(444 + player->center_x, 200, 160, 20, score, 0, 4); //スコア（何分の何
 			UI_num_aslash.SetImage(430 + player->center_x, 210);
 			SetNumImage(360 + player->center_x, 200, 160, 20, stage_nolma[stage_select], 0, 4);
-			SetNumImage(360 + player->center_x, 268, 160, 20, 4, 0, 4);
+			SetNumImage(360 + player->center_x, 268, 160, 20, score_miss, 0, 4); //ミスの回数
 		}
 
 
@@ -2988,7 +2988,7 @@ void display(void)
 		SetNumImage(-260, -192, 512, 64, score_miss, 0, 4); //▼
 		UI_15.SetImage(0, 64);
 
-		if (before_stageclear_time > (stage_time_limit[stage_select] - (double)(time) / 60) * 100 || stage_clear[stage_select][3] == 0) //タイム更新 ファイルの0は未プレイを表している（0秒クリアはありえないので）
+		if (before_stageclear_time > (stage_time_limit[stage_select] - (double)(time) / 60) * 100 || before_stageclear_time == 0) //タイム更新 ファイルの0は未プレイを表している（0秒クリアはありえないので）
 		{
 			UI_newrecord_stage.SetImage(420, -60); //new_Recordの表示
 		}
@@ -3021,7 +3021,7 @@ void display(void)
 				UI_result_stage_medal_2_lux.SetImage(0, -160);
 			}
 
-			if (stage_time_limit[stage_select] - time / 60 - score_miss * 30 <= stage_time_limit_gold[stage_select])
+			if (stage_time_limit[stage_select] - time / 60 - score_miss * 30 <= stage_time_limit_gold[stage_select] )
 			{
 				UI_result_stage_medal_3_lux.SetImage(0, -160);
 			}
@@ -3368,9 +3368,12 @@ void idle(void)
 
 		//printf("ttt %d ttt %d ttt\n", stage_clear[stage_select][3], (int)((float)(stage_time_limit[stage_select]) - time/ 60)*100);
 
-		if (stage_clear[stage_select][3] > (stage_time_limit[stage_select] - (double)(time) / 60) * 100 || stage_clear[stage_select][3] == 0) //タイム更新 ファイルの0は未プレイを表している（0秒クリアはありえないので）
+	
+
+		if (stage_clear[stage_select][3] > (int)((stage_time_limit[stage_select] - (double)(time) / 60) * 100) - 3000 * score_miss || before_stageclear_time == 0) //タイム更新 ファイルの0は未プレイを表している（0秒クリアはありえないので）
 		{
-			stage_clear[stage_select][3] = (stage_time_limit[stage_select] - (double)(time) / 60)*100 - 30 * score_miss; //◆
+			stage_clear[stage_select][3] = (int)((stage_time_limit[stage_select] - (double)(time) / 60) * 100) - 3000 * score_miss; //◆
+			
 		}
 
 		stage_clear[stage_select][0] = 1; //ノルマクリアで無条件でメダル一枚目獲得
@@ -3730,8 +3733,21 @@ void keyboard(unsigned char key, int x, int y)
 	{
 		switch (key) {
 		case 'p': {move_lock = false; camera_x = temp_camera_x; camera_y = temp_camera_y;  scene = 5; } break;//再開 カメラの位置をゲーム中のに戻す
-		case 'r': {Mix_PlayChannel(-1, SE_select, 0);  next_scene = 1;  scene = 10; } break;//やりなおす→ほんとうによろしいですか？
-		case 't': {Mix_PlayChannel(-1, SE_select, 0);  next_scene = 0;  scene = 10; } break;//タイトルに戻る→ほんとうによろしいですか？
+		case 'r': {Mix_PlayChannel(-1, SE_select, 0);  next_scene = 5;  scene = 10; } break;//やりなおす→ほんとうによろしいですか？
+
+		case 's': //ステージ選択に戻る→ほんとうによろしいですか？
+		{
+			if (mode == 0) //スコアアタックのときの"ステージ選択に戻る"
+			{
+				Mix_PlayChannel(-1, SE_select, 0);  next_scene = 8;  scene = 10;
+			}
+
+			else if (mode == 1) //ステージクリアモードのときの"ステージ選択に戻る"
+			{
+				Mix_PlayChannel(-1, SE_select, 0);  next_scene = 9;  scene = 10;
+			}
+		} break;
+
 		case '\033': game_shutdown(); break;
 		}
 	}break;
@@ -4014,7 +4030,7 @@ void keyboard(unsigned char key, int x, int y)
 			move_lock = false;
 			camera_x = 640; camera_y = -544; player->center_x = 0; player->center_y = 0;
 
-			if (next_scene == 1) //ゲームをはじめからやりなおすとき，モードに応じてステージを再構築する
+			if (next_scene == 5) //ゲームをはじめからやりなおすとき，モードに応じてステージを再構築する
 			{
 				if (mode == 0) { scene = 5; game_reset(); stage_select = 0; }
 				else if (mode == 1) { scene = 5; standby_stage(stage_select); }
@@ -4687,7 +4703,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.4.2");
+	glutCreateWindow("goipachi ver.1.4.4");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

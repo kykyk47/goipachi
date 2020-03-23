@@ -1378,7 +1378,7 @@ void keyboard(unsigned char key, int x, int y)
 
 		case 'a':  //インポートしたいステージ番号ー
 		{
-			if (stage_select_confirm >= 2) { stage_select_confirm--; }
+			if (stage_select_confirm >= 1) { stage_select_confirm--; }
 		}break;
 
 		case 'd': //インポートしたいステージ番号+
@@ -1389,7 +1389,7 @@ void keyboard(unsigned char key, int x, int y)
 		case 'j': //インポートしたいステージ番号ー10
 		{ 
 			if (stage_select_confirm >= 12) { stage_select_confirm -= 10; }
-			else if (stage_select_confirm >= 2) { stage_select_confirm = 1; }
+			else if (stage_select_confirm >= 1) { stage_select_confirm = 0; }
 		}break;
 
 		case 'l':  //インポートしたいステージ番号 +10
@@ -1420,7 +1420,7 @@ void keyboard(unsigned char key, int x, int y)
 
 		case 'a': //エクスポートしたいステージ番号ー
 		{
-			if (stage_select_confirm >= 2) { stage_select_confirm--; }
+			if (stage_select_confirm >= 1) { stage_select_confirm--; }
 		}break;
 
 		case 'd': //エクスポートしたいステージ番号＋
@@ -1431,7 +1431,7 @@ void keyboard(unsigned char key, int x, int y)
 		case 'j': //エクスポートしたいステージ番号ー10
 		{
 			if (stage_select_confirm >= 12) { stage_select_confirm -= 10; }
-			else if (stage_select_confirm >= 2) { stage_select_confirm = 1; }
+			else if (stage_select_confirm >= 1) { stage_select_confirm = 0; }
 		}break;
 
 		case 'l': //エクスポートしたいステージ番号＋10
@@ -1650,6 +1650,7 @@ void timer(int value) {
 
 }
 
+
 int main(int argc, char *argv[])
 {
 	atexit(end);
@@ -1657,7 +1658,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi editor ver.1.0.8");
+	glutCreateWindow("goipachi editor ver.1.0.9");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

@@ -1291,7 +1291,7 @@ void keyboard(unsigned char key, int x, int y)
 			{
 				if (cursorB.x == 20 && cursorB.y == 4) //スロット0
 				{
-					if (stage_slot_constraint_edit[0] <= 74) { stage_slot_constraint_edit[0]++; }
+					if (stage_slot_constraint_edit[0] >= 1) { stage_slot_constraint_edit[0]--; }
 				}
 				if (cursorB.x == 19 && cursorB.y == 4) //スロット1
 				{
@@ -1658,7 +1658,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi editor ver.1.0.7");
+	glutCreateWindow("goipachi editor ver.1.0.8");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

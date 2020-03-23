@@ -1436,7 +1436,7 @@ void keyboard(unsigned char key, int x, int y)
 
 		case 'l': //エクスポートしたいステージ番号＋10
 		{
-			if (stage_select_confirm <= STAGE_LIMIT - 1) { stage_select_confirm++; }
+			if (stage_select_confirm <= STAGE_LIMIT - 1) { stage_select_confirm+=10; }
 			else if (stage_select_confirm <= STAGE_LIMIT - 11) { stage_select_confirm = STAGE_LIMIT; }
 		}break;
 
@@ -1658,7 +1658,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi editor ver.1.0.9");
+	glutCreateWindow("goipachi editor ver.1.0.10");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

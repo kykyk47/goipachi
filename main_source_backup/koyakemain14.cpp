@@ -497,17 +497,17 @@ GameObject UI_slot_decision_green = GameObject(0, 0, 192, 192, L"./pic/slot_deci
 
 
 GameObject UI_slot_same[3] = {
-GameObject(0, 0, 192, 192, L"./pic/block_blank.png"), //空白 ID:0
+GameObject(0, 0, 192, 192, L"./pic/slot_null.png"), //空白 ID:0
 GameObject(0, 0, 192, 192, L"./pic/slot_A.png"),
 GameObject(0, 0, 192, 192, L"./pic/slot_B.png") };
 
 GameObject slot_same_block[3] = {
-GameObject(0, 0, 92, 92, L"./pic/block_blank.png"), //空白 ID:0
+GameObject(0, 0, 92, 92, L"./pic/slot_null.png"), //空白 ID:0
 GameObject(0, 0, 92, 92, L"./pic/slot_A.png"),
 GameObject(0, 0, 92, 92, L"./pic/slot_B.png") };
 
 GameObject slot_same_block_mini[3] = {
-GameObject(0, 0, 48, 48, L"./pic/block_blank.png"), //空白 ID:0
+GameObject(0, 0, 48, 48, L"./pic/slot_null.png"), //空白 ID:0
 GameObject(0, 0, 48, 48, L"./pic/slot_A.png"),
 GameObject(0, 0, 48, 48, L"./pic/slot_B.png") };
 
@@ -2338,7 +2338,10 @@ void display(void)
 		{
 			for (i = 0; i <= 2; i++)
 			{
-				UI_slot_same[stage_slot_constraint[stage_select][i]].SetImage(174 - 174 * i + player->center_x, 176); //ステージモードでスロットの文字固定の場合
+				if (stage_slot_constraint[stage_select][i] != 0) 
+				{
+					UI_slot_same[stage_slot_constraint[stage_select][i]].SetImage(174 - 174 * i + player->center_x, 176); 
+				}//ステージモードでスロットの文字がABABで固定の場合
 			}
 		}
 
@@ -2346,7 +2349,10 @@ void display(void)
 		{
 			for (i = 0; i <= 3; i++)
 			{
-				UI_slot_same[stage_slot_constraint[stage_select][i]].SetImage(216 - 144 * i + player->center_x, 176); //ステージモードでスロットの文字固定の場合
+				if (stage_slot_constraint[stage_select][i] != 0)
+				{
+					UI_slot_same[stage_slot_constraint[stage_select][i]].SetImage(216 - 144 * i + player->center_x, 176); //ステージモードでスロットの文字ABABで固定の場合
+				}
 			}
 		}
 
@@ -2354,7 +2360,10 @@ void display(void)
 		{
 			for (i = 0; i <= 4; i++)
 			{
-				UI_slot_same[stage_slot_constraint[stage_select][i]].SetImage(264 - 132 * i + player->center_x, 176); //ステージモードでスロットの文字固定の場合
+				if (stage_slot_constraint[stage_select][i] != 0)
+				{
+					UI_slot_same[stage_slot_constraint[stage_select][i]].SetImage(264 - 132 * i + player->center_x, 176); //ステージモードでスロットの文字ABABで固定の場合
+				}
 			}
 		}
 
@@ -4703,7 +4712,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.4.5");
+	glutCreateWindow("goipachi ver.1.4.6");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

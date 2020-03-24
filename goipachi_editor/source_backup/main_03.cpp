@@ -747,7 +747,7 @@ void export_stage(int stage_num) //ステージファイルを書き出す
 	}
 
 
-	for (i = 0; i < STAGE_LIMIT; i++)
+	for (i = 0; i <= STAGE_LIMIT; i++)
 	{
 		fprintf(fp_stage_nolma_info, "%d,%d,%d,%d,%d,%d,%d,%d,%d\n", stage_info[i], stage_nolma[i], stage_time_limit[i], stage_time_limit_gold[i], stage_slot_constraint[i][0], stage_slot_constraint[i][1], stage_slot_constraint[i][2], stage_slot_constraint[i][3], stage_slot_constraint[i][4]);
 	}
@@ -1658,7 +1658,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi editor ver.1.0.10");
+	glutCreateWindow("goipachi editor ver.1.0.11");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

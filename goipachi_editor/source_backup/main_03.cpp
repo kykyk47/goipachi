@@ -1204,19 +1204,19 @@ void keyboard(unsigned char key, int x, int y)
 		{
 			switch (key) {
 
-			case 'a': //下半分で変更するブロックを選択 or B.xが16のときはステージ情報を選択
+			case 'a': //下半分で配置するブロックを選択 or B.xが16以上のときはステージ情報を選択
 			{
 				if (cursorB.x <= 15 && cursorB.y <= 3 || cursorB.x <= 19 && cursorB.y == 4) { cursorB.x++; select_hiragana = def_hiragana(cursorB.x, cursorB.y);  }
 			}break;
 
-			case 'd': //下半分で変更するブロックを選択 or B.xが16のときはステージ情報を選択
+			case 'd': //下半分で配置するブロックを選択 or B.xが16以上のときはステージ情報を選択
 			{
 				if (cursorB.x >= 1) {
 					cursorB.x--; select_hiragana = def_hiragana(cursorB.x, cursorB.y);
 				} 
 			}break;
 
-			case 'w':  //下半分で変更するブロックを選択 or B.xが16のときはステージ情報を選択
+			case 'w':  //下半分で配置するブロックを選択 or B.xが16以上のときはステージ情報を選択
 			{
 				if (cursorB.x >= 17) { cursorB.x = 16; cursorB.y = 3; }
 				else if (cursorB.y >= 1) {
@@ -1224,7 +1224,7 @@ void keyboard(unsigned char key, int x, int y)
 				}
 			}break;
 
-			case 's':  //下半分で変更するブロックを選択 or B.xが16のときはステージ情報を選択
+			case 's':  //下半分で配置するブロックを選択 or B.xが16以上のときはステージ情報を選択
 			{
 				if (cursorB.y <= 3) {
 					if (cursorB.x == 16 && cursorB.y == 3) {
@@ -1243,6 +1243,15 @@ void keyboard(unsigned char key, int x, int y)
 			{
 				if (cursorB.x == 16 && cursorB.y == 0) //ステージ情報
 				{
+					if (stage_info_edit == 23) //スロット固定のステージ情報(info:23-25)から違う形式のステージ情報(info:13以下)に遷移したとき下で設定してる固定スロットがある場合はリセットしてあげる
+					{
+						stage_slot_constraint_edit[0] = 0;
+						stage_slot_constraint_edit[1] = 0;
+						stage_slot_constraint_edit[2] = 0;
+						stage_slot_constraint_edit[3] = 0;
+						stage_slot_constraint_edit[4] = 0;
+					}
+
 					if (stage_info_edit % 10 == 3 && stage_info_edit >= 13) { stage_info_edit -= 8; }
 					else if (stage_info_edit >= 4) { stage_info_edit--; }
 				}
@@ -1267,6 +1276,15 @@ void keyboard(unsigned char key, int x, int y)
 			{
 				if (cursorB.x == 16 && cursorB.y == 0) //ステージ情報
 				{
+					if (stage_info_edit == 5) //スロット固定のステージ情報(info:3-5)から違う形式のステージ情報(info:13以上)に遷移したとき下で設定してる固定スロットがある場合はリセットしてあげる
+					{
+						stage_slot_constraint_edit[0] = 0;
+						stage_slot_constraint_edit[1] = 0;
+						stage_slot_constraint_edit[2] = 0;
+						stage_slot_constraint_edit[3] = 0;
+						stage_slot_constraint_edit[4] = 0;
+					}
+
 					if (stage_info_edit % 10 == 5 && stage_info_edit <= 15) { stage_info_edit += 8; }
 					else if (stage_info_edit <= 24) { stage_info_edit++; }
 				}
@@ -1289,26 +1307,26 @@ void keyboard(unsigned char key, int x, int y)
 
 			case 'i': //スロット固定情報を調整
 			{
-				if (cursorB.x == 20 && cursorB.y == 4) //スロット0
+				if (cursorB.x == 20 && cursorB.y == 4) //1文字目
 				{
 					if (stage_slot_constraint_edit[0] >= 1) { stage_slot_constraint_edit[0]--; }
 				}
-				if (cursorB.x == 19 && cursorB.y == 4) //スロット1
+				if (cursorB.x == 19 && cursorB.y == 4) //2文字目
 				{
 					if (stage_slot_constraint_edit[1] >= 1) { stage_slot_constraint_edit[1]--; }
 				}
 
-				if (cursorB.x == 18 && cursorB.y == 4) //スロット2
+				if (cursorB.x == 18 && cursorB.y == 4) //3文字目
 				{
 					if (stage_slot_constraint_edit[2] >= 1) { stage_slot_constraint_edit[2]--; }
 				}
 
-				if (cursorB.x == 17 && cursorB.y == 4) //スロット3
+				if (cursorB.x == 17 && cursorB.y == 4) //4文字目
 				{
 					if (stage_slot_constraint_edit[3] >= 1) { stage_slot_constraint_edit[3]--; }
 				}
 
-				if (cursorB.x == 16 && cursorB.y == 4) //スロット4
+				if (cursorB.x == 16 && cursorB.y == 4) //5文字目
 				{
 					if (stage_slot_constraint_edit[4] >= 1) { stage_slot_constraint_edit[4]--; }
 				}
@@ -1317,29 +1335,99 @@ void keyboard(unsigned char key, int x, int y)
 
 			case 'k': //スロット固定情報を調整
 			{
-				if (cursorB.x == 20 && cursorB.y == 4) //スロット0
+				if (cursorB.x == 20 && cursorB.y == 4) //1文字目
 				{
-					if (stage_slot_constraint_edit[0] <= 74) { stage_slot_constraint_edit[0]++; }
+					switch (stage_info_edit)
+					{
+					case 3: case 4: case 5:
+					{
+						if (stage_slot_constraint_edit[0] <= 74) { stage_slot_constraint_edit[0]++; }
+					}break;
+
+					case 23: case 24: case 25:
+					{
+						if (stage_slot_constraint_edit[0] <= 1) { stage_slot_constraint_edit[0]++; }
+					}break;
+
+					default:
+						break;
+					}
 				}
 
-				if (cursorB.x == 19 && cursorB.y == 4) //スロット1
+				if (cursorB.x == 19 && cursorB.y == 4) //2文字目
 				{
-					if (stage_slot_constraint_edit[1] <= 74) { stage_slot_constraint_edit[1]++; }
+					switch (stage_info_edit)
+					{
+					case 3: case 4: case 5:
+					{
+						if (stage_slot_constraint_edit[1] <= 74) { stage_slot_constraint_edit[1]++; }
+					}break;
+
+					case 23: case 24: case 25:
+					{
+						if (stage_slot_constraint_edit[1] <= 1) { stage_slot_constraint_edit[1]++; }
+					}break;
+
+					default:
+						break;
+					}
 				}
 
-				if (cursorB.x == 18 && cursorB.y == 4) //スロット2
+				if (cursorB.x == 18 && cursorB.y == 4) //3文字目
 				{
-					if (stage_slot_constraint_edit[2] <= 74) { stage_slot_constraint_edit[2]++; }
+					switch (stage_info_edit)
+					{
+					case 3: case 4: case 5:
+					{
+						if (stage_slot_constraint_edit[2] <= 74) { stage_slot_constraint_edit[2]++; }
+					}break;
+
+					case 23: case 24: case 25:
+					{
+						if (stage_slot_constraint_edit[2] <= 1) { stage_slot_constraint_edit[2]++; }
+					}break;
+
+					default:
+						break;
+					}
 				}
 
-				if (cursorB.x == 17 && cursorB.y == 4) //スロット3
+				if (cursorB.x == 17 && cursorB.y == 4) //4文字目
 				{
-					if (stage_slot_constraint_edit[3] <= 74) { stage_slot_constraint_edit[3]++; }
+					switch (stage_info_edit)
+					{
+					case 3: case 4: case 5:
+					{
+						if (stage_slot_constraint_edit[3] <= 74) { stage_slot_constraint_edit[3]++; }
+					}break;
+
+					case 23: case 24: case 25:
+					{
+						if (stage_slot_constraint_edit[3] <= 1) { stage_slot_constraint_edit[3]++; }
+					}break;
+
+					default:
+						break;
+					}
 				}
 
-				if (cursorB.x == 16 && cursorB.y == 4) //スロット4
+				if (cursorB.x == 16 && cursorB.y == 4) //5文字目
 				{
-					if (stage_slot_constraint_edit[4] <= 74) { stage_slot_constraint_edit[4]++; }
+					switch (stage_info_edit)
+					{
+					case 3: case 4: case 5:
+					{
+						if (stage_slot_constraint_edit[4] <= 74) { stage_slot_constraint_edit[4]++; }
+					}break;
+
+					case 23: case 24: case 25:
+					{
+						if (stage_slot_constraint_edit[4] <= 1) { stage_slot_constraint_edit[4]++; }
+					}break;
+
+					default:
+						break;
+					}
 				}
 
 			}break;
@@ -1394,8 +1482,8 @@ void keyboard(unsigned char key, int x, int y)
 
 		case 'l':  //インポートしたいステージ番号 +10
 		{
-			if (stage_select_confirm <= STAGE_LIMIT - 1) { stage_select_confirm += 10; }
-			else if (stage_select_confirm <= STAGE_LIMIT - 11) { stage_select_confirm = STAGE_LIMIT; }
+			if (stage_select_confirm <= STAGE_LIMIT - 11) { stage_select_confirm += 10; }
+			else if (stage_select_confirm <= STAGE_LIMIT - 1) { stage_select_confirm = STAGE_LIMIT; }
 		}break;
 
 		case 'i': //もどる
@@ -1436,8 +1524,8 @@ void keyboard(unsigned char key, int x, int y)
 
 		case 'l': //エクスポートしたいステージ番号＋10
 		{
-			if (stage_select_confirm <= STAGE_LIMIT - 1) { stage_select_confirm+=10; }
-			else if (stage_select_confirm <= STAGE_LIMIT - 11) { stage_select_confirm = STAGE_LIMIT; }
+			if (stage_select_confirm <= STAGE_LIMIT - 11) { stage_select_confirm+=10; }
+			else if (stage_select_confirm <= STAGE_LIMIT - 1) { stage_select_confirm = STAGE_LIMIT; }
 		}break;
 
 		case 'i': //もどる
@@ -1658,7 +1746,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi editor ver.1.0.11");
+	glutCreateWindow("goipachi editor ver.1.0.12");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

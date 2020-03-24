@@ -4,6 +4,9 @@
 //1.choose_pattern()の各文字のdo-whileの条件を変える
 //2.block_standbyでcase 0,100,200なり新しく追加する
 
+//ループ処理の規模が大きくなりそうなところはポインタを使用して安定化を図る
+
+
 //kykyk47用
 
 #include <Windows.h>
@@ -46,6 +49,7 @@ using namespace Gdiplus;
 #define PATTERN_LIMIT 45 //横に並べるブロック配置パターンの上限
 #define MADE_LIMIT 100 //ステージモードにおいて，作れる単語の限界数（すてーじもーどで単語重複不可のステージの時に使う）
 #define STAGE_LIMIT 518 //ステージモードの上限
+#define STAGE_AVAILABLE 30 //★提出段階で見せられるステージの数
 
 GdiplusStartupInput gdiPSI;
 ULONG_PTR gdiPT;
@@ -81,7 +85,7 @@ int lamp_timer_02 = 0; //プレイヤーのリアクションのエフェクト
 int lamp_timer_block = 0; //ルーレットブロックのエフェクトのアニメーション
 int lamp_timer_clear = 0; //クリアランプ全点灯でゴージャスになる
 int hiragana_roulette_timer = 0; //ルーレットブロックの中身のタイマー
-int hiragana_roulette[74] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75 }; //ルーレットの中身
+int hiragana_roulette[74] = { 1,2,3,48,4,5,6,51,7,52,8,53,9,54,10,55,11,56,12,57,13,58,14,59,15,60,16,61,17,62,18,63,47,19,64,20,65,21,22,23,24,25,26,66,71,27,67,72,28,68,73,29,69,74,30,70,75,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,50 }; //ルーレットの中身の順番
 int gun_timer = 0; //銃を構えているイラストの表示
 int bullet_timer = 0; //弾丸が発射されてからの秒数 一定時間たつと消える（無限に飛び続けるのいやでしょ）
 
@@ -128,40 +132,21 @@ float hiragana_score_5[80][5] = { {} }; //Kキーを押下した際スロット�
 int odai; //お題の番号を決める
 
 int odai_hiragana_3[75][5] = {
-{0,46,0}
+{0,46,0},{0,47,0},{0,50,0},{0,3,0},{0,2,0},{0,0,41},{0,0,33},{0,0,13}
 }; //お題のひらがなの配置
+#define odai_hiragana_3_all 8
 
 int odai_hiragana_4[75][5] = {
-{0,6,2,0},{0,0,2,43},{11,0,0,8},{0,46,0,46},{0,2,0,2},{0,3,0,3},{0,2,15,0},{14,2,0,0},{0,0,6,39},
-{66,46,0,0},{0,47,0,3},{0,0,0,48},{6,0,6,0},{16,0,0,46},{0,47,0,2},{0,50,0,50},{0,50,41,0},{26,0,0,8},
-{39,0,0,50},{0,0,50,65}
+{0,6,2,0},{0,0,2,43},{11,0,0,8},{0,46,0,46},{0,2,0,2},{0,3,0,3},{0,2,15,0},{14,2,0,0},{0,0,6,39},{66,46,0,0},
+{0,47,0,3},{0,0,0,48},{6,0,6,0},{16,0,0,46},{0,47,0,2},{0,50,0,50},{0,50,41,0},{26,0,0,8},{39,0,0,50},{0,0,50,65}
 }; //お題のひらがなの配置
+#define odai_hiragana_4_all 20
 
 int odai_hiragana_5[75][5] = {
-	{0,0,0,46,7}
+{0,0,0,32,41},{0,46,0,46,0},{0,50,0,50,0},{0,3,0,2,0},{0,46,0,0,7},{0,0,0,2,43},{14,2,0,0,0},{0,0,0,4,41},{0,0,0,42,41},{0,0,45,0,0},
+{0,45,0,0,0},{0,47,0,0,0}
 }; //お題のひらがなの配置
-
-int choose_hiragana_weight[80] = { 0, //ひらがなブロックがステージに配置されるときの平仮名の種類の重み
-12,20,18,10,16, //ア行
-20,18,10,10,12,
-12,15,10,10,9,
-15,8,10,15,15,
-15,9,5,10,13,
-12,9,12,7,12,
-16,13,11,11,12,
-15,10,10,
-8,12,10,12,12,
-12,4,13,15,4,0,17, //わをんっヴ箱ー
-10,10,10,9,14,
-8,14,10,10,8,
-15,6,6,14,14,
-10,8,13,13,10,
-9,9,9,9,7,
-0,0,0,0
-};
-
-
-int choose_hiragana_weight_add[80] = {}; //最終的に乱数よりひらがなを決定するために 1~79だったら「あ」　80~144だったら「い」みたいにできるように
+#define odai_hiragana_5_all 12
 
 int high_score_3[5] = { 0,0,0,0,0 }; //レコードされているハイスコア
 int high_score_4[5] = { 0,0,0,0,0 }; //レコードされているハイスコア
@@ -224,8 +209,6 @@ bool flag_collision_D = false; //衝突判定（下方向）
 bool flag_move_bullet = true; //次のタイマー関数が呼び出されるまで弾丸の移動を与えないための制御
 bool flag_jump_slow = false; //ジャンプ→落下時ゆっくり降りるかんじにするトリガー
 bool flag_bullet_exist = false; //弾丸が存在して動いている状態（当たり判定起動）
-
-
 
 int time_1flame; //デバッグ用，1フレームでどれだけ進んだか，どれだけ時間がたっているか（ms）（下３つも同じ）
 double speed_1flame;
@@ -1360,13 +1343,27 @@ int choose_pattern(int MOJISU) //ステージのブロック配置パターン�
 	return a;
 }
 
-int choose_odai(void) //ヒントブロックの中身をランダムに選ぶ関数
+int choose_odai(int MOJISU) //ヒントブロックの中身をランダムに選ぶ関数
 {
 	int a;
 
-	do {
-		a = rand_odai(mt);
-	} while (a >= 15);
+	switch (MOJISU)
+	{
+	case 3:
+	{
+		do {a = rand_odai(mt);} while (a >= odai_hiragana_3_all);
+	}break;
+
+	case 4:
+	{
+		do { a = rand_odai(mt); } while (a >= odai_hiragana_4_all);
+	}break;
+
+	case 5:
+	{
+		do { a = rand_odai(mt); } while (a >= odai_hiragana_5_all);
+	}break;
+	}
 
 	return a;
 }
@@ -2741,9 +2738,9 @@ void display(void)
 			UI_num_aslash_big.SetImage(-375, 25);
 			UI_num_aslash_big.SetImage(-375, 105);
 			UI_num_aslash_big.SetImage(-375, -55);
-			SetNumImage(-520, 80, 300, 50, STAGE_LIMIT, 0, 4);
-			SetNumImage(-520, 0, 300, 50, STAGE_LIMIT, 0, 4);
-			SetNumImage(-520, -80, 300, 50, STAGE_LIMIT, 0, 4);
+			SetNumImage(-520, 80, 300, 50, STAGE_AVAILABLE, 0, 4);
+			SetNumImage(-520, 0, 300, 50, STAGE_AVAILABLE, 0, 4);
+			SetNumImage(-520, -80, 300, 50, STAGE_AVAILABLE, 0, 4);
 
 
 		}
@@ -2783,14 +2780,14 @@ void display(void)
 			UI_arrow_2L.SetImage(488, -348);
 		}
 
-		if (stage_select <= STAGE_LIMIT - 1) //ステージ選択の右の矢印
+		if (stage_select <= STAGE_AVAILABLE - 1) //ステージ選択の右の矢印
 		{
 			UI_arrow_2R.SetImage(-488, -348);
 		}
 
 		for (i = -3; i <= 3; i++)
 		{
-			if (stage_select + i >= 1 && stage_select + i <= STAGE_LIMIT) //ステージ選択のブロックの描画
+			if (stage_select + i >= 1 && stage_select + i <= STAGE_AVAILABLE) //ステージ選択のブロックの描画
 			{
 				UI_clear_lamp_off.SetImage(-i * 128, -280);
 				UI_block_stage_num.SetImage(-i * 128, -348);
@@ -2815,7 +2812,7 @@ void display(void)
 
 		for (i = -3; i <= 3; i++)
 		{
-			if (stage_select + i >= 1 && stage_select + i <= STAGE_LIMIT) //ステージ選択の番号の描画
+			if (stage_select + i >= 1 && stage_select + i <= STAGE_AVAILABLE) //ステージ選択の番号の描画
 			{
 				if (stage_select + i >= 100)  //桁数によってブロックへの数字の画像の納め方が変わるので分けた＆ステージが定義されている場合は明るいフォントで描画
 				{
@@ -3055,7 +3052,8 @@ void idle(void)
 	int *odhr4 = &odai_hiragana_4[0][0];
 	int *odhr5 = &odai_hiragana_5[0][0];
 	int *sl = &slot[0];
-	// std::cout <<--------------------フレーム開始--------------------->" << std::endl;
+
+	// std::cout << <--------------------フレーム開始--------------------->" << std::endl;
 
 	/*
 	 std::cout << "<info 007: プレイヤーの座標：[ "<< player->center.x << "],[" <<  player->center.y <<"]" << std::endl; //コピー用 随所で使う
@@ -3070,12 +3068,12 @@ void idle(void)
 		{
 		case true://ふわふわ落下モード
 		{
-			player->Move(0, -(15.8 * jump_timer - 9.8* jump_timer * sqrt(jump_timer) *0.5)*0.0015 * 36);
+			player->Move(0, -(15.8 * jump_timer - 9.8* jump_timer * sqrt(jump_timer) *0.5)*0.0015 * 36); //★基本的なジャンプの物理式/最高点到達より後（いろいろ調整したので汚いですが…）
 		}break;
 
 		case false:
 		{
-			player->Move(0, -(15.8 * jump_timer - 9.8* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 128);
+			player->Move(0, -(15.8 * jump_timer - 9.8* jump_timer * sqrt(jump_timer) *0.5)*0.01 * 128); //★基本的なジャンプの物理式/最高点到達より前（いろいろ調整したので汚いですが…）
 		}break;
 		}
 
@@ -3286,7 +3284,7 @@ void idle(void)
 				{
 					if (mode_mojisu == 3 && slot[0] == 0 && slot[1] == 0 && slot[2] == 0)//3文字モードの時
 					{
-						odai = choose_odai(); //おだい
+						odai = choose_odai(mode_mojisu); //おだい
 						*(sl + 0) = *(odhr3 + odai * 5 + 0);
 						*(sl + 1) = *(odhr3 + odai * 5 + 1);
 						*(sl + 2) = *(odhr3 + odai * 5 + 2);
@@ -3296,7 +3294,7 @@ void idle(void)
 
 					else if (mode_mojisu == 4 && slot[0] == 0 && slot[1] == 0 && slot[2] == 0 && slot[3] == 0)//4文字モードの時
 					{
-						odai = choose_odai(); //おだい
+						odai = choose_odai(mode_mojisu); //おだい
 						*(sl + 0) = *(odhr4 + odai * 5 + 0);
 						*(sl + 1) = *(odhr4 + odai * 5 + 1);
 						*(sl + 2) = *(odhr4 + odai * 5 + 2);
@@ -3307,7 +3305,7 @@ void idle(void)
 
 					else if (mode_mojisu == 5 && slot[0] == 0 && slot[1] == 0 && slot[2] == 0 && slot[3] == 0 && slot[4] == 0)//5文字モードの時
 					{
-						odai = choose_odai(); //おだい
+						odai = choose_odai(mode_mojisu); //おだい
 						*(sl + 0) = *(odhr5 + odai * 5 + 0);
 						*(sl + 1) = *(odhr5 + odai * 5 + 1);
 						*(sl + 2) = *(odhr5 + odai * 5 + 2);
@@ -3406,9 +3404,13 @@ void idle(void)
 		for (i = 0; i <= STAGE_LIMIT; i++)
 		{
 			fprintf(fp_stageclear, "%d,%d,%d,%d,%d\n", stage_clear[i][0], stage_clear[i][1], stage_clear[i][2], stage_clear[i][3], stage_clear[i][4]); //ステージクリア進捗状況ファイルを更新
-			if (stage_clear[i][0] == 1) { stage_medal[0]++; }
-			if (stage_clear[i][1] == 1) { stage_medal[1]++; }
-			if (stage_clear[i][2] == 1) { stage_medal[2]++; } //メダルを取った数を記録
+			
+			if (i <= STAGE_AVAILABLE) //ステージのクリア状況の表示は，現在選択できるステージまでの情報のみを参照する（プレイできるステージ以降のステージもテストプレイでクリアデータが入ってる可能性があるため）
+			{
+				if (stage_clear[i][0] == 1) { stage_medal[0]++; }
+				if (stage_clear[i][1] == 1) { stage_medal[1]++; }
+				if (stage_clear[i][2] == 1) { stage_medal[2]++; } //メダルを取った数を記録し，「何ステージをどのくらいクリアしているか」の情報を取得する
+			}
 		}
 
 
@@ -4024,10 +4026,10 @@ void keyboard(unsigned char key, int x, int y)
 		switch (key) {
 		case 'i': {	Mix_PlayChannel(-1, SE_back, 0);  scene = 7; } break; //モード選択画面に戻る
 		case 'k': {if (stage_info[stage_select] != 0) { Mix_PlayChannel(-1, SE_enter, 0);  scene = 1; } } break; //ステージが定義されていれば次のシーンへ
-		case 'a': { if (stage_select >= 2) { Mix_PlayChannel(-1, SE_select, 0);  stage_select--; }} break;
-		case 'd': {	if (stage_select <= STAGE_LIMIT - 1) { Mix_PlayChannel(-1, SE_select, 0);  stage_select++; }} break;
+		case 'a': { if (stage_select >= 2) { Mix_PlayChannel(-1, SE_select, 0);  stage_select--; }} break; //ステージ番号選択←
+		case 'd': {	if (stage_select <= STAGE_AVAILABLE - 1) { Mix_PlayChannel(-1, SE_select, 0);  stage_select++; }} break; //ステージ番号選択→
 		case 'j': { if (stage_select >= 12) { Mix_PlayChannel(-1, SE_select, 0);  stage_select -= 10; } else { stage_select = 1; }} break;
-		case 'l': {	if (stage_select <= STAGE_LIMIT - 11) { Mix_PlayChannel(-1, SE_select, 0);  stage_select += 10; } else { stage_select = STAGE_LIMIT; }} break;
+		case 'l': {	if (stage_select <= STAGE_AVAILABLE - 11) { Mix_PlayChannel(-1, SE_select, 0);  stage_select += 10; } else { stage_select = STAGE_AVAILABLE; }} break;
 		case '\033': game_shutdown(); break;
 		}
 	}break;
@@ -4121,7 +4123,6 @@ void Init() {
 	int *sc = &stage_clear[0][0];
 
 	// 効果音のロード 
-
 	SE_select = Mix_LoadWAV("./sound/select.wav"); if (SE_select == NULL) { std::cout << "<info 056: 音声ファイルを開けませんでした>" << std::endl; exit(56); }
 	SE_back = Mix_LoadWAV("./sound/back.wav"); if (SE_back == NULL) { std::cout << "<info 056: 音声ファイルを開けませんでした>" << std::endl; exit(56); }
 	SE_batsu = Mix_LoadWAV("./sound/batsu.wav"); if (SE_batsu == NULL) { std::cout << "<info 056: 音声ファイルを開けませんでした>" << std::endl; exit(56); }
@@ -4134,38 +4135,6 @@ void Init() {
 
 	std::cout << "<info 057: 音声ファイルを読み込みました>" << std::endl;
 
-	/*
-	if ((fopen_s(&fp_dic_sample_i, "./dat/dic_sample.dat", "r")) != 0) //実験
-	{
-		std::cout << "<info 060: 辞書ファイル（サンプル）を開けませんでした>" << std::endl;
-		exit(60);
-	}
-
-	i = 0;
-	while (fscanf_s(fp_dic_sample_i, "%s\n", dics2) != EOF)
-	{
-		printf("%s\n",dics2[i]);
-		i++;
-	}
-
-
-	dic_sample_all = i;
-	std::cout << "<info 061: 辞書ファイル（サンプル）" << i << " 単語を読み込みました>" << std::endl;
-
-	for (i = 0; i < dic_sample_all; i++)
-	{
-		for (k = 0; k < 25; k++)
-		{
-			printf("%c", *(dics2_+i*25 + k));
-		}
-		printf("\n");
-	}
-
-	fclose(fp_dic_sample_i); std::cout << "<info 062: 辞書ファイル（サンプル）を閉じました>" << std::endl;
-	*/
-
-
-	std::cout << "<info 016: スコアファイルを読み込みました>" << std::endl;
 
 	if ((fopen_s(&fp_score_3, "./dat/score_3.dat", "r")) != 0) //スコアファイルを読み込む
 	{
@@ -4276,9 +4245,12 @@ void Init() {
 	for (i = 0; i <= STAGE_LIMIT; i++)
 	{
 		//fprintf(fp_stageclear, "%d,%d,%d,%d,%d\n", stage_clear[i][0], stage_clear[i][1], stage_clear[i][2], stage_clear[i][3], stage_clear[i][4]); //ステージクリア進捗状況ファイルを更新
-		if (stage_clear[i][0] == 1) { stage_medal[0]++; }
-		if (stage_clear[i][1] == 1) { stage_medal[1]++; }
-		if (stage_clear[i][2] == 1) { stage_medal[2]++; } //メダルを取った数を記録し，「何ステージをどのくらいクリアしているか」の情報を取得する
+		if (i <= STAGE_AVAILABLE) //ステージのクリア状況の表示は，現在選択できるステージまでの情報のみを参照する（プレイできるステージ以降のステージもテストプレイでクリアデータが入ってる可能性があるため）
+		{
+			if (stage_clear[i][0] == 1) { stage_medal[0]++; }
+			if (stage_clear[i][1] == 1) { stage_medal[1]++; }
+			if (stage_clear[i][2] == 1) { stage_medal[2]++; } //メダルを取った数を記録し，「何ステージをどのくらいクリアしているか」の情報を取得する
+		}
 	}
 
 	if ((fopen_s(&fp_stage_nolma_info, "./dat/stage_nolma_info.dat", "r")) != 0) //ステージのノルマや制限時間などの基本情報を取得する
@@ -4488,11 +4460,6 @@ void Init() {
 		block_hiragana[i].LoadImagePNG2(block_hiragana[i].file, block_hiragana[i].tex);
 		block_hiragana_mini[i].LoadImagePNG2(block_hiragana_mini[i].file, block_hiragana_mini[i].tex);
 	}
-	for (i = 1; i <= 79; i++)
-	{
-		choose_hiragana_weight_add[i] = choose_hiragana_weight_add[i - 1] + choose_hiragana_weight[i];
-	}
-
 
 	//コピー用
 	//.LoadImagePNG2(.file, .tex);
@@ -4713,7 +4680,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.4.6");
+	glutCreateWindow("goipachi ver.1.4.8");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

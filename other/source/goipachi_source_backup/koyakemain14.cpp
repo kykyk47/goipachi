@@ -530,6 +530,7 @@ GameObject UI_mode_description_2 = GameObject(0, 0, 512, 512, L"./pic/mode_descr
 GameObject UI_slot_AB_description = GameObject(0, 0, 512, 32, L"./pic/slot_constraint_description2.png");
 
 
+
 GameObject UI_mode_select_UI = GameObject(0, 0, 768, 96, L"./pic/mode_select_UI.png");
 
 GameObject UI_mode_mojisu = GameObject(0, 0, 1024, 128, L"./pic/select_mojisu.png");

@@ -1,14 +1,15 @@
 // goipachi.cpp
 
+//使用ライブラリ：GLUT(OpenGL 3.7.6), GdiPlus, SDL2_mixer(SDL2 2.0.10, SDL2_mixer 2.0.4)
+
 //★ステージクリアモードにおいて，地形パターンを増やす手順
 //1.choose_pattern()の各文字のdo-whileの条件を変える
 //2.block_standbyでcase 0,100,200なり新しく追加する
 
-//ループ処理の規模が大きくなりそうなところはポインタを使用して安定化を図る
-
+//★ループ処理の規模が大きくなりそうなところはポインタを使用して安定化を図る
+//ポインタの名前は変数(または配列)名の略称っぽいので統一しようということに
 
 //kykyk47用
-
 #include <Windows.h>
 #include <iostream>
 #include <gl/glut.h>
@@ -21,7 +22,6 @@
 #include <random>
 #include <SDL.h>
 #include <SDL_mixer.h>
-#include "./utility/def_class.h" //クラスの定義の記述があるヘッダファイル
 
 
 //matsuodora用
@@ -56,21 +56,21 @@ using namespace Gdiplus;
 GdiplusStartupInput gdiPSI;
 ULONG_PTR gdiPT;
 
-GLuint tex_num[7][11] = { {} }; //[0][]：数字フォント（赤） //[1][]：数字フォント（頭上のスコアの数字・黄緑） [10]は「＋」
+GLuint tex_num[7][11] = { {} }; //数字フォント，[0][]：赤, [1][]：頭上のスコアの数字・緑，[2][0]：ステージセレクト番号・黄色，[3][0]：ステージセレクト番号・未定義茶色，[6][]：記号類，*][10]は「＋」
 
 void play_SE(Mix_Chunk *filename);
 void end();
-void check_goi(int* moji);
-void LoadImagePNG(const wchar_t* filename, GLuint &texture);
-void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, int d);
-int choose_hiragana(void);
-int choose_pattern(void);
-int choose_odai(void);
-void set_block_info(int type, int x_grid, int y_grid, int leftside, int blocknum);
-void block_standby(void);
-void standby_stage(int stage_num);
-void game_reset(void);
-void game_shutdown(void);
+void check_goi(int* moji); //Kキーが押されたあとの語彙スロットの正誤判定
+void LoadImagePNG(const wchar_t* filename, GLuint &texture); //画像ロード
+void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, int d); //数字を画像にして表示
+int choose_hiragana(void); //乱数によりひらがなを1文字選ぶ
+int choose_pattern(void); //乱数によりスコアアタックモードのステージ配置パターンを選ぶ
+int choose_odai(void); //乱数により「お題ブロック」のお題番号を選ぶ
+void set_block_info(int type, int x_grid, int y_grid, int leftside, int blocknum); //ステージファイルやblock_standbyで定義された数値群より実際に配置するブロックの情報へ置き換える
+void block_standby(void); //スコアアタックモードで，ステージの生成（準備）をする
+void standby_stage(int stage_num); //ステージクリアモードで，ステージの生成（準備）をする
+void game_reset(void); //スコアアタックモードでステージを再構成する
+void game_shutdown(void); //ゲームを終了し，もろもろを開放する
 
 
 int ranking; //ランキング表示のため
@@ -96,20 +96,19 @@ int bullet_timer = 0; //弾丸が発射されてからの秒数 一定時間た�
 int scene = 0; //◇シーンの追加．0:タイトル 1:スタンバイ画面 2:ポーズ画面 3:リザルト画面A 4リザルト画面B 5:プレイ画面（メイン） 6:GAME OVER画面  7:ステージ・モード選択（ 8:文字数選択メニュー 9:ステージ選択画面 10:ほんとうによろしいですか
 int next_scene = 0; //ゲームをやめる→ほんとうによろしいですか？→の分岐などに使う
 int mode = 0; //0:スコアアタック 1:ステージモード スコアの計算にも影響する
-int mode_mojisu = 4; //3or4or5 3文字，5文字はおいおい辞書を用意して実装したい．とりあえず4文字モードだけ
+int mode_mojisu = 4; //スコアアタックの現在選択しているモードの文字数
 int stage_medal[3] = {}; //全ステージ中の獲得したメダルの総数を記録
 
 int made_tango[MADE_LIMIT + 1][5] = { {} }; //ステージクリアモードのとき，重複した単語は作れない
 int stage_select = 1; //ステージクリアモードで選んでいるステージの番号
 int stage_clear[STAGE_LIMIT + 1][5] = { {} }; //ステージクリアモードの進捗状況  0~2 メダル 3:クリア時間ハイスコア 4:ミス回数ハイスコア
-int stage_info[STAGE_LIMIT + 1] = {}; //0:未定義（カミングスーン) 1:何単語作るかミッション それ以外：面白そうなのがあったら追加
+int stage_info[STAGE_LIMIT + 1] = {}; //0:未定義（カミングスーン) 3-5:スロット固定あり言葉作成ミッション（固定情報がなければ通常単語作成ミッション），13-15：しりとりミッション， 23-25：ABには同じ言葉が入りますミッション
 int stage_nolma[STAGE_LIMIT + 1] = {}; //例：ステージ１で10単語作れミッション→ [1]=10
 int stage_time_limit[STAGE_LIMIT + 1] = {}; //例：ステージ1は200秒以内 [1]=200
 int stage_time_limit_gold[STAGE_LIMIT + 1] = {}; //例：ステージ1のメダル獲得タイム50秒以内→[1]=50
 int stage_slot_constraint[STAGE_LIMIT + 1][5] = { {} }; //語彙スロット固定（例：ステージ1で[][][い][ろ]のときは [1][0]～[1][3]：＿＿いろになる
 int stage_block_info[OBJECT_LIMIT][3] = { {} }; //ステージモードの時に配置されるブロックの情報
-int score_miss = 0; //スコア（ミス数）（ステージモードのみ
-
+int score_miss = 0; //スコア（ミス数）（ステージモードのみ情報を使う
 
 int dic_3moji[dic_3_LIMIT][3] = { {} }; //辞書の情報を格納
 int dic_4moji[dic_4_LIMIT][4] = { {} }; //辞書の情報を格納
@@ -155,20 +154,20 @@ int odai_hiragana_5[75][5] = {
 int high_score_3[5] = { 0,0,0,0,0 }; //レコードされているハイスコア
 int high_score_4[5] = { 0,0,0,0,0 }; //レコードされているハイスコア
 int high_score_5[5] = { 0,0,0,0,0 }; //レコードされているハイスコア
-int slot[5] = { 0,0,0,0,0 }; //スロット（のちのち5文字でもできるように）
-int slot_select = 0; //どの文字をさしているか
+int slot[5] = { 0,0,0,0,0 }; //語彙スロットの中身
+int slot_select = 0; //現在語彙スロットの何文字目を選択しているか
 int slot_start[OBJECT_LIMIT] = {}; //オブジェクトがルーレットだった場合ルーレットはどっから始まるか
 
 int object_on_stage = 0; //そのセッションで配置されたブロックの総数
 
 int score_word = 0; //１つ１つのワードのスコア
-int time = TIME_LIMIT * 60;
+int time = TIME_LIMIT * 60; //制限時間（単位：フレーム）
 
-int stage_structure[PATTERN_LIMIT] = {};
-int set_leftside = 0;
+int stage_structure[PATTERN_LIMIT] = {}; //スコアアタックモードでの地形生成パターンの生成順
+int set_leftside = 0; //スコアアタックモードでのブロック配置時，地形パターンの生成の左端を指定し，そこを基準に配置していく（グローバル座標的なやつ）
 
 int before_stageclear_miss; //ステージクリアモードにて，new record表示には更新前のクリアタイムなどが必要なのでそれをとっておく
-int before_stageclear_time;
+int before_stageclear_time; //〃
 
 int object_block[OBJECT_LIMIT][3] = { {} }; //衝突判定に使う，プレイヤーとの距離の条件を満たすためにこの配列にオブジェクトの情報を記載（ブロックの種類,中心座標（ｘとｙ））
 int height_c = 0; //衝突判定に使う，ジャンプした後着地できる位置（高さ）最も高い座標
@@ -182,9 +181,9 @@ FILE *fp_dic_4; //４文字辞書ファイル
 FILE *fp_dic_5; //５文字辞書ファイル（未完成）
 FILE *fp_stageclear; //ステージクリア進捗
 FILE *fp_stage_structure_info; //ステージの情報
-FILE *fp_stage_nolma_info;
+FILE *fp_stage_nolma_info; //ステージのノルマ情報
 
-FILE *fp_dic_sample_i; //辞書ファイル（ひらがな格納）を数値化できるように工夫するテスト
+FILE *fp_dic_sample_i; //★辞書ファイル（ひらがな格納）を数値化できるように工夫するテスト（まだ実用化には至っておらず・・・がんばります）
 FILE *fp_dic_sample_o;
 
 int dic_3_all = 0; //実際に辞書に登録されていた単語数
@@ -332,12 +331,6 @@ public:
 	};
 
 };
-
-class UIObject :public GameObject //UIの画像などを
-{
-
-};
-
 
 class MoveObject :public GameObject
 {
@@ -844,8 +837,12 @@ void check_goi(int* moji)
 	int *dic4 = &dic_4moji[0][0];
 	int *dic5 = &dic_5moji[0][0];
 	int *lmhr = &list_most_hiragana[0];
+	int *si = &stage_info[0];
+	int *mdtn = &made_tango[0][0];
 
-	if (mode == 0)//スコアモード
+	switch (mode)
+	{
+	case 0: //スコアアタックモードのとき
 	{
 		switch (mode_mojisu)
 		{
@@ -864,6 +861,7 @@ void check_goi(int* moji)
 					score_tango++;
 					(*(lmhr + moji[0]))++;
 					(*(lmhr + moji[1]))++;
+					(*(lmhr + moji[2]))++;
 					(*(lmhr + moji[2]))++;
 
 					break;
@@ -915,7 +913,7 @@ void check_goi(int* moji)
 					word_hit = true;
 					play_SE(SE_maru);
 
-					score_word = (int)(*(hs5 + 5 * moji[0]) + *(hs5 + 5 * moji[1] + 1) + *(hs5 + 45 * moji[2] + 2) + *(hs5 + 5 * moji[3] + 3) + *(hs5 + 5 * moji[4] + 4));
+					score_word = (int)(*(hs5 + 5 * moji[0]) + *(hs5 + 5 * moji[1] + 1) + *(hs5 + 5 * moji[2] + 2) + *(hs5 + 5 * moji[3] + 3) + *(hs5 + 5 * moji[4] + 4));
 
 					score += score_word;
 					score_tango++;
@@ -936,11 +934,11 @@ void check_goi(int* moji)
 			}
 		}break;
 		}
-	}
+	}break;
 
-	if (mode == 1)//ステージモード
+	case 1: //ステージクリアモードのとき
 	{
-		switch (stage_info[stage_select] % 10)
+		switch (*(si + stage_select) % 10)
 		{
 		case 3:
 		{
@@ -950,7 +948,7 @@ void check_goi(int* moji)
 				{
 					for (k = 0; k <= score; k++)
 					{
-						if (made_tango[k][0] == moji[0] && made_tango[k][1] == moji[1] && made_tango[k][2] == moji[2])
+						if (*(mdtn + k * 5 + 0) == moji[0] && *(mdtn + k * 5 + 1) == moji[1] && *(mdtn + k * 5 + 2) == moji[2])
 						{
 							word_hit = false;
 							break;
@@ -968,9 +966,9 @@ void check_goi(int* moji)
 
 			if (word_hit == true)
 			{
-				made_tango[score][0] = moji[0];
-				made_tango[score][1] = moji[1];
-				made_tango[score][2] = moji[2];
+				*(mdtn + score * 5 + 0) = moji[0];
+				*(mdtn + score * 5 + 1) = moji[1];
+				*(mdtn + score * 5 + 2) = moji[2];
 
 				score_word = 1;
 				score += score_word;
@@ -992,7 +990,7 @@ void check_goi(int* moji)
 				{
 					for (k = 0; k <= score; k++)
 					{
-						if (made_tango[k][0] == moji[0] && made_tango[k][1] == moji[1] && made_tango[k][2] == moji[2] && made_tango[k][3] == moji[3])
+						if (*(mdtn + k * 5 + 0) == moji[0] && *(mdtn + k * 5 + 1) == moji[1] && *(mdtn + k * 5 + 2) == moji[2] && *(mdtn + k * 5 + 3) == moji[3])
 						{
 							word_hit = false;
 							break;
@@ -1010,10 +1008,10 @@ void check_goi(int* moji)
 
 			if (word_hit == true)
 			{
-				made_tango[score][0] = moji[0];
-				made_tango[score][1] = moji[1];
-				made_tango[score][2] = moji[2];
-				made_tango[score][3] = moji[3];
+				*(mdtn + score * 5 + 0) = moji[0];
+				*(mdtn + score * 5 + 1) = moji[1];
+				*(mdtn + score * 5 + 2) = moji[2];
+				*(mdtn + score * 5 + 3) = moji[3];
 
 				score_word = 1;
 				score += score_word;
@@ -1035,7 +1033,7 @@ void check_goi(int* moji)
 				{
 					for (k = 0; k <= score; k++)
 					{
-						if (made_tango[k][0] == moji[0] && made_tango[k][1] == moji[1] && made_tango[k][2] == moji[2] && made_tango[k][3] == moji[3] && made_tango[k][4] == moji[4])
+						if (*(mdtn + k * 5 + 0) == moji[0] && *(mdtn + k * 5 + 1) == moji[1] && *(mdtn + k * 5 + 2) == moji[2] && *(mdtn + k * 5 + 3) == moji[3] && *(mdtn + k * 5 + 4) == moji[4])
 						{
 							word_hit = false;
 							break;
@@ -1053,11 +1051,11 @@ void check_goi(int* moji)
 
 			if (word_hit == true)
 			{
-				made_tango[score][0] = moji[0];
-				made_tango[score][1] = moji[1];
-				made_tango[score][2] = moji[2];
-				made_tango[score][3] = moji[3];
-				made_tango[score][4] = moji[4];
+				*(mdtn + score * 5 + 0) = moji[0];
+				*(mdtn + score * 5 + 1) = moji[1];
+				*(mdtn + score * 5 + 2) = moji[2];
+				*(mdtn + score * 5 + 3) = moji[3];
+				*(mdtn + score * 5 + 4) = moji[4];
 
 				score_word = 1;
 				score += score_word;
@@ -1071,6 +1069,7 @@ void check_goi(int* moji)
 			}
 		}break;
 		}
+	}break;
 	}
 }
 
@@ -1091,9 +1090,11 @@ void LoadImagePNG(const wchar_t* filename, GLuint &texture)
 
 void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, int d) { //プレイヤーエフェクトとしての数字 //dは文字同士の間隔
 
-	if (num >= 100000) //10万の位
+	GLuint *tn = &tex_num[0][0];
+
+	if (num >= 100000) //10万の位 *(tn+font*11+(num / 10000) % 10)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][num / 100000]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + num / 100000));
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1112,7 +1113,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	if (num >= 10000) //1万の位
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][(num / 10000) % 10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + (num / 10000) % 10));
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1131,7 +1132,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	if (num >= 1000) //1000の位
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][(num / 1000) % 10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + (num / 1000) % 10));
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1150,7 +1151,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	if (num >= 100) //100の位
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][(num / 100) % 10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + (num / 100) % 10));
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1169,7 +1170,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	if (num >= 10) //10の位
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][(num / 10) % 10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + (num / 10) % 10));
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1186,7 +1187,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 		glDisable(GL_BLEND);
 	}
 
-	glBindTexture(GL_TEXTURE_2D, tex_num[font][num % 10]);
+	glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + num % 10));
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1205,7 +1206,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 	//ここからプラス記号の描画
 	if (num >= 100000)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + 10));
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -1223,7 +1224,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	else if (num >= 10000 && num <= 99999)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + 10));
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -1241,7 +1242,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	else if (num >= 1000 && num <= 9999)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + 10));
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -1259,7 +1260,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	else if (num >= 100 && num <= 999)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + 10));
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -1277,7 +1278,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	else if (num >= 10 && num <= 99)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + 10));
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -1295,7 +1296,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	else if (num >= 1 && num <= 9)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + 10));
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -1982,39 +1983,43 @@ void block_standby(void) //スコアアタックモード
 
 void standby_stage(int stage_num) //ステージモード
 {
-	time = stage_time_limit[stage_num] * 60;
+	time = stage_time_limit[stage_num] * 60; //制限時間をリセット
 
-	player->center_x = 0;
+	player->center_x = 0; //プレイヤーの初期位置をリセット
 	player->center_y = -8;
-	score = 0;
-	score_miss = 0;
-	lamp_timer_01 = 0;
+	score = 0; //スコアをリセット
+	score_miss = 0; //ミスの回数をリセット
+	lamp_timer_01 = 0; //各種アニメーションエフェクトをリセット
 	lamp_timer_02 = 0;
-	slot_select = 0;
-	slot[0] = 0;
+	slot_select = 0; //スロットの選択位置を最左に固定
+	slot[0] = 0; //スロットの情報をリセット
 	slot[1] = 0;
 	slot[2] = 0;
 	slot[3] = 0;
 	slot[4] = 0;
 
-
+	int *mdtn = &made_tango[0][0];
+	int *obbl = &object_block[0][0];
+	int *sbi = &stage_block_info[0][0];
+	int *ssc = &stage_slot_constraint[0][0];
+	int *si = &stage_info[0];
 
 	char file_path[32]; //ステージファイルを読み込むときのステージ名
 
-	for (i = 0; i <= 100; i++) //作った単語のやつをリセットする
+	for (i = 0; i < MADE_LIMIT; i++) //作った単語のやつをリセットする
 	{
-		made_tango[i][0] = 0;
-		made_tango[i][1] = 0;
-		made_tango[i][2] = 0;
-		made_tango[i][3] = 0;
-		made_tango[i][4] = 0;
+		*(mdtn + i * 5 + 0) = 0;
+		*(mdtn + i * 5 + 1) = 0;
+		*(mdtn + i * 5 + 2) = 0;
+		*(mdtn + i * 5 + 3) = 0;
+		*(mdtn + i * 5 + 4) = 0;
 	}
 
 	for (i = 0; i <= OBJECT_LIMIT; i++) //ゲーム内ブロックをリセットする
 	{
-		object_block[i][0] = 0;
-		object_block[i][1] = 0;
-		object_block[i][2] = 0;
+		*(obbl + i * 3 + 0) = 0;
+		*(obbl + i * 3 + 1) = 0;
+		*(obbl + i * 3 + 2) = 0;
 	}
 
 	object_on_stage = 0;
@@ -2024,12 +2029,9 @@ void standby_stage(int stage_num) //ステージモード
 	{
 		printf("%s\n", file_path);
 		std::cout << "<info 034: ステージファイルを開けませんでした" << std::endl;	exit(34);
-
 	}
 
-
 	i = 0;
-
 	while (fscanf_s(fp_stage_structure_info, "%d,%d,%d", &stage_block_info[i][0], &stage_block_info[i][1], &stage_block_info[i][2]) != EOF)
 	{
 		i++;
@@ -2039,12 +2041,11 @@ void standby_stage(int stage_num) //ステージモード
 
 	std::cout << "<info 035: ステージファイルを読み込みました>" << std::endl;
 
-
 	for (i = 0; i <= object_on_stage; i++) //ファイルの情報をobject_blockに書き出していく
 	{
-		object_block[i][0] = stage_block_info[i][0];
-		object_block[i][1] = stage_block_info[i][1] * (-64);
-		object_block[i][2] = stage_block_info[i][2] * (-64);
+		*(obbl + i * 3 + 0) = *(sbi + i * 3 + 0);
+		*(obbl + i * 3 + 1) = *(sbi + i * 3+ 1) * (-64);
+		*(obbl + i * 3 + 2) = *(sbi + i *3+ 2) * (-64);
 	}
 
 	int *slst = &slot_start[0];
@@ -2054,13 +2055,13 @@ void standby_stage(int stage_num) //ステージモード
 		*(slst + i) = choose_hiragana(); //ヒントブロックの表示ひらがなをばらけさせるためにそれぞれのオブジェクトに割り振る（ルーレットブロックが登場するステージもあるので）
 	}
 
-	if (stage_info[stage_select] >= 3 && stage_info[stage_select] <= 5) //語彙スロット固定の場合は固定平名を設定．
+	if (*(si+stage_select) >= 3 && *(si+stage_select) <= 5) //語彙スロット固定の場合は固定平名を設定．
 	{
-		slot[0] = stage_slot_constraint[stage_num][0];
-		slot[1] = stage_slot_constraint[stage_num][1];
-		slot[2] = stage_slot_constraint[stage_num][2];
-		slot[3] = stage_slot_constraint[stage_num][3];
-		slot[4] = stage_slot_constraint[stage_num][4];
+		slot[0] = *(ssc + stage_num * 5 + 0);
+		slot[1] = *(ssc + stage_num * 5 + 1);
+		slot[2] = *(ssc + stage_num * 5 + 2);
+		slot[3] = *(ssc + stage_num * 5 + 3);
+		slot[4] = *(ssc + stage_num * 5 + 4);
 	}
 
 	fclose(fp_stage_structure_info);
@@ -2165,6 +2166,13 @@ void display(void)
 	int *hrrl = &hiragana_roulette[0];
 	int *slst = &slot_start[0];
 	int *sl = &slot[0];
+	int *si = &stage_info[0];
+	int *sc = &stage_clear[0][0];
+	int *sn = &stage_nolma[0];
+	int *stl = &stage_time_limit[0];
+	int *stlg = &stage_time_limit_gold[0];
+	int *ssc = &stage_slot_constraint[0][0];
+	int *mdtn = &made_tango[0][0];
 
 
 	switch (scene)
@@ -2289,7 +2297,7 @@ void display(void)
 		UI_result03.SetImage(128, -136);
 		UI_result04.SetImage(128, -88);
 
-		block_hiragana[score_most_hiragana].SetImage(-224, -132);
+		(*(blhr + score_most_hiragana)).SetImage(-224, -132);
 		SetNumImage(-244, -244, 320, 40, score_get_hiragana, 0, 4);
 		SetNumImage(-244, -200, 320, 40, score_leave_hiragana, 0, 4);
 
@@ -2302,18 +2310,17 @@ void display(void)
 		glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
 		gluLookAt(camera_x, camera_y + 128, 0, camera_x, camera_y + 128, 1, 0, 1, 0);
 
-
-		if (mode == 0 && mode_mojisu == 3 || mode == 1 && stage_info[stage_select] % 10 == 3) //3文字モードの時のスロットの背景
+		if (mode == 0 && mode_mojisu == 3 || mode == 1 && *(si+stage_select) % 10 == 3) //3文字モードの時のスロットの背景
 		{
 			UI_slot_base_3.SetImage(0 + player->center_x, 200);
 		}
 
-		else if (mode == 0 && mode_mojisu == 4 || mode == 1 && stage_info[stage_select] % 10 == 4) //4文字モードの時のスロットの背景
+		else if (mode == 0 && mode_mojisu == 4 || mode == 1 && *(si + stage_select) % 10 == 4) //4文字モードの時のスロットの背景
 		{
 			UI_slot_base_4.SetImage(0 + player->center_x, 200);
 		}
 
-		else if (mode == 0 && mode_mojisu == 5 || mode == 1 && stage_info[stage_select] % 10 == 5) //5文字モードの時のスロットの背景
+		else if (mode == 0 && mode_mojisu == 5 || mode == 1 && *(si + stage_select) % 10 == 5) //5文字モードの時のスロットの背景
 		{
 			UI_slot_base_5.SetImage(0 + player->center_x, 200);
 		}
@@ -2343,54 +2350,54 @@ void display(void)
 			SetNumImage(360 + player->center_x, 176, 160, 20, time / 60, 0, 4); //タイマー
 			SetNumImage(444 + player->center_x, 224, 160, 20, score, 0, 4); //スコア（分子）
 			UI_num_aslash.SetImage(430 + player->center_x, 236); //分数のスラッシュ（名前忘れた）
-			SetNumImage(360 + player->center_x, 224, 160, 20, stage_nolma[stage_select], 0, 4); //ノルマ（分母）
+			SetNumImage(360 + player->center_x, 224, 160, 20, *(stage_nolma+stage_select), 0, 4); //ノルマ（分母）
 			SetNumImage(360 + player->center_x, 272, 160, 20, score_miss, 0, 4); //ミスの回数
 		}
 
 
 
-		if (mode == 1 && stage_info[stage_select] == 23)
+		if (mode == 1 && *(si+stage_select) == 23)
 		{
 			for (i = 0; i <= 2; i++)
 			{
-				if (stage_slot_constraint[stage_select][i] != 0) 
+				if (*(ssc + stage_select*5+i) != 0)
 				{
-					UI_slot_same[stage_slot_constraint[stage_select][i]].SetImage(174 - 174 * i + player->center_x, 176); 
+					UI_slot_same[*(ssc + stage_select * 5 + i)].SetImage(174 - 174 * i + player->center_x, 176);
 				}//ステージモードでスロットの文字がABABで固定の場合
 			}
 		}
 
-		else if (mode == 1 && stage_info[stage_select] == 24)
+		else if (mode == 1 && *(si+stage_select) == 24)
 		{
 			for (i = 0; i <= 3; i++)
 			{
-				if (stage_slot_constraint[stage_select][i] != 0)
+				if (*(ssc + stage_select*5+i) != 0)
 				{
-					UI_slot_same[stage_slot_constraint[stage_select][i]].SetImage(216 - 144 * i + player->center_x, 176); //ステージモードでスロットの文字ABABで固定の場合
+					UI_slot_same[*(ssc + stage_select * 5 + i)].SetImage(216 - 144 * i + player->center_x, 176); //ステージモードでスロットの文字ABABで固定の場合
 				}
 			}
 		}
 
-		else if (mode == 1 && stage_info[stage_select] == 25)
+		else if (mode == 1 && *(si+stage_select) == 25)
 		{
 			for (i = 0; i <= 4; i++)
 			{
-				if (stage_slot_constraint[stage_select][i] != 0)
+				if (*(ssc + stage_select * 5 + i) != 0)
 				{
-					UI_slot_same[stage_slot_constraint[stage_select][i]].SetImage(264 - 132 * i + player->center_x, 176); //ステージモードでスロットの文字ABABで固定の場合
+					UI_slot_same[*(ssc + stage_select * 5 + i)].SetImage(264 - 132 * i + player->center_x, 176); //ステージモードでスロットの文字ABABで固定の場合
 				}
 			}
 		}
 
 
-		if (mode == 0 && mode_mojisu == 3 || mode == 1 && stage_info[stage_select] % 10 == 3) //3文字モードの時のひらがなスロット
+		if (mode == 0 && mode_mojisu == 3 || mode == 1 && *(si + stage_select) % 10 == 3) //3文字モードの時のひらがなスロット
 		{
 			(*(blUI + *(sl + 0))).SetImage(174 + player->center_x, 176); //ひらがなスロット
 			(*(blUI + *(sl + 1))).SetImage(0 + player->center_x, 176);
 			(*(blUI + *(sl + 2))).SetImage(-174 + player->center_x, 176);
 		}
 
-		else if (mode == 0 && mode_mojisu == 4 || mode == 1 && stage_info[stage_select] % 10 == 4) //4文字モードの時ひらがなスロット
+		else if (mode == 0 && mode_mojisu == 4 || mode == 1 && *(si + stage_select) % 10 == 4) //4文字モードの時ひらがなスロット
 		{
 			(*(blUI + *(sl + 0))).SetImage(216 + player->center_x, 176); //ひらがなスロット
 			(*(blUI + *(sl + 1))).SetImage(72 + player->center_x, 176);
@@ -2398,7 +2405,7 @@ void display(void)
 			(*(blUI + *(sl + 3))).SetImage(-216 + player->center_x, 176);
 		}
 
-		else if (mode == 0 && mode_mojisu == 5 || mode == 1 && stage_info[stage_select] % 10 == 5) //5文字モードの時のひらがなスロット
+		else if (mode == 0 && mode_mojisu == 5 || mode == 1 && *(si + stage_select) % 10 == 5) //5文字モードの時のひらがなスロット
 		{
 			(*(blUI + *(sl + 0))).SetImage(264 + player->center_x, 176); //ひらがなスロット
 			(*(blUI + *(sl + 1))).SetImage(132 + player->center_x, 176);
@@ -2407,17 +2414,13 @@ void display(void)
 			(*(blUI + *(sl + 4))).SetImage(-264 + player->center_x, 176);
 		}
 
-
-
-
-
-		if (mode == 0 && mode_mojisu == 3 || mode == 1 && stage_info[stage_select] % 10 == 3) //3文字モードの時の語彙スロット固定orスロット制限がある場合
+		if (mode == 0 && mode_mojisu == 3 || mode == 1 && *(si + stage_select) % 10 == 3) //3文字モードの時の語彙スロット固定orスロット制限がある場合
 		{
 			for (i = 0; i <= 2; i++)
 			{
-				if (stage_slot_constraint[stage_select][i] != 0)
+				if (*(ssc + stage_select * 5 + i) != 0)
 				{
-					if (stage_info[stage_select] == 3)
+					if (*(si+stage_select) == 3)
 					{
 						UI_slot_locked.SetImage(174 - 174 * i + player->center_x, 176); //ステージモードでスロットの文字固定の場合
 					}
@@ -2425,13 +2428,13 @@ void display(void)
 			}
 		}
 
-		else if (mode == 0 && mode_mojisu == 4 || mode == 1 && stage_info[stage_select] % 10 == 4) //4文字モードの時の語彙スロット固定orスロット制限がある場合
+		else if (mode == 0 && mode_mojisu == 4 || mode == 1 && *(si + stage_select) % 10 == 4) //4文字モードの時の語彙スロット固定orスロット制限がある場合
 		{
 			for (i = 0; i <= 3; i++)
 			{
-				if (stage_slot_constraint[stage_select][i] != 0)
+				if (*(ssc + stage_select * 5 + i) != 0)
 				{
-					if (stage_info[stage_select] == 4)
+					if (*(si+stage_select) == 4)
 					{
 						UI_slot_locked.SetImage(216 - 144 * i + player->center_x, 176); //ステージモードでスロットの文字固定の場合
 					}
@@ -2439,13 +2442,13 @@ void display(void)
 			}
 		}
 
-		else if (mode == 0 && mode_mojisu == 5 || mode == 1 && stage_info[stage_select] % 10 == 5) //5文字モードの時の語彙スロット固定orスロット制限がある場合
+		else if (mode == 0 && mode_mojisu == 5 || mode == 1 && *(si + stage_select) % 10 == 5) //5文字モードの時の語彙スロット固定orスロット制限がある場合
 		{
 			for (i = 0; i <= 4; i++)
 			{
-				if (stage_slot_constraint[stage_select][i] != 0)
+				if (*(ssc + stage_select*5+i) != 0)
 				{
-					if (stage_info[stage_select] == 5)
+					if (*(si+stage_select) == 5)
 					{
 						UI_slot_locked.SetImage(264 - 132 * i + player->center_x, 176); //ステージモードでスロットの文字固定の場合
 					}
@@ -2457,17 +2460,17 @@ void display(void)
 
 		if (lamp_timer_01 == 0)
 		{
-			if (mode == 0 && mode_mojisu == 3 || mode == 1 && stage_info[stage_select] % 10 == 3) //3文字モードの時選択箇所
+			if (mode == 0 && mode_mojisu == 3 || mode == 1 && *(si + stage_select) % 10 == 3) //3文字モードの時選択箇所
 			{
 				UI_slot_highlight.SetImage(174 - slot_select * 174 + player->center_x, 176); //スロットの選択箇所
 			}
 
-			if (mode == 0 && mode_mojisu == 4 || mode == 1 && stage_info[stage_select] % 10 == 4) //4文字モードの時の選択箇所
+			if (mode == 0 && mode_mojisu == 4 || mode == 1 && *(si + stage_select) % 10 == 4) //4文字モードの時の選択箇所
 			{
 				UI_slot_highlight.SetImage(216 - slot_select * 144 + player->center_x, 176); //スロットの選択箇所
 			}
 
-			if (mode == 0 && mode_mojisu == 5 || mode == 1 && stage_info[stage_select] % 10 == 5) //5文字モードの時の選択箇所
+			if (mode == 0 && mode_mojisu == 5 || mode == 1 && *(si + stage_select) % 10 == 5) //5文字モードの時の選択箇所
 			{
 				UI_slot_highlight.SetImage(264 - slot_select * 132 + player->center_x, 176); //スロットの選択箇所
 			}
@@ -2479,20 +2482,20 @@ void display(void)
 			{
 			case false:
 			{
-				if (mode == 0 && mode_mojisu == 3 || mode == 1 && stage_info[stage_select] % 10 == 3) //3文字モードの時の語彙スロット点滅
+				if (mode == 0 && mode_mojisu == 3 || mode == 1 && *(si + stage_select) % 10 == 3) //3文字モードの時の語彙スロット点滅
 				{
 					UI_slot_decision.SetImage(174 + player->center_x, 176);
 					UI_slot_decision.SetImage(0 + player->center_x, 176);
 					UI_slot_decision.SetImage(-174 + player->center_x, 176);
 				}
-				else if (mode == 0 && mode_mojisu == 4 || mode == 1 && stage_info[stage_select] % 10 == 4) //4文字モードの時のの語彙スロット点滅
+				else if (mode == 0 && mode_mojisu == 4 || mode == 1 && *(si + stage_select) % 10 == 4) //4文字モードの時のの語彙スロット点滅
 				{
 					UI_slot_decision.SetImage(216 + player->center_x, 176);
 					UI_slot_decision.SetImage(72 + player->center_x, 176);
 					UI_slot_decision.SetImage(-72 + player->center_x, 176);
 					UI_slot_decision.SetImage(-216 + player->center_x, 176);
 				}
-				else if (mode == 0 && mode_mojisu == 5 || mode == 1 && stage_info[stage_select] % 10 == 5) //5文字モードの時のの語彙スロット点滅
+				else if (mode == 0 && mode_mojisu == 5 || mode == 1 && *(si + stage_select) % 10 == 5) //5文字モードの時のの語彙スロット点滅
 				{
 					UI_slot_decision.SetImage(264 + player->center_x, 176);
 					UI_slot_decision.SetImage(132 + player->center_x, 176);
@@ -2505,20 +2508,20 @@ void display(void)
 
 			case true:
 			{
-				if (mode == 0 && mode_mojisu == 3 || mode == 1 && stage_info[stage_select] % 10 == 3) //3文字モードの時の語彙スロット点滅
+				if (mode == 0 && mode_mojisu == 3 || mode == 1 && *(si + stage_select) % 10 == 3) //3文字モードの時の語彙スロット点滅
 				{
 					UI_slot_decision_green.SetImage(174 + player->center_x, 176);
 					UI_slot_decision_green.SetImage(0 + player->center_x, 176);
 					UI_slot_decision_green.SetImage(-174 + player->center_x, 176);
 				}
-				else if (mode == 0 && mode_mojisu == 4 || mode == 1 && stage_info[stage_select] % 10 == 4) //4文字モードの時のの語彙スロット点滅
+				else if (mode == 0 && mode_mojisu == 4 || mode == 1 && *(si + stage_select) % 10 == 4) //4文字モードの時のの語彙スロット点滅
 				{
 					UI_slot_decision_green.SetImage(216 + player->center_x, 176);
 					UI_slot_decision_green.SetImage(72 + player->center_x, 176);
 					UI_slot_decision_green.SetImage(-72 + player->center_x, 176);
 					UI_slot_decision_green.SetImage(-216 + player->center_x, 176);
 				}
-				else if (mode == 0 && mode_mojisu == 5 || mode == 1 && stage_info[stage_select] % 10 == 5) //4文字モードの時のの語彙スロット点滅
+				else if (mode == 0 && mode_mojisu == 5 || mode == 1 && *(si + stage_select) % 10 == 5) //4文字モードの時のの語彙スロット点滅
 				{
 					UI_slot_decision_green.SetImage(264 + player->center_x, 176);
 					UI_slot_decision_green.SetImage(132 + player->center_x, 176);
@@ -2609,12 +2612,12 @@ void display(void)
 
 			else if (*(obbl + i * 3) == 77) //お題箱描画
 			{
-				if (*(sl + 0) == 0 && *(sl + 1) == 0 && *(sl + 2) == 0 && *(sl + 3) == 0)
+				if (*(sl + 0) == 0 && *(sl + 1) == 0 && *(sl + 2) == 0 && *(sl + 3) == 0) //スロットが空っぽの時マ〇オのハテ〇ブロックみたいなテクスチャにする）
 				{
 					(*(blhr + 77)).SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2)));
 				}
 
-				else //スロットが空っぽじゃなかったらお題箱は起動しない
+				else //スロットが空っぽじゃなかったらお題箱は起動しない（マ〇オのたたいた後のブロックみたいなテクスチャにする）
 				{
 					(*(blhr + 78)).SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2)));
 				}
@@ -2683,36 +2686,36 @@ void display(void)
 		}
 
 
-		if (stage_info[stage_select] % 10 == 3) //ステージモードかつ3文字モードのとき，今まで作った単語を左上に表示
+		if (*(si+stage_select) % 10 == 3) //ステージモードかつ3文字モードのとき，今まで作った単語を左上に表示
 		{
 			for (i = 0; i <= 100; i++)
 			{
-				if (made_tango[i][0] != 0) { (*(blmn + made_tango[i][0])).SetImage(600 + player->center_x, -400 + i * 35); }
-				if (made_tango[i][1] != 0) { (*(blmn + made_tango[i][1])).SetImage(568 + player->center_x, -400 + i * 35); }
-				if (made_tango[i][2] != 0) { (*(blmn + made_tango[i][2])).SetImage(536 + player->center_x, -400 + i * 35); }
+				if (*(mdtn + i * 5 + 0) != 0) { (*(blmn + *(mdtn + i * 5 + 0))).SetImage(600 + player->center_x, -400 + i * 35); }
+				if (*(mdtn + i * 5 + 1) != 0) { (*(blmn + *(mdtn + i * 5 + 1))).SetImage(568 + player->center_x, -400 + i * 35); }
+				if (*(mdtn + i * 5 + 2) != 0) { (*(blmn + *(mdtn + i * 5 + 2))).SetImage(536 + player->center_x, -400 + i * 35); }
 			}
 		}
 
-		else if (stage_info[stage_select] % 10 == 4) //ステージモードかつ4文字モードのとき，今まで作った単語を左上に表示
+		else if (*(si+stage_select) % 10 == 4) //ステージモードかつ4文字モードのとき，今まで作った単語を左上に表示
 		{
-			for (i = 0; i <= 100; i++)
+			for (i = 0; i <= 100; i++) 
 			{
-				if (made_tango[i][0] != 0) { (*(blmn + made_tango[i][0])).SetImage(600 + player->center_x, -400 + i * 35); }
-				if (made_tango[i][1] != 0) { (*(blmn + made_tango[i][1])).SetImage(568 + player->center_x, -400 + i * 35); }
-				if (made_tango[i][2] != 0) { (*(blmn + made_tango[i][2])).SetImage(536 + player->center_x, -400 + i * 35); }
-				if (made_tango[i][3] != 0) { (*(blmn + made_tango[i][3])).SetImage(504 + player->center_x, -400 + i * 35); }
+				if (*(mdtn + i * 5 + 0) != 0) { (*(blmn + *(mdtn + i * 5 + 0))).SetImage(600 + player->center_x, -400 + i * 35); }
+				if (*(mdtn + i * 5 + 1) != 0) { (*(blmn + *(mdtn + i * 5 + 1))).SetImage(568 + player->center_x, -400 + i * 35); }
+				if (*(mdtn + i * 5 + 2) != 0) { (*(blmn + *(mdtn + i * 5 + 2))).SetImage(536 + player->center_x, -400 + i * 35); }
+				if (*(mdtn + i * 5 + 3) != 0) { (*(blmn + *(mdtn + i * 5 + 3))).SetImage(504 + player->center_x, -400 + i * 35); }
 			}
 		}
 
-		else if (stage_info[stage_select] % 10 == 5) //ステージモードかつ5文字モードのとき，今まで作った単語を左上に表示
+		else if (*(si+stage_select) % 10 == 5) //ステージモードかつ5文字モードのとき，今まで作った単語を左上に表示
 		{
 			for (i = 0; i <= 100; i++)
 			{
-				if (made_tango[i][0] != 0) { (*(blmn + made_tango[i][0])).SetImage(600 + player->center_x, -400 + i * 35); }
-				if (made_tango[i][1] != 0) { (*(blmn + made_tango[i][1])).SetImage(568 + player->center_x, -400 + i * 35); }
-				if (made_tango[i][2] != 0) { (*(blmn + made_tango[i][2])).SetImage(536 + player->center_x, -400 + i * 35); }
-				if (made_tango[i][3] != 0) { (*(blmn + made_tango[i][3])).SetImage(504 + player->center_x, -400 + i * 35); }
-				if (made_tango[i][4] != 0) { (*(blmn + made_tango[i][4])).SetImage(472 + player->center_x, -400 + i * 35); }
+				if (*(mdtn + i * 5 + 0) != 0) { (*(blmn + *(mdtn + i * 5 + 0))).SetImage(600 + player->center_x, -400 + i * 35); }
+				if (*(mdtn + i * 5 + 1) != 0) { (*(blmn + *(mdtn + i * 5 + 1))).SetImage(568 + player->center_x, -400 + i * 35); }
+				if (*(mdtn + i * 5 + 2) != 0) { (*(blmn + *(mdtn + i * 5 + 2))).SetImage(536 + player->center_x, -400 + i * 35); }
+				if (*(mdtn + i * 5 + 3) != 0) { (*(blmn + *(mdtn + i * 5 + 3))).SetImage(504 + player->center_x, -400 + i * 35); }
+				if (*(mdtn + i * 5 + 4) != 0) { (*(blmn + *(mdtn + i * 5 + 4))).SetImage(472 + player->center_x, -400 + i * 35); }
 			}
 		}
 
@@ -2808,15 +2811,15 @@ void display(void)
 			{
 				UI_clear_lamp_off.SetImage(-i * 128, -280);
 				UI_block_stage_num.SetImage(-i * 128, -348);
-				if (stage_info[stage_select + i] == 0)
+				if (*(si + stage_select + i) == 0)
 				{
 					UI_coming_soon64.SetImage(-i * 128, -236);
 				}
-				if (stage_clear[stage_select + i][0] == 1) { UI_clear_lamp_on_1.SetImage(-i * 128, -280); } //クリアランプの点灯
-				if (stage_clear[stage_select + i][1] == 1) { UI_clear_lamp_on_2.SetImage(-i * 128, -280); }
-				if (stage_clear[stage_select + i][2] == 1) { UI_clear_lamp_on_3.SetImage(-i * 128, -280); }
+				if (*(sc + stage_select * 5 + 0) == 1) { UI_clear_lamp_on_1.SetImage(-i * 128, -280); } //クリアランプの点灯
+				if (*(sc + stage_select * 5 + 1) == 1) { UI_clear_lamp_on_2.SetImage(-i * 128, -280); }
+				if (*(sc + stage_select * 5 + 2) == 1) { UI_clear_lamp_on_3.SetImage(-i * 128, -280); }
 
-				if (stage_clear[stage_select + i][0] == 1 && stage_clear[stage_select + i][1] == 1 && stage_clear[stage_select + i][2] == 1) //全点灯アニメーション
+				if (*(sc + stage_select * 5 + 0) == 1 && *(sc + stage_select * 5 + 1) == 1 && *(sc + stage_select * 5 + 2) == 1) //全点灯アニメーション
 				{
 					if (lamp_timer_clear % 12 <= 5) {
 						UI_clear_lamp_on_1_lux.SetImage(-i * 128, -280);
@@ -2833,7 +2836,7 @@ void display(void)
 			{
 				if (stage_select + i >= 100)  //桁数によってブロックへの数字の画像の納め方が変わるので分けた＆ステージが定義されている場合は明るいフォントで描画
 				{
-					if (stage_info[stage_select + i] == 0)
+					if ( *(si + stage_select+i) == 0)
 					{
 						SetNumImage(-38 - i * 128, -372, 288, 48, stage_select + i, 3, -16);
 					}
@@ -2846,7 +2849,7 @@ void display(void)
 
 				else if (stage_select + i >= 10 && stage_select + i <= 99)
 				{
-					if (stage_info[stage_select + i] == 0)
+					if (*(si + stage_select + i) == 0)
 					{
 						SetNumImage(-40 - i * 128, -372, 384, 48, stage_select + i, 3, -16);
 					}
@@ -2858,7 +2861,7 @@ void display(void)
 				}
 				else if (stage_select + i <= 9)
 				{
-					if (stage_info[stage_select + i] == 0)
+					if (*(si + stage_select + i) == 0)
 					{
 						SetNumImage(-24 - i * 128, -372, 384, 48, stage_select + i, 3, -16);
 					}
@@ -2871,15 +2874,15 @@ void display(void)
 			}
 		}
 
-		if (stage_info[stage_select] != 0) //ステージが定義されている場合ステージの概要情報と決定ボタンを描画
+		if (*(si+stage_select) != 0) //ステージが定義されている場合ステージの概要情報と決定ボタンを描画
 		{
 			UI_time_limit_description.SetImage(0, 32);
 			UI_16.SetImage(0, 128); //決定ボタン
 
-			SetNumImage(155, -16, 320, 40, stage_time_limit[stage_select], 0, 4); //ステージの制限時間
-			SetNumImage(155, 40, 320, 40, stage_time_limit_gold[stage_select], 0, 4); //ステージのメダル時間
+			SetNumImage(155, -16, 320, 40, *(stl + stage_select), 0, 4); //ステージの制限時間
+			SetNumImage(155, 40, 320, 40, *(stlg + stage_select), 0, 4); //ステージのメダル時間
 
-			if (stage_clear[stage_select][3] == 0) //今選んでるステージが未クリア（クリアタイム０）のときはーーー表示
+			if (*(sc + stage_select * 5 + 3) == 0) //今選んでるステージが未クリア（クリアタイム０）のときはーーー表示
 			{
 				SetNumImage(-376, -16, 160, 40, 1, 6, 4);
 				SetNumImage(-426, -16, 160, 40, 1, 6, 4);
@@ -2889,28 +2892,28 @@ void display(void)
 
 			else //クリアしたとき
 			{
-				SetNumImage(-376, -16, 160, 40, stage_clear[stage_select][3] / 100, 0, 4); //ステージのハイスコア整数部分
-				SetNumImage(-426, -16, 160, 40, (int)((stage_clear[stage_select][3] / 10) % 10), 0, 4); //ステージのハイスコア小数部分
+				SetNumImage(-376, -16, 160, 40, *(sc + stage_select * 5 + 3) / 100, 0, 4); //ステージのハイスコア整数部分
+				SetNumImage(-426, -16, 160, 40, (int)((*(sc + stage_select * 5 + 3) / 10) % 10), 0, 4); //ステージのハイスコア小数部分
 				SetNumImage(-401, -16, 160, 40, 0, 6, 4); //小数点
 			}
 
-			switch (stage_info[stage_select])//stage_infno情報は1の位でなんもじもーどか決まる
+			switch (*(si+stage_select))//stage_infno情報は1の位でなんもじもーどか決まる
 			{
 			case 3: 
 			{
-				if (stage_slot_constraint[stage_select][0] == 0 && stage_slot_constraint[stage_select][1] == 0 && stage_slot_constraint[stage_select][2] == 0)
+				if (*(ssc + stage_select * 5 + 0) == 0 && *(ssc + stage_select * 5 + 1) == 0 && *(ssc + stage_select * 5 + 2) == 0)
 				{
 					UI_mission_description_0.SetImage(0, -145); //スロット固定がない場合「ただのｎ単語作成ミッション」になる
-					SetNumImage(80, -166, 320, 40, stage_nolma[stage_select], 0, 4);
+					SetNumImage(80, -166, 320, 40, *(sn+stage_select), 0, 4);
 				}
 				else
 				{
 					UI_slot_constraint_description.SetImage(0, -160);
 					UI_mission_description_1.SetImage(0, -96); //スロット固定がある場合のn単語作成ミッション
-					SetNumImage(-48, -115, 320, 40, stage_nolma[stage_select], 0, 4);
-					block_hiragana[stage_slot_constraint[stage_select][0]].SetImage(-64, -160); //固定スロットの情報を描画
-					block_hiragana[stage_slot_constraint[stage_select][1]].SetImage(-128, -160);
-					block_hiragana[stage_slot_constraint[stage_select][2]].SetImage(-192, -160);
+					SetNumImage(-48, -115, 320, 40, *(sn + stage_select), 0, 4);
+					(*(blhr + *(ssc + stage_select * 5 + 0))).SetImage(-64, -160); //固定スロットの情報を描画
+					(*(blhr + *(ssc + stage_select * 5 + 1))).SetImage(-128, -160);
+					(*(blhr + *(ssc + stage_select * 5 + 2))).SetImage(-192, -160);
 				}
 
 
@@ -2918,42 +2921,42 @@ void display(void)
 
 			case 4:
 			{
-				if (stage_slot_constraint[stage_select][0] == 0 && stage_slot_constraint[stage_select][1] == 0 && stage_slot_constraint[stage_select][2] == 0 && stage_slot_constraint[stage_select][3] == 0)
+				if (*(ssc + stage_select * 5 + 0) == 0 && *(ssc + stage_select * 5 + 1) == 0 && *(ssc + stage_select * 5 + 2) == 0 && *(ssc + stage_select * 5 + 3) == 0)
 				{
 					UI_mission_description_0.SetImage(0, -145);//スロット固定がない場合「ただのｎ単語作成ミッション」になる
-					SetNumImage(80, -166, 320, 40, stage_nolma[stage_select], 0, 4);
+					SetNumImage(80, -166, 320, 40, *(sn + stage_select), 0, 4);
 				}
 				else
 				{
 					UI_slot_constraint_description.SetImage(0, -160);
 					UI_mission_description_1.SetImage(0, -96);//スロット固定がある場合のn単語作成ミッション
 
-					SetNumImage(-48, -115, 320, 40, stage_nolma[stage_select], 0, 4);
-					block_hiragana[stage_slot_constraint[stage_select][0]].SetImage(-64, -160); //固定スロットの情報を描画
-					block_hiragana[stage_slot_constraint[stage_select][1]].SetImage(-128, -160);
-					block_hiragana[stage_slot_constraint[stage_select][2]].SetImage(-192, -160);
-					block_hiragana[stage_slot_constraint[stage_select][3]].SetImage(-256, -160);
+					SetNumImage(-48, -115, 320, 40, *(sn + stage_select), 0, 4);
+					(*(blhr + *(ssc + stage_select * 5 + 0))).SetImage(-64, -160); //固定スロットの情報を描画
+					(*(blhr + *(ssc + stage_select * 5 + 1))).SetImage(-128, -160);
+					(*(blhr + *(ssc + stage_select * 5 + 2))).SetImage(-192, -160);
+					(*(blhr + *(ssc + stage_select * 5 + 3))).SetImage(-256, -160);
 				}
 
 			}break;
 
 			case 5:
 			{
-				if (stage_slot_constraint[stage_select][0] == 0 && stage_slot_constraint[stage_select][1] == 0 && stage_slot_constraint[stage_select][2] == 0 && stage_slot_constraint[stage_select][3] == 0 && stage_slot_constraint[stage_select][4] == 0)
+				if (*(ssc + stage_select * 5 + 0) == 0 && *(ssc + stage_select * 5 + 1) == 0 && *(ssc + stage_select * 5 + 2) == 0 && *(ssc + stage_select * 5 + 3) == 0 && *(ssc + stage_select * 5 + 4) == 0)
 				{
 					UI_mission_description_0.SetImage(0, -145);//スロット固定がない場合「ただのｎ単語作成ミッション」になる
-					SetNumImage(80, -166, 320, 40, stage_nolma[stage_select], 0, 4);
+					SetNumImage(80, -166, 320, 40, *(sn + stage_select), 0, 4);
 				}
 				else
 				{
 					UI_slot_constraint_description.SetImage(0, -160);
 					UI_mission_description_1.SetImage(0, -96);//スロット固定がある場合のn単語作成ミッショ
-					SetNumImage(-48, -115, 320, 40, stage_nolma[stage_select], 0, 4);
-					block_hiragana[stage_slot_constraint[stage_select][0]].SetImage(-64, -160); //固定スロットの情報を描画
-					block_hiragana[stage_slot_constraint[stage_select][1]].SetImage(-128, -160);
-					block_hiragana[stage_slot_constraint[stage_select][2]].SetImage(-192, -160);
-					block_hiragana[stage_slot_constraint[stage_select][3]].SetImage(-256, -160);
-					block_hiragana[stage_slot_constraint[stage_select][4]].SetImage(-320, -160);
+					SetNumImage(-48, -115, 320, 40, *(sn + stage_select), 0, 4);
+					(*(blhr + *(ssc + stage_select * 5 + 0))).SetImage(-64, -160); //固定スロットの情報を描画
+					(*(blhr + *(ssc + stage_select * 5 + 1))).SetImage(-128, -160);
+					(*(blhr + *(ssc + stage_select * 5 + 2))).SetImage(-192, -160);
+					(*(blhr + *(ssc + stage_select * 5 + 3))).SetImage(-256, -160);
+					(*(blhr + *(ssc + stage_select * 5 + 4))).SetImage(-320, -160);
 				}
 
 			}break;
@@ -2971,12 +2974,12 @@ void display(void)
 
 				UI_slot_constraint_description.SetImage(0, -160);
 				UI_mission_description_1.SetImage(0, -96);//スロット固定がある場合のn単語作成ミッショ
-				SetNumImage(-48, -115, 320, 40, stage_nolma[stage_select], 0, 4);
-				slot_same_block[stage_slot_constraint[stage_select][0]].SetImage(-64, -160); //スロット制限の情報を描画
-				slot_same_block[stage_slot_constraint[stage_select][1]].SetImage(-128, -160);
-				slot_same_block[stage_slot_constraint[stage_select][2]].SetImage(-192, -160);
-				if (stage_info[stage_select] >= 24) { slot_same_block[stage_slot_constraint[stage_select][3]].SetImage(-256, -160); }
-				if (stage_info[stage_select] >= 25) { slot_same_block[stage_slot_constraint[stage_select][4]].SetImage(-320, -160); }
+				SetNumImage(-48, -115, 320, 40, *(sn+stage_select), 0, 4);
+				slot_same_block[*(ssc + stage_select * 5 + 0)].SetImage(-64, -160); //スロット制限の情報を描画
+				slot_same_block[*(ssc + stage_select * 5 + 1)].SetImage(-128, -160);
+				slot_same_block[*(ssc + stage_select * 5 + 2)].SetImage(-192, -160);
+				if (*(si+stage_select) >= 24) { slot_same_block[*(ssc + stage_select * 5 + 3)].SetImage(-256, -160); }
+				if (*(si+stage_select) >= 25) { slot_same_block[*(ssc + stage_select * 5 + 4)].SetImage(-320, -160); }
 
 			}break;
 			}
@@ -3006,13 +3009,13 @@ void display(void)
 		UI_result_stage.SetImage(0, -160); //
 		UI_result_stage_title.SetImage(80, -416); //ステージ
 		SetNumImage(-300, -464, 768, 96, stage_select, 2, -16); //ステージ番号
-		SetNumImage(-180, -100, 256, 64, (stage_time_limit[stage_select] - (double)(time) / 60) * 100 /100 - score_miss * 30, 0, 4); //整数部分
-		SetNumImage(-250, -100, 256, 64, ((int)((stage_time_limit[stage_select] - (double)(time) / 60) * 100 )/10)%10 , 0, 4); //小数点部分
+		SetNumImage(-180, -100, 256, 64, (*(stl+stage_select) - (double)(time) / 60) * 100 /100 - score_miss * 30, 0, 4); //整数部分
+		SetNumImage(-250, -100, 256, 64, ((int)((*(stl + stage_select) - (double)(time) / 60) * 100 )/10)%10 , 0, 4); //小数点部分
 		SetNumImage(-210, -100, 256, 64, 0, 6, 4); //小数点
 		SetNumImage(-260, -192, 512, 64, score_miss, 0, 4); //▼
 		UI_15.SetImage(0, 64);
 
-		if (before_stageclear_time > (stage_time_limit[stage_select] - (double)(time) / 60) * 100 || before_stageclear_time == 0) //タイム更新 ファイルの0は未プレイを表している（0秒クリアはありえないので）
+		if (before_stageclear_time > (*(stl + stage_select) - (double)(time) / 60) * 100 || before_stageclear_time == 0) //タイム更新 ファイルの0は未プレイを表している（0秒クリアはありえないので）
 		{
 			UI_newrecord_stage.SetImage(420, -60); //new_Recordの表示
 		}
@@ -3031,7 +3034,7 @@ void display(void)
 				UI_result_stage_medal_2.SetImage(0, -160);
 			}
 
-			if (stage_time_limit[stage_select] - time / 60 - score_miss * 30 <= stage_time_limit_gold[stage_select])
+			if (*(stl+stage_select) - time / 60 - score_miss * 30 <= *(stlg + stage_select))
 			{
 				UI_result_stage_medal_3.SetImage(0, -160);
 			}
@@ -3045,7 +3048,7 @@ void display(void)
 				UI_result_stage_medal_2_lux.SetImage(0, -160);
 			}
 
-			if (stage_time_limit[stage_select] - time / 60 - score_miss * 30 <= stage_time_limit_gold[stage_select] )
+			if (*(stl + stage_select) - time / 60 - score_miss * 30 <= *(stlg + stage_select))
 			{
 				UI_result_stage_medal_3_lux.SetImage(0, -160);
 			}
@@ -3069,6 +3072,7 @@ void idle(void)
 	int *odhr4 = &odai_hiragana_4[0][0];
 	int *odhr5 = &odai_hiragana_5[0][0];
 	int *sl = &slot[0];
+	int *si = &stage_info[0];
 
 	// std::cout << <--------------------フレーム開始--------------------->" << std::endl;
 
@@ -3275,7 +3279,7 @@ void idle(void)
 					play_SE(SE_hit);
 					score_get_hiragana++;
 		
-					if (mode == 1 && stage_info[stage_select] >= 23 && stage_info[stage_select] <= 25) //A〇A〇のとき
+					if (mode == 1 && *(si+stage_select) >= 23 && *(si+stage_select) <= 25) //A〇A〇のとき
 					{
 						
 						if (stage_slot_constraint[stage_select][slot_select] != 0) //選択しているスロットがＡとかになってるとき
@@ -3338,7 +3342,7 @@ void idle(void)
 					*(sl + slot_select) = *(hrrl + ((hiragana_roulette_timer + *(slst + i) * 60)) % (74 * 60) / 60); //弾丸が衝突したブロックをスロットに格納（ランダムで選ばれたスロットの開始位置＋ひらがなの総数の結果ひらがなの総数を超えてしまう場合，ひらがなの総数で割ったあまりを求めることでルーレットの中身がひらがなの総数分から外れることを防いでいる）
 					
 
-					if (mode == 1 && stage_info[stage_select] >= 23 && stage_info[stage_select] <= 25) //A〇A〇のとき
+					if (mode == 1 && *(si+stage_select) >= 23 && *(si+stage_select) <= 25) //A〇A〇のとき
 					{
 
 						if (stage_slot_constraint[stage_select][slot_select] != 0) //選択しているスロットがＡとかになってるとき
@@ -3727,6 +3731,9 @@ void idle(void)
 
 void keyboard(unsigned char key, int x, int y)
 {
+	int *si = &stage_info[0];
+	int *ssc = &stage_slot_constraint[0][0];
+
 	switch (scene)
 	{
 	case 0:
@@ -3820,7 +3827,7 @@ void keyboard(unsigned char key, int x, int y)
 
 			if (lamp_timer_01 == 0)
 			{
-				if (mode == 0 && slot_select < mode_mojisu - 1 || mode == 1 && slot_select < stage_info[stage_select] % 10 - 1)
+				if (mode == 0 && slot_select < mode_mojisu - 1 || mode == 1 && slot_select < *(si+stage_select) % 10 - 1)
 				{
 					play_SE(SE_select);  slot_select++;
 				}
@@ -3829,22 +3836,22 @@ void keyboard(unsigned char key, int x, int y)
 
 		case 'i': //選択中のスロットの場所をからっぽにする
 		{
-			if (lamp_timer_02 == 0)
+			if (lamp_timer_02 == 0) //
 			{
-				if (slot[slot_select] != 0 && stage_slot_constraint[stage_select][slot_select] == 0 || (stage_info[stage_select] >= 23 && stage_info[stage_select] <= 25))
+				if (slot[slot_select] != 0 && *(ssc + stage_select * 5 + slot_select) == 0 || (*(si+stage_select) >= 23 && *(si+stage_select) <= 25))
 				{
 	
 					play_SE(SE_throw);
 					score_leave_hiragana++;
 					slot[slot_select] = 0;
 
-					if (mode == 1 && stage_info[stage_select] >= 23 && stage_info[stage_select] <= 25) //A〇A〇のとき
+					if (mode == 1 && *(si+stage_select) >= 23 && *(si+stage_select) <= 25) //A〇A〇のとき
 					{
-						if (stage_slot_constraint[stage_select][slot_select] != 0) //選択しているスロットがＡとかになってるとき
+						if (*(ssc + stage_select * 5 + slot_select) != 0) //選択しているスロットがＡとかになってるとき
 						{
 							for (k = 0; k <= 4; k++)
 							{
-								if (stage_slot_constraint[stage_select][slot_select] == stage_slot_constraint[stage_select][k])
+								if (*(ssc + stage_select * 5 + slot_select) == *(ssc + stage_select * 5 + k)) 
 								{
 									slot[k] = 0; //スロットを消すときも入れる時と一緒
 								}
@@ -3862,23 +3869,22 @@ void keyboard(unsigned char key, int x, int y)
 		{
 			if (lamp_timer_02 == 0)
 			{
-				if ((mode == 0 && mode_mojisu == 3 || mode == 1 && stage_info[stage_select] % 10 == 3) && slot[0] != 0 && slot[1] != 0 && slot[2] != 0)
-					//3文字モードの時のチェック語彙
+				if ((mode == 0 && mode_mojisu == 3 || mode == 1 && *(si+stage_select) % 10 == 3) && slot[0] != 0 && slot[1] != 0 && slot[2] != 0) //3文字モードの時のチェック語彙
 				{
 					check_goi(slot);
 					lamp_timer_02 = 100;
 					lamp_timer_01 = 50;
 
-					if (stage_info[stage_select] == 13) //しりとりモード
+					if (*(si+stage_select) == 13) //しりとりモード
 					{
-						stage_slot_constraint[stage_select][0] = slot[2];
+						*(ssc + stage_select * 5) = slot[2];
 						slot[0] = slot[2];
 
 						slot[1] = 0;
 						slot[2] = 0;
 					}
 
-					else if (stage_info[stage_select] == 23) //A〇A〇モード
+					else if (*(si+stage_select) == 23) //A〇A〇モード
 					{
 						slot[0] = 0;
 						slot[1] = 0;
@@ -3890,24 +3896,24 @@ void keyboard(unsigned char key, int x, int y)
 					else
 					{
 
-						if (stage_slot_constraint[stage_select][0] == 0) { slot[0] = 0; }
-						if (stage_slot_constraint[stage_select][1] == 0) { slot[1] = 0; }
-						if (stage_slot_constraint[stage_select][2] == 0) { slot[2] = 0; }
+						if (*(ssc + stage_select * 5 + 0) == 0) { slot[0] = 0; }
+						if (*(ssc + stage_select * 5 + 1) == 0) { slot[1] = 0; }
+						if (*(ssc + stage_select * 5 + 2) == 0) { slot[2] = 0; }
 
 					}
 
 					slot_select = 0; //スロットの選択位置を左にもどす
 				}
 
-				if ((mode == 0 && mode_mojisu == 4 || mode == 1 && stage_info[stage_select] % 10 == 4) && slot[0] != 0 && slot[1] != 0 && slot[2] != 0 && slot[3] != 0) //4文字モードの時のチェック語彙
+				if ((mode == 0 && mode_mojisu == 4 || mode == 1 && *(si+stage_select) % 10 == 4) && slot[0] != 0 && slot[1] != 0 && slot[2] != 0 && slot[3] != 0) //4文字モードの時のチェック語彙
 				{
 					check_goi(slot);
 					lamp_timer_02 = 100;
 					lamp_timer_01 = 50;
 
-					if (stage_info[stage_select] == 14) //しりとりモード
+					if (*(si+stage_select) == 14) //しりとりモード
 					{
-						stage_slot_constraint[stage_select][0] = slot[3];
+						*(ssc + stage_select * 5) = slot[3];
 						slot[0] = slot[3];
 
 						slot[1] = 0;
@@ -3915,7 +3921,7 @@ void keyboard(unsigned char key, int x, int y)
 						slot[3] = 0;
 					}
 
-					else if (stage_info[stage_select] == 24) //A〇A〇モード
+					else if (*(si+stage_select) == 24) //A〇A〇モード
 					{
 						slot[0] = 0;
 						slot[1] = 0;
@@ -3927,25 +3933,25 @@ void keyboard(unsigned char key, int x, int y)
 					else
 					{
 
-						if (stage_slot_constraint[stage_select][0] == 0) { slot[0] = 0; }
-						if (stage_slot_constraint[stage_select][1] == 0) { slot[1] = 0; }
-						if (stage_slot_constraint[stage_select][2] == 0) { slot[2] = 0; }
-						if (stage_slot_constraint[stage_select][3] == 0) { slot[3] = 0; }
+						if (*(ssc + stage_select * 5 + 0) == 0) { slot[0] = 0; }
+						if (*(ssc + stage_select * 5 + 1) == 0) { slot[1] = 0; }
+						if (*(ssc + stage_select * 5 + 2) == 0) { slot[2] = 0; }
+						if (*(ssc + stage_select * 5 + 3) == 0) { slot[3] = 0; }
 
 					}
 
 					slot_select = 0; //スロットの選択位置を左にもどす
 				}
 
-				if ((mode == 0 && mode_mojisu == 5 || mode == 1 && stage_info[stage_select] % 10 == 5) && slot[0] != 0 && slot[1] != 0 && slot[2] != 0 && slot[3] != 0 && slot[4] != 0) //5文字モードの時のチェック語彙
+				if ((mode == 0 && mode_mojisu == 5 || mode == 1 && *(si+stage_select) % 10 == 5) && slot[0] != 0 && slot[1] != 0 && slot[2] != 0 && slot[3] != 0 && slot[4] != 0) //5文字モードの時のチェック語彙
 				{
 					check_goi(slot);
 					lamp_timer_02 = 100;
 					lamp_timer_01 = 50;
 
-					if (stage_info[stage_select] == 15) //しりとりモード
+					if (*(si+stage_select) == 15) //しりとりモード
 					{
-						stage_slot_constraint[stage_select][0] = slot[4];
+						*(ssc + stage_select * 5) = slot[4];
 						slot[0] = slot[4];
 
 						slot[1] = 0;
@@ -3954,7 +3960,7 @@ void keyboard(unsigned char key, int x, int y)
 						slot[4] = 0;
 					}
 
-					else if (stage_info[stage_select] == 25) //A〇A〇モード
+					else if (*(si+stage_select) == 25) //A〇A〇モード
 					{
 						slot[0] = 0;
 						slot[1] = 0;
@@ -3966,11 +3972,11 @@ void keyboard(unsigned char key, int x, int y)
 					else
 					{
 
-						if (stage_slot_constraint[stage_select][0] == 0) { slot[0] = 0; }
-						if (stage_slot_constraint[stage_select][1] == 0) { slot[1] = 0; }
-						if (stage_slot_constraint[stage_select][2] == 0) { slot[2] = 0; }
-						if (stage_slot_constraint[stage_select][3] == 0) { slot[3] = 0; }
-						if (stage_slot_constraint[stage_select][4] == 0) { slot[4] = 0; }
+						if (*(ssc + stage_select * 5 +0) == 0) { slot[0] = 0; }
+						if (*(ssc + stage_select * 5 + 1) == 0) { slot[1] = 0; }
+						if (*(ssc + stage_select * 5 + 2) == 0) { slot[2] = 0; }
+						if (*(ssc + stage_select * 5 + 3) == 0) { slot[3] = 0; }
+						if (*(ssc + stage_select * 5 + 4) == 0) { slot[4] = 0; }
 
 					}
 
@@ -4040,7 +4046,7 @@ void keyboard(unsigned char key, int x, int y)
 	{
 		switch (key) {
 		case 'i': {	play_SE(SE_back);  scene = 7; } break; //モード選択画面に戻る
-		case 'k': {if (stage_info[stage_select] != 0) { play_SE(SE_enter);  scene = 1; } } break; //ステージが定義されていれば次のシーンへ
+		case 'k': {if (*(si+stage_select) != 0) { play_SE(SE_enter);  scene = 1; } } break; //ステージが定義されていれば次のシーンへ
 		case 'a': { if (stage_select >= 2) { play_SE(SE_select);   stage_select--; }} break; //ステージ番号選択←
 		case 'd': {	if (stage_select <= STAGE_AVAILABLE - 1) { play_SE(SE_select); stage_select++; }} break; //ステージ番号選択→
 		case 'j': { if (stage_select >= 12) { play_SE(SE_select);  stage_select -= 10; } else { stage_select = 1; }} break;
@@ -4471,7 +4477,7 @@ void Init() {
 	//コピー用
 	//.LoadImagePNG2(.file, .tex);
 
-	player = new AnimationChara(0.0, 0.0, 64.0, 64.0, L"./pic/player_walk1.png");
+	player = new AnimationChara(0.0, 0.0, 64.0, 64.0, L"./pic/player_walk1.png"); //ゲーム上で移動するオブジェクト
 	player->LoadPNGImage(L"./pic/player_walk2.png");
 	player->LoadPNGImage(L"./pic/player_walk3.png");
 	player->LoadPNGImage(L"./pic/player_jump.png");
@@ -4672,7 +4678,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.5.0");
+	glutCreateWindow("goipachi ver.1.5.1");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

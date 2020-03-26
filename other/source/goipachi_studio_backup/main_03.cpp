@@ -74,7 +74,7 @@ double camera_x = 0; //カメラの位置
 double camera_y = 0;
 
 
-class GameObject 
+class GameObject
 {
 public:
 	double center_x = 0;
@@ -87,7 +87,7 @@ public:
 		:center_x(x), center_y(y), size_x(size_x), size_y(size_y) {
 
 		file = filename;
-		tex = *filename; 
+		tex = *filename;
 		GdiplusStartup(&gdiPT, &gdiPSI, NULL);
 		glEnable(GL_TEXTURE_2D);
 		Bitmap bmp(filename);
@@ -346,12 +346,13 @@ GameObject UI_confirm02 = GameObject(0, 0, 768, 384, L"./pic/export_confirm.png"
 GameObject UI_confirm03 = GameObject(0, 0, 768, 384, L"./pic/renew_confirm.png"); //新規ステージを作成します
 GameObject UI_confirm04 = GameObject(0, 0, 768, 384, L"./pic/import_done.png"); //ステージＸをインポートしました
 GameObject UI_confirm05 = GameObject(0, 0, 768, 384, L"./pic/export_done.png"); //ステージｘをエクスポートしました
-GameObject UI_start= GameObject(0, 0, 64, 64, L"./pic/player_walk2.png");
+GameObject UI_confirm06 = GameObject(0, 0, 768, 384, L"./pic/cannot_setblock.png"); //ステージｘをエクスポートしました
+GameObject UI_start = GameObject(0, 0, 64, 64, L"./pic/player_walk2.png");
 GameObject UI_cursor_A = GameObject(0, 0, 64, 64, L"./pic/block_select.png"); //エディタ上画面でのブロック選択
 GameObject UI_cursor_Bm = GameObject(0, 0, 400, 50, L"./pic/select_koumooku.png"); //エディタ下画面でのメニュー選択
 GameObject UI_cursor_Bb = GameObject(0, 0, 34, 34, L"./pic/block_select.png"); //エディタ下画面でのブロック選択
 GameObject UI_kirikae = GameObject(0, 0, 128, 64, L"./pic/UI_kirikae.png"); //エディタ画面の上下きりかえ
-GameObject UI_sousa_00= GameObject(0, 0, 256, 128, L"./pic/UI_sousa_00.png"); //エディタ画面での操作ＵＩ
+GameObject UI_sousa_00 = GameObject(0, 0, 256, 128, L"./pic/UI_sousa_00.png"); //エディタ画面での操作ＵＩ
 GameObject UI_sousa_02 = GameObject(0, 0, 256, 128, L"./pic/UI_sousa_02.png"); //エディタ画面での操作ＵＩ
 GameObject UI_sousa_03 = GameObject(0, 0, 256, 128, L"./pic/UI_sousa_03.png"); //エディタ画面での操作ＵＩ
 GameObject UI_sousa_04 = GameObject(0, 0, 256, 128, L"./pic/UI_sousa_04.png"); //エディタ画面での操作ＵＩ
@@ -389,12 +390,13 @@ void LoadImagePNG(const wchar_t* filename, GLuint &texture)
 	bmp.UnlockBits(&data);
 }
 
-
 void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, int d) { //プレイヤーエフェクトとしての数字 //dは文字同士の間隔
 
-	if (num >= 100000) //10万の位
+	GLuint *tn = &tex_num[0][0];
+
+	if (num >= 100000) //10万の位 *(tn+font*11+(num / 10000) % 10)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][num / 100000]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + num / 100000));
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -413,7 +415,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	if (num >= 10000) //1万の位
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][(num / 10000) % 10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + (num / 10000) % 10));
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -432,7 +434,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	if (num >= 1000) //1000の位
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][(num / 1000) % 10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + (num / 1000) % 10));
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -451,7 +453,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	if (num >= 100) //100の位
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][(num / 100) % 10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + (num / 100) % 10));
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -470,7 +472,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	if (num >= 10) //10の位
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][(num / 10) % 10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + (num / 10) % 10));
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -487,7 +489,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 		glDisable(GL_BLEND);
 	}
 
-	glBindTexture(GL_TEXTURE_2D, tex_num[font][num % 10]);
+	glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + num % 10));
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -506,7 +508,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 	//ここからプラス記号の描画
 	if (num >= 100000)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + 10));
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -524,7 +526,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	else if (num >= 10000 && num <= 99999)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + 10));
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -542,7 +544,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	else if (num >= 1000 && num <= 9999)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + 10));
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -560,7 +562,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	else if (num >= 100 && num <= 999)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + 10));
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -578,7 +580,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	else if (num >= 10 && num <= 99)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + 10));
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -596,7 +598,7 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 
 	else if (num >= 1 && num <= 9)
 	{
-		glBindTexture(GL_TEXTURE_2D, tex_num[font][10]);
+		glBindTexture(GL_TEXTURE_2D, *(tn + font * 11 + 10));
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_TEXTURE_2D);
@@ -613,13 +615,12 @@ void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, 
 	}
 }
 
-
 void new_stage() //新規ステージ作成
 {
 	for (i = 0; i <= OBJECT_LIMIT; i++) //ファイルの情報をobject_blockに書き出していく
 	{
 		object_block[i][0] = 0;
-		object_block[i][1] =0;
+		object_block[i][1] = 0;
 		object_block[i][2] = 0;
 	}
 
@@ -689,7 +690,7 @@ void import_stage(int stage_num) //ステージファイルを読み込む
 		object_block[i][2] = stage_block_info[i][2] * (-64);
 	}
 
-	stage_info_edit = stage_info[stage_num];
+	stage_info_edit = stage_info[stage_num]; //ステージファイルに保存されている情報をエディタ画面のほうへもっていく
 	stage_nolma_edit = stage_nolma[stage_num];
 	stage_time_limit_edit = stage_time_limit[stage_num];
 	stage_time_limit_gold_edit = stage_time_limit_gold[stage_num];
@@ -710,8 +711,7 @@ void export_stage(int stage_num) //ステージファイルを書き出す
 {
 	char file_path[32]; //ステージファイルを読み込むときのステージ名
 
-
-	stage_info[stage_num] = stage_info_edit;
+	stage_info[stage_num] = stage_info_edit; //エディタ画面で設定している情報をそれぞれ現在選択しているステージに書き出す
 	stage_nolma[stage_num] = stage_nolma_edit;
 	stage_time_limit[stage_num] = stage_time_limit_edit;
 	stage_time_limit_gold[stage_num] = stage_time_limit_gold_edit;
@@ -731,7 +731,7 @@ void export_stage(int stage_num) //ステージファイルを書き出す
 
 	for (i = 0; i < object_on_stage; i++)
 	{
-		fprintf(fp_stage_structure_info, "%d,%d,%d\n", object_block[i][0], (object_block[i][1])/(-64)-20, object_block[i][2]/(-64)); //★
+		fprintf(fp_stage_structure_info, "%d,%d,%d\n", object_block[i][0], (object_block[i][1]) / (-64) - 20, object_block[i][2] / (-64)); //★
 	}
 
 	fclose(fp_stage_structure_info);
@@ -860,21 +860,21 @@ void display(void)
 	glLoadIdentity();
 
 	glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);
-	gluLookAt(camera_x, camera_y+128, 0, camera_x, camera_y+128, 1, 0, 1, 0);
+	gluLookAt(camera_x, camera_y + 128, 0, camera_x, camera_y + 128, 1, 0, 1, 0);
 
 	int *obbl = &object_block[0][0];
 	GameObject *blhr = &block_hiragana[0];
 	GameObject *blmn = &block_hiragana_mini[0];
 
-	UI_02.SetImage(-400-640 + camera_x,194);
-	UI_01.SetImage(400-640 + camera_x,194);
+	UI_02.SetImage(-400 - 640 + camera_x, 194);
+	UI_01.SetImage(400 - 640 + camera_x, 194);
 
 
 	for (i = 0; i < object_on_stage; i++) //オブジェクトとなるブロックここで全部描画
 	{
 		if (*(obbl + i * 3) != 0)
 		{
-			(*(blhr + *(obbl + i * 3))).SetImage(double(*(obbl + i * 3 + 1)+640), double(*(obbl + i * 3 + 2)));
+			(*(blhr + *(obbl + i * 3))).SetImage(double(*(obbl + i * 3 + 1) + 640), double(*(obbl + i * 3 + 2)));
 		}
 	}
 	UI_start.SetImage(-640, 0);
@@ -884,13 +884,13 @@ void display(void)
 		SetNumImage(-320 + camera_x, 100, 192, 24, stage_select_edit, 0, 4); //ステージ番号
 	}
 
-	SetNumImage(-360 + camera_x, 136, 192, 24, stage_info_edit%10, 0, 4); //みしょん情報の描画
+	SetNumImage(-360 + camera_x, 136, 192, 24, stage_info_edit % 10, 0, 4); //みしょん情報の描画
 
-	switch(stage_info_edit)
+	switch (stage_info_edit)
 	{
 	case 3: case 4: case 5:
 	{
-		UI_stage_info_0.SetImage(-315 + camera_x , 148); //スロット固定
+		UI_stage_info_0.SetImage(-315 + camera_x, 148); //スロット固定
 	}break;
 
 	case 13: case 14: case 15:
@@ -943,44 +943,44 @@ void display(void)
 	{
 		for (i = 0; i <= 4; i++)
 		{
-			block_hiragana_mini[k*5+i+1].SetImage(-960+34*k + camera_x , 120+34*i);
+			block_hiragana_mini[k * 5 + i + 1].SetImage(-960 + 34 * k + camera_x, 120 + 34 * i);
 		}
 	}
 
 	for (i = 0; i <= 2; i++) //やゆよ
 	{
-		block_hiragana_mini[36+i].SetImage(-960 + 34 * 7 + camera_x, 120 + 68 * i);
+		block_hiragana_mini[36 + i].SetImage(-960 + 34 * 7 + camera_x, 120 + 68 * i);
 	}
 
 	for (i = 0; i <= 4; i++) //らりるれろ
 	{
-		block_hiragana_mini[39+i].SetImage(-960 + 34 * 8 + camera_x, 120 + 34 * i);
+		block_hiragana_mini[39 + i].SetImage(-960 + 34 * 8 + camera_x, 120 + 34 * i);
 	}
 	for (i = 0; i <= 3; i++) //わをんっー
 	{
-		block_hiragana_mini[44 + i].SetImage(-960 + 34 * 9 + camera_x, 120 +34* i);
+		block_hiragana_mini[44 + i].SetImage(-960 + 34 * 9 + camera_x, 120 + 34 * i);
 	}
-	block_hiragana_mini[50].SetImage(-960 + 34 * 9+ camera_x , 120 + 34 * 4);
+	block_hiragana_mini[50].SetImage(-960 + 34 * 9 + camera_x, 120 + 34 * 4);
 
 	block_hiragana_mini[79].SetImage(-960 + 34 * 10 + camera_x, 120 + 34 * 0); //ヴ
 	block_hiragana_mini[48].SetImage(-960 + 34 * 10 + camera_x, 120 + 34 * 2); //ルーレット
 	block_hiragana_mini[49].SetImage(-960 + 34 * 10 + camera_x, 120 + 34 * 3); //木箱
 	block_hiragana_mini[76].SetImage(-960 + 34 * 10 + camera_x, 120 + 34 * 4); //地面
 
-	UI_kirikae.SetImage(-1200 + camera_x,25);
+	UI_kirikae.SetImage(-1200 + camera_x, 25);
 
 
 	for (k = 10; k <= 14; k++) //濁点
 	{
 		for (i = 0; i <= 4; i++)
 		{
-			block_hiragana_mini[k * 5 + i + 1].SetImage(-960 + 34 * (k+1) + camera_x , 120 + 34 * i);
+			block_hiragana_mini[k * 5 + i + 1].SetImage(-960 + 34 * (k + 1) + camera_x, 120 + 34 * i);
 		}
 	}
 
-	if (timer_cursor_lux % 10 >=2 && mode_edit == 0)
+	if (timer_cursor_lux % 10 >= 2 && mode_edit == 0)
 	{
-		UI_cursor_A.SetImage(cursorA.x * (-64)-640, cursorA.y * (-64)); //ステージ編集（上画面）でのカーソル描画(点滅）
+		UI_cursor_A.SetImage(cursorA.x * (-64) - 640, cursorA.y * (-64)); //ステージ編集（上画面）でのカーソル描画(点滅）
 	}
 
 	if (mode_edit == 0)
@@ -990,12 +990,12 @@ void display(void)
 
 	if (mode_edit == 1)
 	{
-		UI_cursor_A.SetImage(cursorA.x * (-64)-640, cursorA.y * (-64)); //ステージ編集（上画面）でのカーソル描画
+		UI_cursor_A.SetImage(cursorA.x * (-64) - 640, cursorA.y * (-64)); //ステージ編集（上画面）でのカーソル描画
 	}
 
 	if (timer_cursor_lux % 10 >= 2 && mode_edit == 1 && cursorB.x >= 0 && cursorB.x <= 15 && cursorB.y >= 0 && cursorB.y <= 4) //下画面の設置したいひらがなのカーソル描画（点滅）
 	{
-		UI_cursor_Bb.SetImage(-960 + cursorB.x * (34) + camera_x, 120+cursorB.y * (34));
+		UI_cursor_Bb.SetImage(-960 + cursorB.x * (34) + camera_x, 120 + cursorB.y * (34));
 	}
 
 	if (mode_edit == 1 && cursorB.x >= 0 && cursorB.x <= 15 && cursorB.y >= 0 && cursorB.y <= 4) //下画面の設置したいひらがな UI
@@ -1003,9 +1003,9 @@ void display(void)
 		UI_sousa_02.SetImage(-180 + camera_x, 0);
 	}
 
-	if (timer_cursor_lux % 10 >= 2 && mode_edit == 1 && cursorB.x >=16 && cursorB.y >=0 && cursorB.y <= 3) //下画面でのステージ情報編集のカーソル描画（固定スロット情報以外）点滅）
+	if (timer_cursor_lux % 10 >= 2 && mode_edit == 1 && cursorB.x >= 16 && cursorB.y >= 0 && cursorB.y <= 3) //下画面でのステージ情報編集のカーソル描画（固定スロット情報以外）点滅）
 	{
-		UI_cursor_Bm.SetImage(-280 + camera_x, 148+cursorB.y * 30);
+		UI_cursor_Bm.SetImage(-280 + camera_x, 148 + cursorB.y * 30);
 	}
 
 	if (mode_edit == 1 && cursorB.x >= 16 && cursorB.y >= 0 && cursorB.y <= 3) //下画面でのステージ情報編集（固定スロット情報以外）UI
@@ -1013,12 +1013,12 @@ void display(void)
 		UI_sousa_04.SetImage(-180 + camera_x, 0);
 	}
 
-	if (timer_cursor_lux % 10 >= 2 && mode_edit == 1 && cursorB.x >=17 || timer_cursor_lux % 10 >= 2 && mode_edit == 1 && cursorB.x == 16 && cursorB.y == 4) //下画面でのステージ情報編集のカーソル描画（固定スロット情報）点滅）
+	if (timer_cursor_lux % 10 >= 2 && mode_edit == 1 && cursorB.x >= 17 || timer_cursor_lux % 10 >= 2 && mode_edit == 1 && cursorB.x == 16 && cursorB.y == 4) //下画面でのステージ情報編集のカーソル描画（固定スロット情報）点滅）
 	{
 		UI_cursor_Bb.SetImage(-930 + camera_x + 34 * cursorB.x, 266);
 	}
 
-	if ( mode_edit == 1 && cursorB.x >= 17 || mode_edit == 1 && cursorB.x == 16 && cursorB.y == 4) //下画面でのステージ情報編集 （固定スロット） UI
+	if (mode_edit == 1 && cursorB.x >= 17 || mode_edit == 1 && cursorB.x == 16 && cursorB.y == 4) //下画面でのステージ情報編集 （固定スロット） UI
 	{
 		UI_sousa_03.SetImage(-180 + camera_x, 0);
 	}
@@ -1028,11 +1028,11 @@ void display(void)
 		UI_cursor_Bb.SetImage(-960 + cursorB.x * (34) + camera_x, 120 + cursorB.y * (34));
 	}
 
-	if ( mode_edit == 0 && cursorB.x >= 16 && cursorB.y >= 0 && cursorB.y <= 3) //下画面でのステージ情報編集のカーソル描画（固定スロット情報以外）
+	if (mode_edit == 0 && cursorB.x >= 16 && cursorB.y >= 0 && cursorB.y <= 3) //下画面でのステージ情報編集のカーソル描画（固定スロット情報以外）
 	{
 		UI_cursor_Bm.SetImage(-280 + camera_x, 148 + cursorB.y * 30);
 	}
-	
+
 
 	if (mode_edit == 0 && cursorB.x <= 20 && cursorB.x >= 17 || mode_edit == 0 && cursorB.x == 16 && cursorB.y == 4) //下画面でのステージ情報編集のカーソル描画（固定スロット情報）
 	{
@@ -1041,8 +1041,8 @@ void display(void)
 
 	if (displayGUI == 1) //ステージを読み込むのを確認する画面
 	{
-		UI_confirm01.SetImage(camera_x-640, -72);
-		SetNumImage(-232 + camera_x - 640,-216,640,80,stage_select_confirm,2,-24);
+		UI_confirm01.SetImage(camera_x - 640, -72);
+		SetNumImage(-232 + camera_x - 640, -216, 640, 80, stage_select_confirm, 2, -24);
 	}
 
 	if (displayGUI == 2) //ステージをデータに書き込むのを確認する画面
@@ -1066,13 +1066,18 @@ void display(void)
 		UI_confirm05.SetImage(camera_x - 640, -72);
 	}
 
+	if (displayGUI == 6) //これ以上設置できません
+	{
+		UI_confirm06.SetImage(camera_x - 640, -72);
+	}
+
 
 	glutSwapBuffers();
 }
 
 void idle(void)
 {
-	
+
 }
 
 void keyboard(unsigned char key, int x, int y)
@@ -1119,7 +1124,7 @@ void keyboard(unsigned char key, int x, int y)
 
 					for (i = 0; i < object_on_stage; i++)
 					{
-						if (object_block[i][1] == cursorA.x * (-64) -1280 && object_block[i][2] == cursorA.y*(-64) && object_block[i][0] != 0)
+						if (object_block[i][1] == cursorA.x * (-64) - 1280 && object_block[i][2] == cursorA.y*(-64) && object_block[i][0] != 0)
 						{
 							std::cout << "<info 104: この場所には既にブロックがあるので新しくブロックを置けません" << std::endl;
 							flag_set = false;
@@ -1129,10 +1134,15 @@ void keyboard(unsigned char key, int x, int y)
 
 					if (flag_set == true) //選んでいるカーソルの場所に何もなければ設置できる
 					{
-						object_block[object_on_stage][0] = select_hiragana;
-						object_block[object_on_stage][1] = cursorA.x * (-64) - 1280;
-						object_block[object_on_stage][2] = cursorA.y * (-64);
-						object_on_stage++;
+						if (object_on_stage < OBJECT_LIMIT) //オブジェクトの上限数に達していなければ新しく設置できる
+						{
+							object_block[object_on_stage][0] = select_hiragana;
+							object_block[object_on_stage][1] = cursorA.x * (-64) - 1280;
+							object_block[object_on_stage][2] = cursorA.y * (-64);
+							object_on_stage++;
+						}
+						else { displayGUI = 6; } //これ以上設置できませんのポップを出す
+
 					}
 
 					flag_set = true;
@@ -1143,7 +1153,7 @@ void keyboard(unsigned char key, int x, int y)
 			{
 				for (i = 0; i < object_on_stage; i++)
 				{
-					if (object_block[i][1] == cursorA.x * (-64) -1280 && object_block[i][2] == cursorA.y*(-64) && object_block[i][0] != 0)
+					if (object_block[i][1] == cursorA.x * (-64) - 1280 && object_block[i][2] == cursorA.y*(-64) && object_block[i][0] != 0)
 					{
 						object_block[i][0] = 0;
 						object_block[i][1] = 0;
@@ -1206,21 +1216,21 @@ void keyboard(unsigned char key, int x, int y)
 
 			case 'a': //下半分で配置するブロックを選択 or B.xが16以上のときはステージ情報を選択
 			{
-				if (cursorB.x <= 15 && cursorB.y <= 3 || cursorB.x <= 19 && cursorB.y == 4) { cursorB.x++; select_hiragana = def_hiragana(cursorB.x, cursorB.y);  }
+				if (cursorB.x <= 15 && cursorB.y <= 3 || cursorB.x <= 19 && cursorB.y == 4) { cursorB.x++; select_hiragana = def_hiragana(cursorB.x, cursorB.y); }
 			}break;
 
 			case 'd': //下半分で配置するブロックを選択 or B.xが16以上のときはステージ情報を選択
 			{
 				if (cursorB.x >= 1) {
 					cursorB.x--; select_hiragana = def_hiragana(cursorB.x, cursorB.y);
-				} 
+				}
 			}break;
 
 			case 'w':  //下半分で配置するブロックを選択 or B.xが16以上のときはステージ情報を選択
 			{
 				if (cursorB.x >= 17) { cursorB.x = 16; cursorB.y = 3; }
 				else if (cursorB.y >= 1) {
-					cursorB.y--; select_hiragana = def_hiragana(cursorB.x, cursorB.y); 
+					cursorB.y--; select_hiragana = def_hiragana(cursorB.x, cursorB.y);
 				}
 			}break;
 
@@ -1236,7 +1246,7 @@ void keyboard(unsigned char key, int x, int y)
 						cursorB.y++; select_hiragana = def_hiragana(cursorB.x, cursorB.y);
 					}
 				}
-				
+
 			}break;
 
 			case 'j':
@@ -1475,7 +1485,7 @@ void keyboard(unsigned char key, int x, int y)
 		}break;
 
 		case 'j': //インポートしたいステージ番号ー10
-		{ 
+		{
 			if (stage_select_confirm >= 12) { stage_select_confirm -= 10; }
 			else if (stage_select_confirm >= 1) { stage_select_confirm = 0; }
 		}break;
@@ -1524,7 +1534,7 @@ void keyboard(unsigned char key, int x, int y)
 
 		case 'l': //エクスポートしたいステージ番号＋10
 		{
-			if (stage_select_confirm <= STAGE_LIMIT - 11) { stage_select_confirm+=10; }
+			if (stage_select_confirm <= STAGE_LIMIT - 11) { stage_select_confirm += 10; }
 			else if (stage_select_confirm <= STAGE_LIMIT - 1) { stage_select_confirm = STAGE_LIMIT; }
 		}break;
 
@@ -1564,23 +1574,7 @@ void keyboard(unsigned char key, int x, int y)
 		}
 	}break;
 
-	case 4: //インポートできましたの画面
-	{
-		switch (key) {
-
-
-		case 'k':
-		{
-			displayGUI = 0;
-		}break;
-
-		default:
-			break;
-
-		}
-	}break;
-
-	case 5: //エクスポートできましたの画面
+	case 4: case 5: case 6://4:インポートできました 5:エクスポートしました 6:これ以上設置できませんの画面　ここでは「K:はい」以外の選択肢がない
 	{
 		switch (key) {
 
@@ -1596,6 +1590,7 @@ void keyboard(unsigned char key, int x, int y)
 		}
 	}break;
 	}
+
 
 }
 
@@ -1658,6 +1653,7 @@ void Init() {
 	UI_confirm03.LoadImagePNG2(UI_confirm03.file, UI_confirm03.tex);
 	UI_confirm04.LoadImagePNG2(UI_confirm04.file, UI_confirm04.tex);
 	UI_confirm05.LoadImagePNG2(UI_confirm05.file, UI_confirm05.tex);
+	UI_confirm06.LoadImagePNG2(UI_confirm06.file, UI_confirm06.tex);
 	UI_start.LoadImagePNG2(UI_start.file, UI_start.tex);
 	UI_cursor_A.LoadImagePNG2(UI_cursor_A.file, UI_cursor_A.tex);
 	UI_cursor_Bm.LoadImagePNG2(UI_cursor_Bm.file, UI_cursor_Bm.tex);
@@ -1728,8 +1724,8 @@ void timer(int value) {
 
 	glutPostRedisplay();
 	glutTimerFunc(16, timer, 0); //だいたい60fpsを目指す
-		
-	if(timer_cursor_lux >= 1000)
+
+	if (timer_cursor_lux >= 1000)
 	{
 		timer_cursor_lux = 0;
 
@@ -1746,7 +1742,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi editor ver.1.0.12");
+	glutCreateWindow("goipachi editor ver.1.0.13");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

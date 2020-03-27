@@ -29,14 +29,14 @@ int stage_select_confirm = 1; //インポートorエクスポートするステ�
 
 int stage_clear[STAGE_LIMIT + 1][5] = { {} }; //ステージクリアモードの進捗状況  0~2 メダル 3:クリア時間ハイスコア 4:ミス回数ハイスコア
 int stage_info[STAGE_LIMIT + 1] = {}; //0:未定義（カミングスーン) 1:何単語作るかミッション それ以外：面白そうなのがあったら追加
-int stage_nolma[STAGE_LIMIT + 1] = {}; //例：ステージ１で10単語作れミッション→ [1]=10
+int stage_norma[STAGE_LIMIT + 1] = {}; //例：ステージ１で10単語作れミッション→ [1]=10
 int stage_time_limit[STAGE_LIMIT + 1] = {}; //例：ステージ1は200秒以内 [1]=200
 int stage_time_limit_gold[STAGE_LIMIT + 1] = {}; //例：ステージ1のメダル獲得タイム50秒以内→[1]=50
 int stage_slot_constraint[STAGE_LIMIT + 1][5] = { {} }; //語彙スロット固定（例：ステージ1で[][][い][ろ]のときは [1][0]～[1][3]：＿＿いろになる
 int stage_block_info[OBJECT_LIMIT][3] = { {} }; //ステージモードの時に配置されるブロックの情報
 
 int stage_info_edit = 3; //編集中のステージの情報
-int stage_nolma_edit = 0;
+int stage_norma_edit = 0;
 int stage_time_limit_edit = 0;
 int stage_time_limit_gold_edit = 0;
 int stage_slot_constraint_edit[5] = {};
@@ -65,7 +65,7 @@ ULONG_PTR gdiPT;
 GLuint tex_num[7][11] = { {} }; //[0][]：数字フォント（赤） //[1][]：数字フォント（頭上のスコアの数字・黄緑） [10]は「＋」
 
 FILE *fp_stage_structure_info; //ステージの情報
-FILE *fp_stage_nolma_info;
+FILE *fp_stage_norma_info;
 
 int i, j, k;
 int object_on_stage = 0;
@@ -625,7 +625,7 @@ void new_stage() //新規ステージ作成
 	}
 
 	stage_info_edit = 0;
-	stage_nolma_edit = 0;
+	stage_norma_edit = 0;
 	stage_time_limit_edit = 0;
 	stage_time_limit_gold_edit = 0;
 	stage_slot_constraint_edit[0] = 0;
@@ -644,18 +644,18 @@ void import_stage(int stage_num) //ステージファイルを読み込む
 	char file_path[32]; //ステージファイルを読み込むときのステージ名
 
 
-	fclose(fp_stage_nolma_info);
+	fclose(fp_stage_norma_info);
 	std::cout << "<info 094: ステージノルマファイルを「読み込み用として」閉じました>" << std::endl;
 
 
-	if ((fopen_s(&fp_stage_nolma_info, "./dat/stage_nolma_info.dat", "r")) != 0) //ステージのノルマや制限時間などの基本情報を取得する
+	if ((fopen_s(&fp_stage_norma_info, "./dat/stage_norma_info.dat", "r")) != 0) //ステージのノルマや制限時間などの基本情報を取得する
 	{
 		std::cout << "<info 050: ステージノルマ情報ファイルを開けませんでした>" << std::endl;
 		exit(50);
 	}
 
 	i = 0;
-	while (fscanf_s(fp_stage_nolma_info, "%d,%d,%d,%d,%d,%d,%d,%d,%d", &stage_info[i], &stage_nolma[i], &stage_time_limit[i], &stage_time_limit_gold[i], &stage_slot_constraint[i][0], &stage_slot_constraint[i][1], &stage_slot_constraint[i][2], &stage_slot_constraint[i][3], &stage_slot_constraint[i][4]) != EOF)
+	while (fscanf_s(fp_stage_norma_info, "%d,%d,%d,%d,%d,%d,%d,%d,%d", &stage_info[i], &stage_norma[i], &stage_time_limit[i], &stage_time_limit_gold[i], &stage_slot_constraint[i][0], &stage_slot_constraint[i][1], &stage_slot_constraint[i][2], &stage_slot_constraint[i][3], &stage_slot_constraint[i][4]) != EOF)
 	{
 		i++;
 	}
@@ -691,7 +691,7 @@ void import_stage(int stage_num) //ステージファイルを読み込む
 	}
 
 	stage_info_edit = stage_info[stage_num]; //ステージファイルに保存されている情報をエディタ画面のほうへもっていく
-	stage_nolma_edit = stage_nolma[stage_num];
+	stage_norma_edit = stage_norma[stage_num];
 	stage_time_limit_edit = stage_time_limit[stage_num];
 	stage_time_limit_gold_edit = stage_time_limit_gold[stage_num];
 	stage_slot_constraint_edit[0] = stage_slot_constraint[stage_num][0];
@@ -712,7 +712,7 @@ void export_stage(int stage_num) //ステージファイルを書き出す
 	char file_path[32]; //ステージファイルを読み込むときのステージ名
 
 	stage_info[stage_num] = stage_info_edit; //エディタ画面で設定している情報をそれぞれ現在選択しているステージに書き出す
-	stage_nolma[stage_num] = stage_nolma_edit;
+	stage_norma[stage_num] = stage_norma_edit;
 	stage_time_limit[stage_num] = stage_time_limit_edit;
 	stage_time_limit_gold[stage_num] = stage_time_limit_gold_edit;
 	stage_slot_constraint[stage_num][0] = stage_slot_constraint_edit[0];
@@ -738,10 +738,10 @@ void export_stage(int stage_num) //ステージファイルを書き出す
 	std::cout << "<info 092: ステージファイルを閉じました>" << std::endl;
 
 
-	fclose(fp_stage_nolma_info);
+	fclose(fp_stage_norma_info);
 	std::cout << "<info 094: ステージノルマファイルを「読み込み用として」閉じました>" << std::endl;
 
-	if ((fopen_s(&fp_stage_structure_info, "./dat/stage_nolma_info.dat", "w")) != 0)
+	if ((fopen_s(&fp_stage_structure_info, "./dat/stage_norma_info.dat", "w")) != 0)
 	{
 		std::cout << "<info 095: ステージファイルを開けませんでした" << std::endl;	exit(95);
 	}
@@ -749,14 +749,14 @@ void export_stage(int stage_num) //ステージファイルを書き出す
 
 	for (i = 0; i <= STAGE_LIMIT; i++)
 	{
-		fprintf(fp_stage_nolma_info, "%d,%d,%d,%d,%d,%d,%d,%d,%d\n", stage_info[i], stage_nolma[i], stage_time_limit[i], stage_time_limit_gold[i], stage_slot_constraint[i][0], stage_slot_constraint[i][1], stage_slot_constraint[i][2], stage_slot_constraint[i][3], stage_slot_constraint[i][4]);
+		fprintf(fp_stage_norma_info, "%d,%d,%d,%d,%d,%d,%d,%d,%d\n", stage_info[i], stage_norma[i], stage_time_limit[i], stage_time_limit_gold[i], stage_slot_constraint[i][0], stage_slot_constraint[i][1], stage_slot_constraint[i][2], stage_slot_constraint[i][3], stage_slot_constraint[i][4]);
 	}
 
-	fclose(fp_stage_nolma_info);
+	fclose(fp_stage_norma_info);
 	std::cout << "<info 096: ステージノルマファイルを「書き込み用として」閉じました>" << std::endl;
 
 
-	if ((fopen_s(&fp_stage_nolma_info, "./dat/stage_nolma_info.dat", "r")) != 0) //ステージのノルマや制限時間などの基本情報を取得する
+	if ((fopen_s(&fp_stage_norma_info, "./dat/stage_norma_info.dat", "r")) != 0) //ステージのノルマや制限時間などの基本情報を取得する
 	{
 		std::cout << "<info 097: ステージノルマ情報ファイルを開けませんでした>" << std::endl;
 		exit(97);
@@ -767,7 +767,7 @@ void export_stage(int stage_num) //ステージファイルを書き出す
 }
 void shutdown(void)
 {
-	fclose(fp_stage_nolma_info); std::cout << "<info 098: ステージノルマファイルを閉じました>" << std::endl;
+	fclose(fp_stage_norma_info); std::cout << "<info 098: ステージノルマファイルを閉じました>" << std::endl;
 	exit(98);
 }
 
@@ -904,7 +904,7 @@ void display(void)
 	}break;
 	}
 
-	SetNumImage(-380 + camera_x, 166, 192, 24, stage_nolma_edit, 0, 4); //ノルマ数の情報
+	SetNumImage(-380 + camera_x, 166, 192, 24, stage_norma_edit, 0, 4); //ノルマ数の情報
 	SetNumImage(-380 + camera_x, 196, 192, 24, stage_time_limit_edit, 0, 4); //制限時間
 	SetNumImage(-380 + camera_x, 226, 192, 24, stage_time_limit_gold_edit, 0, 4); //勲章の制限時間
 
@@ -1268,7 +1268,7 @@ void keyboard(unsigned char key, int x, int y)
 
 				if (cursorB.x == 16 && cursorB.y == 1) //ノルマ情報
 				{
-					if (stage_nolma_edit >= 2) { stage_nolma_edit--; }
+					if (stage_norma_edit >= 2) { stage_norma_edit--; }
 				}
 
 				if (cursorB.x == 16 && cursorB.y == 2) //タイマー情報
@@ -1301,7 +1301,7 @@ void keyboard(unsigned char key, int x, int y)
 
 				if (cursorB.x == 16 && cursorB.y == 1) //ノルマ情報
 				{
-					if (stage_nolma_edit <= 99) { stage_nolma_edit++; }
+					if (stage_norma_edit <= 99) { stage_norma_edit++; }
 				}
 
 				if (cursorB.x == 16 && cursorB.y == 2) //タイマー情報
@@ -1625,14 +1625,14 @@ void Init() {
 	glOrtho(0, WIDTH, HEIGHT, 0, -1, 1);
 	GdiplusStartup(&gdiPT, &gdiPSI, NULL);
 
-	if ((fopen_s(&fp_stage_nolma_info, "./dat/stage_nolma_info.dat", "r")) != 0) //ステージのノルマや制限時間などの基本情報を取得する
+	if ((fopen_s(&fp_stage_norma_info, "./dat/stage_norma_info.dat", "r")) != 0) //ステージのノルマや制限時間などの基本情報を取得する
 	{
 		std::cout << "<info 050: ステージノルマ情報ファイルを開けませんでした>" << std::endl;
 		exit(50);
 	}
 
 	i = 0;
-	while (fscanf_s(fp_stage_nolma_info, "%d,%d,%d,%d,%d,%d,%d,%d,%d", &stage_info[i], &stage_nolma[i], &stage_time_limit[i], &stage_time_limit_gold[i], &stage_slot_constraint[i][0], &stage_slot_constraint[i][1], &stage_slot_constraint[i][2], &stage_slot_constraint[i][3], &stage_slot_constraint[i][4]) != EOF)
+	while (fscanf_s(fp_stage_norma_info, "%d,%d,%d,%d,%d,%d,%d,%d,%d", &stage_info[i], &stage_norma[i], &stage_time_limit[i], &stage_time_limit_gold[i], &stage_slot_constraint[i][0], &stage_slot_constraint[i][1], &stage_slot_constraint[i][2], &stage_slot_constraint[i][3], &stage_slot_constraint[i][4]) != EOF)
 	{
 		i++;
 	}
@@ -1742,7 +1742,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi editor ver.1.0.13");
+	glutCreateWindow("goipachi editor ver.1.0.14");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

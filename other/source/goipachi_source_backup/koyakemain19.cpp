@@ -2093,6 +2093,16 @@ void game_reset(void) //ステージ構造などゲームを開始する直前�
 	int *obbl = &object_block[0][0];
 	int *stst = &stage_structure[0];
 	int *slst = &slot_start[0];
+	int *mdtn = &made_tango[0][0];
+
+	for (i = 0; i < MADE_LIMIT; i++) //直前に作った単語作ったリストをリセットする
+	{
+		*(mdtn + i * 5 + 0) = 0;
+		*(mdtn + i * 5 + 1) = 0;
+		*(mdtn + i * 5 + 2) = 0;
+		*(mdtn + i * 5 + 3) = 0;
+		*(mdtn + i * 5 + 4) = 0;
+	}
 
 	//ステージの構造を再構成
 
@@ -3436,9 +3446,9 @@ void idle(void)
 
 			if (i <= STAGE_AVAILABLE) //ステージのクリア状況の表示は，現在選択できるステージまでの情報のみを参照する（プレイできるステージ以降のステージもテストプレイでクリアデータが入ってる可能性があるため）
 			{
-				if (*(sc + i * 3 + 0) == 1) { stage_medal[0]++; }
-				if (*(sc + i * 3 + 1) == 1) { stage_medal[1]++; }
-				if (*(sc + i * 3 + 2) == 1) { stage_medal[2]++; } //メダルを取った数を記録し，「何ステージをどのくらいクリアしているか」の情報を取得する
+				if (*(sc + i * 5 + 0) == 1) { stage_medal[0]++; }
+				if (*(sc + i * 5 + 1) == 1) { stage_medal[1]++; }
+				if (*(sc + i * 5 + 2) == 1) { stage_medal[2]++; } //メダルを取った数を記録し，「何ステージをどのくらいクリアしているか」の情報を取得する
 			}
 		}
 
@@ -4687,7 +4697,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.5.4");
+	glutCreateWindow("goipachi ver.1.5.6");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

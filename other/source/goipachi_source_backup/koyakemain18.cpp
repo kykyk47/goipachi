@@ -103,7 +103,7 @@ int made_tango[MADE_LIMIT + 1][5] = { {} }; //ステージクリアモードの�
 int stage_select = 1; //ステージクリアモードで選んでいるステージの番号
 int stage_clear[STAGE_LIMIT + 1][5] = { {} }; //ステージクリアモードの進捗状況  0~2 メダル 3:クリア時間ハイスコア 4:ミス回数ハイスコア
 int stage_info[STAGE_LIMIT + 1] = {}; //0:未定義（カミングスーン) 3-5:スロット固定あり言葉作成ミッション（固定情報がなければ通常単語作成ミッション），13-15：しりとりミッション， 23-25：ABには同じ言葉が入りますミッション
-int stage_nolma[STAGE_LIMIT + 1] = {}; //例：ステージ１で10単語作れミッション→ [1]=10
+int stage_norma[STAGE_LIMIT + 1] = {}; //例：ステージ１で10単語作れミッション→ [1]=10
 int stage_time_limit[STAGE_LIMIT + 1] = {}; //例：ステージ1は200秒以内 [1]=200
 int stage_time_limit_gold[STAGE_LIMIT + 1] = {}; //例：ステージ1のメダル獲得タイム50秒以内→[1]=50
 int stage_slot_constraint[STAGE_LIMIT + 1][5] = { {} }; //語彙スロット固定（例：ステージ1で[][][い][ろ]のときは [1][0]～[1][3]：＿＿いろになる
@@ -181,7 +181,7 @@ FILE *fp_dic_4; //４文字辞書ファイル
 FILE *fp_dic_5; //５文字辞書ファイル（未完成）
 FILE *fp_stageclear; //ステージクリア進捗
 FILE *fp_stage_structure_info; //ステージの情報
-FILE *fp_stage_nolma_info; //ステージのノルマ情報
+FILE *fp_stage_norma_info; //ステージのノルマ情報
 
 FILE *fp_dic_sample_i; //★辞書ファイル（ひらがな格納）を数値化できるように工夫するテスト（まだ実用化には至っておらず・・・がんばります）
 FILE *fp_dic_sample_o;
@@ -2093,6 +2093,16 @@ void game_reset(void) //ステージ構造などゲームを開始する直前�
 	int *obbl = &object_block[0][0];
 	int *stst = &stage_structure[0];
 	int *slst = &slot_start[0];
+	int *mdtn = &made_tango[0][0];
+
+	for (i = 0; i < MADE_LIMIT; i++) //直前に作った単語作ったリストをリセットする
+	{
+		*(mdtn + i * 5 + 0) = 0;
+		*(mdtn + i * 5 + 1) = 0;
+		*(mdtn + i * 5 + 2) = 0;
+		*(mdtn + i * 5 + 3) = 0;
+		*(mdtn + i * 5 + 4) = 0;
+	}
 
 	//ステージの構造を再構成
 
@@ -2134,7 +2144,7 @@ void game_shutdown(void) //Escキーやタイトル→やめるを押下され�
 	fclose(fp_dic_4);
 	fclose(fp_dic_5); std::cout << "<info 018: 5文字辞書ファイルを閉じました>" << std::endl;
 	fclose(fp_stageclear); std::cout << "<info 031: ステージクリア進捗状況ファイルを閉じました>" << std::endl;
-	fclose(fp_stage_nolma_info); std::cout << "<info 052: ステージノルマファイルを閉じました>" << std::endl;
+	fclose(fp_stage_norma_info); std::cout << "<info 052: ステージノルマファイルを閉じました>" << std::endl;
 
 	if (flag_SE == true)
 	{
@@ -2168,7 +2178,7 @@ void display(void)
 	int *sl = &slot[0];
 	int *si = &stage_info[0];
 	int *sc = &stage_clear[0][0];
-	int *sn = &stage_nolma[0];
+	int *sn = &stage_norma[0];
 	int *stl = &stage_time_limit[0];
 	int *stlg = &stage_time_limit_gold[0];
 	int *ssc = &stage_slot_constraint[0][0];
@@ -2350,7 +2360,7 @@ void display(void)
 			SetNumImage(360 + player->center_x, 176, 160, 20, time / 60, 0, 4); //タイマー
 			SetNumImage(444 + player->center_x, 224, 160, 20, score, 0, 4); //スコア（分子）
 			UI_num_aslash.SetImage(430 + player->center_x, 236); //分数のスラッシュ（名前忘れた）
-			SetNumImage(360 + player->center_x, 224, 160, 20, *(stage_nolma + stage_select), 0, 4); //ノルマ（分母）
+			SetNumImage(360 + player->center_x, 224, 160, 20, *(stage_norma + stage_select), 0, 4); //ノルマ（分母）
 			SetNumImage(360 + player->center_x, 272, 160, 20, score_miss, 0, 4); //ミスの回数
 		}
 
@@ -2820,11 +2830,11 @@ void display(void)
 				{
 					UI_coming_soon64.SetImage(-i * 128, -236);
 				}
-				if (*(sc + stage_select * 5 + 0) == 1) { UI_clear_lamp_on_1.SetImage(-i * 128, -280); } //クリアランプの点灯
-				if (*(sc + stage_select * 5 + 1) == 1) { UI_clear_lamp_on_2.SetImage(-i * 128, -280); }
-				if (*(sc + stage_select * 5 + 2) == 1) { UI_clear_lamp_on_3.SetImage(-i * 128, -280); }
+				if (*(sc + (stage_select + i) *5 + 0) == 1) { UI_clear_lamp_on_1.SetImage(-i * 128, -280); } //クリアランプの点灯
+				if (*(sc + (stage_select + i) * 5 + 1) == 1) { UI_clear_lamp_on_2.SetImage(-i * 128, -280); }
+				if (*(sc + (stage_select + i) * 5 + 2) == 1) { UI_clear_lamp_on_3.SetImage(-i * 128, -280); }
 
-				if (*(sc + stage_select * 5 + 0) == 1 && *(sc + stage_select * 5 + 1) == 1 && *(sc + stage_select * 5 + 2) == 1) //全点灯アニメーション
+				if (*(sc + (stage_select + i) * 5 + 0) == 1 && *(sc + (stage_select + i) * 5 + 1) == 1 && *(sc + (stage_select + i) * 5 + 2) == 1) //全点灯アニメーション
 				{
 					if (lamp_timer_clear % 12 <= 5) {
 						UI_clear_lamp_on_1_lux.SetImage(-i * 128, -280);
@@ -2969,7 +2979,7 @@ void display(void)
 			case 13: case 14: case 15: //しりとりミッション
 			{
 				UI_mission_description_2.SetImage(0, -145);
-				SetNumImage(10, -166, 320, 40, stage_nolma[stage_select], 0, 4);
+				SetNumImage(10, -166, 320, 40, stage_norma[stage_select], 0, 4);
 
 			}break;
 
@@ -3379,7 +3389,7 @@ void idle(void)
 		flag_move_bullet = false;
 	}
 
-	if (scene == 5 && mode == 1 && stage_nolma[stage_select] == score) //ステージクリアモードでノルマを達成した
+	if (scene == 5 && mode == 1 && stage_norma[stage_select] == score) //ステージクリアモードでノルマを達成した
 	{
 		scene = 11;
 		camera_x = 640; camera_y = -544; player->center_x = 0; player->center_y = 0;
@@ -4283,14 +4293,14 @@ void Init() {
 		}
 	}
 
-	if ((fopen_s(&fp_stage_nolma_info, "./dat/stage_nolma_info.dat", "r")) != 0) //ステージのノルマや制限時間などの基本情報を取得する
+	if ((fopen_s(&fp_stage_norma_info, "./dat/stage_norma_info.dat", "r")) != 0) //ステージのノルマや制限時間などの基本情報を取得する
 	{
 		std::cout << "<info 050: ステージノルマ情報ファイルを開けませんでした>" << std::endl;
 		exit(50);
 	}
 
 	i = 0;
-	while (fscanf_s(fp_stage_nolma_info, "%d,%d,%d,%d,%d,%d,%d,%d,%d", &stage_info[i], &stage_nolma[i], &stage_time_limit[i], &stage_time_limit_gold[i], &stage_slot_constraint[i][0], &stage_slot_constraint[i][1], &stage_slot_constraint[i][2], &stage_slot_constraint[i][3], &stage_slot_constraint[i][4]) != EOF)
+	while (fscanf_s(fp_stage_norma_info, "%d,%d,%d,%d,%d,%d,%d,%d,%d", &stage_info[i], &stage_norma[i], &stage_time_limit[i], &stage_time_limit_gold[i], &stage_slot_constraint[i][0], &stage_slot_constraint[i][1], &stage_slot_constraint[i][2], &stage_slot_constraint[i][3], &stage_slot_constraint[i][4]) != EOF)
 	{
 		i++;
 	}
@@ -4687,7 +4697,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.5.3");
+	glutCreateWindow("goipachi ver.1.5.5");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);

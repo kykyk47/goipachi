@@ -51,6 +51,8 @@ ULONG_PTR gdiPT;
 
 GLuint tex_num[7][11] = { {} }; //数字フォント，[0][]：赤, [1][]：頭上のスコアの数字・緑，[2][0]：ステージセレクト番号・黄色，[3][0]：ステージセレクト番号・未定義茶色，[6][]：記号類，*][10]は「＋」
 
+
+//★関数プロトタイプ
 void play_SE(Mix_Chunk *filename);
 void end();
 void check_goi(int* moji); //Kキーが押されたあとの語彙スロットの正誤判定
@@ -58,15 +60,13 @@ void LoadImagePNG(const wchar_t* filename, GLuint &texture); //画像ロード
 void SetNumImage(double x, double y, int size_x, int size_y, int num, int font, int d); //数字を画像にして表示
 int choose_hiragana(void); //乱数によりひらがなを1文字選ぶ
 int choose_pattern(void); //乱数によりスコアアタックモードのステージ配置パターンを選ぶ
-int choose_odai(void); //乱数により「お題ブロック」のお題番号を選ぶ
+int choose_odai(void); //乱数により「ヒントブロック」のヒント番号を選ぶ
 void set_block_info(int type, int x_grid, int y_grid, int leftside, int blocknum); //ステージファイルやblock_standbyで定義された数値群より実際に配置するブロックの情報へ置き換える
 void block_standby(void); //スコアアタックモードで，ステージの生成（準備）をする
 void standby_stage(int stage_num); //ステージクリアモードで，ステージの生成（準備）をする
 void game_reset(void); //スコアアタックモードでステージを再構成する
 void game_shutdown(void); //ゲームを終了し，もろもろを開放する
 
-
-int ranking; //ランキング表示のため
 
 bool onMoveKeyPress_L = false;
 bool onMoveKeyPress_R = false;
@@ -114,8 +114,8 @@ int score_most_hiragana = 0; //最も単語に使ったひらがなの数
 int max_most_hiragana = 0; //↑を求めるのに使う(最大値の探索)
 int score_tango = 0; //作った単語の数
 int score = 0; //ゲーム中でのスコア
-
 int list_most_hiragana[80] = {}; //最も入手したひらがなを決めるのに必要
+int ranking; //ランキング表示のため
 
 int hiragana_weight_3[80][5] = { {} }; //各何文字目かの登場回数（単語を構成するひらがなのほかにランダムなひらがなを配置するため，それの生成率を決める重み
 int hiragana_weight_4[80][5] = { {} }; //各何文字目かの登場回数（単語を構成するひらがなのほかにランダムなひらがなを配置するため，それの生成率を決める重み
@@ -125,23 +125,23 @@ float hiragana_score_4[80][4] = { {} }; //Kキーを押下した際スロット�
 float hiragana_score_5[80][5] = { {} }; //Kキーを押下した際スロットの各文字の点数を合計するための要素
 
 
-int odai; //お題の番号を決める
+int odai; //ヒントブロック入手時，↓から抽選するための番号
 
 int odai_hiragana_3[75][5] = {
 {0,46,0},{0,47,0},{0,50,0},{0,3,0},{0,2,0},{0,0,41},{0,0,33},{0,0,13}
-}; //お題のひらがなの配置（例：{0,3,0}:{〇う〇}）
+}; //ヒントブロックのひらがなの配置（例：{0,3,0}:{〇う〇}）
 #define odai_hiragana_3_all 8
 
 int odai_hiragana_4[75][5] = {
 {0,6,2,0},{0,0,2,43},{11,0,0,8},{0,46,0,46},{0,2,0,2},{0,3,0,3},{0,2,15,0},{14,2,0,0},{0,0,6,39},{66,46,0,0},
 {0,47,0,3},{0,0,0,48},{6,0,6,0},{16,0,0,46},{0,47,0,2},{0,50,0,50},{0,50,41,0},{26,0,0,8},{39,0,0,50},{0,0,50,65}
-}; //お題のひらがなの配置
+}; //ヒントブロックのひらがなの配置
 #define odai_hiragana_4_all 20
 
 int odai_hiragana_5[75][5] = {
 {0,0,0,32,41},{0,46,0,46,0},{0,50,0,50,0},{0,3,0,2,0},{0,46,0,0,7},{0,0,0,2,43},{14,2,0,0,0},{0,0,0,4,41},{0,0,0,42,41},{0,0,45,0,0},
 {0,45,0,0,0},{0,47,0,0,0}
-}; //お題のひらがなの配置
+}; //ヒントブロックのひらがなの配置
 #define odai_hiragana_5_all 12
 
 int high_score_3[5] = { 0,0,0,0,0 }; //レコードされているハイスコア
@@ -707,8 +707,8 @@ GameObject(0, 0, 64, 64, L"./pic/block_hiragana_71.png"), //ぺ
 GameObject(0, 0, 64, 64, L"./pic/block_hiragana_72.png"),//ぽ
 GameObject(0, 0, 64, 64, L"./pic/ground.png"), //地面 ID:76
 GameObject(0, 0, 64, 64, L"./pic/block_odai.png"), //おだいばこ
-GameObject(0, 0, 64, 64, L"./pic/block_odai_off.png"), //お題箱オフ
-GameObject(0, 0, 64, 64, L"./pic/block_undifined.png") //未使用（お題箱とかに使う？
+GameObject(0, 0, 64, 64, L"./pic/block_odai_off.png"), //ヒントブロックオフ
+GameObject(0, 0, 64, 64, L"./pic/block_undifined.png") //未使用（ヒントブロックとかに使う？
 };
 
 GameObject block_hiragana_mini[80] = { //ステージクリアモードにおいて，作った単語を左上に表示する用のちいさいブロック
@@ -790,8 +790,8 @@ GameObject(0, 0, 32, 32, L"./pic/block_hiragana_71.png"), //ぺ
 GameObject(0, 0, 32, 32, L"./pic/block_hiragana_72.png"),//ぽ
 GameObject(0, 0, 32, 32, L"./pic/ground.png"), //地面 ID:76
 GameObject(0, 0, 32, 32, L"./pic/block_odai.png"), //おだいばこ
-GameObject(0, 0, 32, 32, L"./pic/block_odai_off.png"), //お題箱オフ
-GameObject(0, 0, 32, 32, L"./pic/block_undifined.png") //未使用（お題箱とかに使う？
+GameObject(0, 0, 32, 32, L"./pic/block_odai_off.png"), //ヒントブロックオフ
+GameObject(0, 0, 32, 32, L"./pic/block_undifined.png") //未使用（ヒントブロックとかに使う？
 };
 
 GameObject block_light_1 = GameObject(0, 0, 64, 64, L"./pic/block_highlight_1.png"); //ルーレットブロックのライトエフェクト（明
@@ -1309,7 +1309,7 @@ int choose_hiragana(void) //ひらがなブロックをランダムに選ぶ関�
 
 	do {
 		a = rand_hiragana(mt);
-	} while (a == 49);
+	} while (a == 49); //木箱のＩＤが選ばれると再抽選
 
 	return a;
 }
@@ -1322,17 +1322,17 @@ int choose_pattern(int MOJISU) //ステージのブロック配置パターン�
 	{
 	case 3:
 	{
-		do { a = rand_pattern3(mt); } while (a <= 0 || a >= 4); //1~3から選ぶ 余裕があるときにパターンを増やす
+		do { a = rand_pattern3(mt); } while (a <= 0 || a >= 4); //1~3から選ぶ 
 	}break;
 
 	case 4:
 	{
-		do { a = rand_pattern4(mt); } while (a <= 100 || a >= 104); //101~103から選ぶ 余裕があるときにパターンを増やす
+		do { a = rand_pattern4(mt); } while (a <= 100 || a >= 104); //101~103から選ぶ 
 	}break;
 
 	case 5:
 	{
-		do { a = rand_pattern5(mt); } while (a <= 200 || a >= 203); //201~202から選ぶ 余裕があるときにパターンを増やす
+		do { a = rand_pattern5(mt); } while (a <= 200 || a >= 203); //201~202から選ぶ 
 	}break;
 	}
 
@@ -2610,21 +2610,22 @@ void display(void)
 				(*(blhr + *(obbl + i * 3))).SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2)));
 			}
 
-			else if (*(obbl + i * 3) == 77) //お題箱描画
+			else if (*(obbl + i * 3) == 77) //ヒントブロック描画
 			{
 				if (*(sl + 0) == 0 && *(sl + 1) == 0 && *(sl + 2) == 0 && *(sl + 3) == 0) //スロットが空っぽの時マ〇オのハテ〇ブロックみたいなテクスチャにする）
 				{
 					(*(blhr + 77)).SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2)));
+					(*(blhr + 77)).SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2)));
 				}
 
-				else //スロットが空っぽじゃなかったらお題箱は起動しない（マ〇オのたたいた後のブロックみたいなテクスチャにする）
+				else //スロットが空っぽじゃなかったらヒントブロックは起動しない（マ〇オのたたいた後のブロックみたいなテクスチャにする）
 				{
 					(*(blhr + 78)).SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2)));
 				}
 
 			}
 
-			else if (*(obbl + i * 3) == 79) //お題箱描画
+			else if (*(obbl + i * 3) == 79) //ヒントブロック描画
 			{
 				//block_hiragana[hiragana_roulette[((hiragana_roulette_timer + (slot_start[i])*60))%(74*60) / 60]].SetImage(double(*(obbl + i * 3 + 1)), double(*(obbl + i * 3 + 2))); //下式が複雑なので一応変形前も載せる
 
@@ -3310,7 +3311,7 @@ void idle(void)
 				}
 
 
-				else if (*(obbl + i * 3) == 77) //お題箱にヒットしたとき（ごいスロットに何かあるときはＯＦＦ状態になる）
+				else if (*(obbl + i * 3) == 77) //ヒントブロックにヒットしたとき（ごいスロットに何かあるときはＯＦＦ状態になる）
 				{
 					if (mode_mojisu == 3 && slot[0] == 0 && slot[1] == 0 && slot[2] == 0)//3文字モードの時
 					{
@@ -3744,7 +3745,7 @@ void keyboard(unsigned char key, int x, int y)
 
 	switch (scene)
 	{
-	case 0:
+	case 0: //タイトル
 	{
 		switch (key) {
 
@@ -4347,7 +4348,7 @@ void Init() {
 	LoadImagePNG(L"./pic/block_null.png", tex_num[6][10]); //tex_num[6]は記号群にしたいと思う [10]はプラス記号なのでえ必要ないフォントは空白にする
 	LoadImagePNG(L"./pic/num_hyphen.png", tex_num[6][1]); //[0]小数点 [1]ハイフン
 
-	UI_title.LoadImagePNG2(UI_title.file, UI_title.tex);
+	UI_title.LoadImagePNG2(UI_title.file, UI_title.tex); //以下テクスチャの割り当て
 	UI_quit.LoadImagePNG2(UI_quit.file, UI_quit.tex);
 	UI_gamestart.LoadImagePNG2(UI_gamestart.file, UI_gamestart.tex);
 	UI_pressstart.LoadImagePNG2(UI_pressstart.file, UI_pressstart.tex);
@@ -4483,7 +4484,7 @@ void Init() {
 	//コピー用
 	//.LoadImagePNG2(.file, .tex);
 
-	player = new AnimationChara(0.0, 0.0, 64.0, 64.0, L"./pic/player_walk1.png"); //ゲーム上で移動するオブジェクト
+	player = new AnimationChara(0.0, 0.0, 64.0, 64.0, L"./pic/player_walk1.png"); //ゲーム上で移動するオブジェクトの定義
 	player->LoadPNGImage(L"./pic/player_walk2.png");
 	player->LoadPNGImage(L"./pic/player_walk3.png");
 	player->LoadPNGImage(L"./pic/player_jump.png");
@@ -4530,7 +4531,7 @@ void Init() {
 		}
 	}
 
-	for (k = 0; k < 80; k++) //何文字目の何のひらがなであれば何点，という点数を付与する
+	for (k = 0; k < 80; k++) //何文字目の何のひらがなであれば何点獲得，という点数情報を決定する
 	{
 		for (j = 0; j <= 2; j++)
 		{
@@ -4684,7 +4685,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(WIDTH, HEIGHT);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutCreateWindow("goipachi ver.1.5.7");
+	glutCreateWindow("goipachi ver.1.5.8");
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutTimerFunc(16, timer, 0);
